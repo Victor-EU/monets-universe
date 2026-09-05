@@ -852,3 +852,50 @@ pond 12.0, parasol 8.9, argenteuil 10.1, poplars 10.3, haystacks 12.9, rouen 9.4
 Commons) and is soft up close; the museum offers larger files behind its terms of use, which the user can accept and drop in. The rooms
 are simpler than the real ones (no cornice mouldings, no rail, no lamps in the cove); the ceiling is a flat veil, not a glazed vault. The
 lawn outside is plain. The Sailko in-situ photographs on Commons remain the reference for the real rooms.
+
+### Progress · M13 — the spot (fix: "the scene is broken by something that feels like a picture")
+
+**What was wrong.** The user's frame was the Argenteuil viewpoint itself: the canvas's sail missing, a band of smeared strips across the
+far bank, the 3D sail standing mid-frame wearing painted sky, the near bridge veiled. The cause, found with a new diagnostic (`?dbg=2`:
+each point's depth against the painter's depth map, red where the map is nearer, blue where it is farther; `?dbg=3` shows the map):
+the depth map was taken once, at build time, and the world then moved away from it. The sailing boats orbit (13 m across), the rowing
+boats drift, so the map held the sail where the painting has it while the render had it 5 m to the right: the far bank behind the old
+sail was "hidden" (key strokes instead of the canvas), the new sail "in front of nothing" (painted with what lay behind it). Two more
+tells came with it: objects of another place inside a frame carried *their* canvas (the Epte's poplars by the Argenteuil bridge were
+behind their own painter and showed his key), and away from the spot the canvas stretched over the ground (the M11 known tell).
+
+**What changed** (`index.html`, build `m13-spot`).
+- **One canvas at a time.** Every material now takes the projector of the place the eye is in (`syncProjectors`), weighted by the
+  place weight as the sky and base terrain already were; a painting keeps its own projector in `painting.own` (`projectorState`).
+- **The depth map follows the world.** While the canvas is in reach (eye within 20 m of the spot) the map is rendered again every other
+  frame from the painter's spot into the next of two depth targets (the other may be bound as a texture: rendering into a bound one
+  silently draws nothing, which is how the first attempt failed). Only the place's own meshes, the ground and the water are drawn;
+  other places are then absent from the map, which paints them as if nothing stood in his way — exact at the spot, harmless elsewhere.
+  Cost: about 1.2 ms per pass at 1024 px on the live tab (so ~0.6 ms a frame); below the bench's noise at 2×.
+- **Moored where he painted them.** A boat whose rest position projects inside a painter's frame, within that place, loses its orbit at build
+  (Argenteuil's sail, Le Havre's two rowers); it still rocks and bobs. The others sail on.
+- **The canvas belongs to the spot** (`canvasHere`): per point it dissolves by the parallax between the painter's ray and the eye's
+  (1 − cos from 4° to 14°: near things first, the far view last) and altogether as the eye walks off (8 to 18 m). As it dissolves, and
+  toward the frame's edge, the canvas read goes soft (mip bias up to 4 + 3) rather than being cut. What remains is the world in the key.
+- **The sky** takes the canvas by the eye's distance only, and where something stood in his view (a hole beside a silhouette, seen from
+  aside) it searches up to 48 % of the canvas upward for clear sky and takes that colour, soft; if none, the key at 70 %. The vertical
+  edge and grey blob of the sail's silhouette on the sky are gone.
+- **Visibility by any tap**: of the four depth taps one clear one is enough, so the ground behind a leaf's edge is no longer fringed.
+- Diagnostics `?dbg=2` and `?dbg=3` kept (grey outside the frame); the bench reports `proj` (pass cost); `monet.projMs`,
+  `monet.flags.noProjPass`.
+
+**Verified.** Headless 1600×900 at all seven spots (`scratchpad/spot-sheet.jpg`): each frame is its canvas; the Argenteuil sail, house
+and far bank are the painting's, the depth check at the spot shows agreement everywhere but thin leaf edges and the (absent) Epte
+poplars. Off the spot (`offspot-sheet.jpg`: Argenteuil from 6 m and from the bank, the haystacks from behind, the pond from the side):
+the canvas dissolves into the key without smears or hard silhouettes. Live tab: build `m13-spot`; over four seconds the moored sail and one rower stay put while the three outer boats
+sail on; no new console errors. Bench Balanced 2× (3840×1550), the machine in a slower state than at M12 — the committed build re-benched alongside
+as the control:
+
+| | pond | parasol | argenteuil | poplars | haystacks | rouen | sunrise | orangerie | aerial | refl |
+|---|---|---|---|---|---|---|---|---|---|---|
+| M12 (control, now) | 22.8 | 16.6 | 16.6 | 17.5 | 21.8 | 18.2 | 10.3 | 17.0 | 8.9 | 1.8 |
+| M13 | 21.3 | 17.7 | 17.4 | 17.7 | 20.5 | 18.4 | 10.2 | 15.9 | 8.5 | 1.4 |
+
+**Still visible.** Between 4° and 14° of parallax the near canvas is half there; walking slowly past a spot one sees it go soft and
+give way, which is the design. The Rouen houses either side are still plain slabs. A painted crown wider than its 3D tree still hangs
+on the sky until the eye has walked 8 m. Deployment still waits for the explicit go-ahead, with the domain.

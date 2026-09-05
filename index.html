@@ -395,7 +395,7 @@ const U = {
   uFogCol: { value: new THREE.Color() }, uFogNear: { value: 15 }, uFogFar: { value: 60 },
   uSkyTop: { value: new THREE.Color() }, uSkyHorizon: { value: new THREE.Color() }, uHaze: { value: .16 }, uSunDisc: { value: 0 },
   uRefl: { value: null }, uReflMatrix: { value: new THREE.Matrix4() }, uWaterDeep: { value: new THREE.Color() }, uWaterTint: { value: new THREE.Color() }, uReflectivity: { value: .8 }, uRipple: { value: .012 }, uBands: { value: .25 },
-  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uDbg: { value: params.has('dbg') ? 1 : 0 },
+  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uDbg: { value: params.has('dbg') ? (parseFloat(params.get('dbg')) || 1) : 0 },
 };
 
 // ============================================================ the brushes
@@ -517,15 +517,25 @@ float frameEdge(vec2 puv) {
   return 1. - smoothstep(.78, 1., em);
 }
 float linD(float z) { float n = uProjNF.x, f = uProjNF.y; return 2. * n * f / (f + n - (2. * z - 1.) * (f - n)); }
-// was this point in Monet's line of sight? four taps of the depth map, compared in metres
+// was this point in Monet's line of sight? four taps of the depth map, compared in metres; one clear tap is enough, so that the
+// ground behind a leaf's edge is not fringed with the key where the map's texel belongs to the leaf
 float projVis(vec2 uv, float z, float loose) {
-  float lz = linD(z), tol = .12 + lz * .012 + loose * (1.2 + lz * .02); vec2 t = 1.2 / uDepthSize; float s = 0.;
-  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(-t.x, -t.y)).r) + tol);
-  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, -t.y)).r) + tol);
-  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(-t.x, t.y)).r) + tol);
-  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, t.y)).r) + tol);
-  return s * .25;
+  float lz = linD(z), tol = .12 + lz * .012 + loose * (1.2 + lz * .02); vec2 t = 1.2 / uDepthSize;
+  float s = step(lz, linD(texture2D(uPaintDepth, uv + vec2(-t.x, -t.y)).r) + tol);
+  s = max(s, step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, -t.y)).r) + tol));
+  s = max(s, step(lz, linD(texture2D(uPaintDepth, uv + vec2(-t.x, t.y)).r) + tol));
+  s = max(s, step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, t.y)).r) + tol));
+  return s;
 }
+// the canvas belongs to the spot where he stood. Seen from elsewhere it would stretch over the ground and hang in the air, so it dissolves:
+// per point, by the parallax between the painter's ray and the eye's (near things first, the far view last), and altogether as the eye
+// walks off (8 to 18 m). What remains is the world in the picture's key.
+float canvasHere(vec3 w, vec3 eye) {
+  float par = 1. - dot(normalize(w - uProjPos), normalize(w - eye)); // 1 - cos: .0024 at 4 degrees, .03 at 14
+  return (1. - smoothstep(.0024, .03, par)) * (1. - smoothstep(8., 18., distance(eye, uProjPos)));
+}
+// and toward its edge, and as it dissolves, it goes soft rather than cut: a mip bias for the canvas read
+float canvasBias(float here, float em) { return (1. - here) * 4. + smoothstep(.72, 1., em) * 3.; }
 const float STROKE = .012; // the width of a stroke, in radians of view: about a hundredth of the picture
 // the paint field read at one tile scale, on the three world planes weighted by the normal: offsets (hue, value, temperature, relief) about zero
 vec4 paintTri(sampler2D t, vec3 p, vec3 bw, float P) {
@@ -693,14 +703,15 @@ void main(){
     vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 1.8), O, .6);
     ex = mix(ex, applyPaint(ecol, O, .3), smoothstep(.7, .95, fog)); // far off, the picture's own distance takes over from the fog
     fin = mix(fin, ex, .85 * uProjOn);
+    float here = canvasHere(vWorld, cameraPosition);
 #ifdef INSTANCED
-    float conf = front * frameEdge(puv) * projVis(puv, pz, 1.);
+    float conf = front * frameEdge(puv) * projVis(puv, pz, 1.) * here;
 #else
-    float conf = front * frameEdge(puv) * projVis(puv, pz, 0.);
+    float conf = front * frameEdge(puv) * projVis(puv, pz, 0.) * here;
 #endif
     if (conf > 0.) {
       vec2 tp = fwidth(puv) * uPaintSize; float mag = 1. / max(max(tp.x, tp.y), 1e-4); // how far the canvas is stretched: strokes return as it is magnified
-      vec3 pcol = texture2D(uPainting, puv).rgb * uGradeMul + uGradeAdd;
+      vec3 pcol = texture2D(uPainting, puv, canvasBias(here, em)).rgb * uGradeMul + uGradeAdd;
       pcol = applyPaint(pcol, O, smoothstep(2., 10., mag) * .55);
 #ifdef INSTANCED
       pcol *= 1. + (S.b - .5) * .12;
@@ -708,6 +719,9 @@ void main(){
       fin = mix(fin, pcol, conf);
       if (uDbg > .5) fin = vec3(.3 + .7 * conf);
     } else if (uDbg > .5) fin = vec3(.3);
+    // ?dbg=2: the depth map against this point, in metres: red where the map is nearer (hidden from him), blue where it is farther (not in it)
+    if (uDbg > 1.5) { float dd = linD(texture2D(uPaintDepth, puv).r) - linD(pz); fin = dd < 0. ? vec3(clamp(-dd / 10., 0., 1.), 0., 0.) : vec3(0., 0., clamp(dd / 10., 0., 1.)); if (front < .5) fin = vec3(0., 1., 0.); if (em > 1.) fin = vec3(.25); }
+    if (uDbg > 2.5) fin = vec3(linD(texture2D(uPaintDepth, puv).r) / 120.); // ?dbg=3: the depth map itself, black near, white at 120 m
     // the canvas carries the painter's own distance; seen from farther away than he stood, the rest of the way is fog
     float fogP = smoothstep(uFogNear, uFogFar, distance(vWorld, uProjPos)) * .9;
 #ifdef INSTANCED
@@ -749,14 +763,23 @@ void main(){
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0.) {
     fin = mix(fin, applyPaint(inKey(fin, extCol(d), .5, .6, 1.45), O, .5), .85 * uProjOn);
-    float conf = front * frameEdge(puv) * step(.99995, texture2D(uPaintDepth, puv).r);
-    fin = mix(fin, texture2D(uPainting, puv).rgb * uGradeMul + uGradeAdd, conf);
+    float here = 1. - smoothstep(8., 18., distance(cameraPosition, uProjPos)), bias = canvasBias(here, em);
+    float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
+    vec3 pc = texture2D(uPainting, puv, bias).rgb;
+    if (clear < .5 && conf > 0.) { // something stood here in his view: take the sky just above it, if there is one within reach
+      vec3 up = extCol(d); float found = 0.;
+      for (int i = 1; i <= 8; i++) { vec2 uv2 = puv + vec2(0., .06 * float(i)); if (found < .5 && uv2.y < 1. && texture2D(uPaintDepth, uv2).r > .99995) { up = textureLod(uPainting, uv2, 3. + bias).rgb * uGradeMul + uGradeAdd; found = 1.; } }
+      pc = up; conf *= mix(.7, 1., found);
+    } else pc = pc * uGradeMul + uGradeAdd;
+    fin = mix(fin, pc, conf);
   }
   gl_FragColor = vec4(fin, 1.);
   #include <colorspace_fragment>
 }`;
 
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
+// each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
+function projectorState() { return { tex: null, depth: null, M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
 function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
@@ -2264,7 +2287,7 @@ function loadPaintings() {
       tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
       tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
       try { const hc = horizonColor(tex.image, P.hz ?? .5); for (const st of pl.stops) { const g = gradeOf(pl, st); st.fogCol.setRGB(clamp(hc.r * g.mul[0] + g.add[0], 0, 1), clamp(hc.g * g.mul[1] + g.add[1], 0, 1), clamp(hc.b * g.mul[2] + g.add[2], 0, 1)); } } catch (e) { console.warn('monet: horizon colour', e); }
-      P.tex = tex; if (pl.PU) { pl.PU.uPainting.value = tex; pl.PU.uPaintSize.value.set(tex.image.width, tex.image.height); if (P.ready && !params.has('noproj')) pl.PU.uProjOn.value = 1; }
+      P.tex = tex; const S = P.own || (P.own = projectorState()); S.tex = tex; S.paintSize.set(tex.image.width, tex.image.height); if (P.ready && !params.has('noproj')) P.on = true;
     });
   }
   for (const P of PANELS) texLoader.load(`paintings/orangerie/${P.file}.jpg`, tex => {
@@ -2273,39 +2296,63 @@ function loadPaintings() {
     P.tex = tex; if (P.mat) { P.mat.uniforms.uTex.value = tex; P.mat.uniforms.uTexSize.value.set(tex.image.width, tex.image.height); }
   });
 }
+const PROJ_RES = 1024;
+function makeDepthTarget(w, h) { return new THREE.WebGLRenderTarget(w, h, { depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType), depthBuffer: true }); }
+// the scene seen from the painter's spot, into the next of the painting's two depth maps (the other may be bound as a texture meanwhile)
+// 'only' = the index of the one place whose meshes (with the ground and the water) are drawn, to keep the pass cheap; the other places
+// are then absent from the map, which paints them as if nothing stood in his way: right at his spot, and harmless elsewhere
+function renderProjectorDepth(P, only) {
+  const rt = P.rt[P.rtIndex = 1 - (P.rtIndex || 0)], savedPx = U.uPxRad.value, hidden = []; sky.visible = false;
+  if (only !== undefined) for (const m of placeGroup.children) { if (m.visible && m.userData.place !== undefined && m.userData.place !== only && !m.userData.always) { m.visible = false; hidden.push(m); } }
+  U.uPxRad.value = rt.height / (2 * Math.tan(P.cam.fov * Math.PI / 360));
+  renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, P.cam); renderer.setRenderTarget(null);
+  U.uPxRad.value = savedPx; sky.visible = true; for (const m of hidden) m.visible = true;
+  P.own.depth = rt.depthTexture; P.own.depthSize.set(rt.width, rt.height);
+}
 function buildProjectors() {
-  const savedPx = U.uPxRad.value; sky.visible = false;
   for (const g of [placeGroup, waterGroup]) for (const m of g.children) m.visible = true;
-  for (const pl of places) { if (!pl.painting || !pl.PU) continue; const P = pl.painting, v = pl.view;
+  for (const pl of places) { if (!pl.painting || !pl.PU) continue; const P = pl.painting, v = pl.view, S = P.own || (P.own = projectorState());
     if (!P.cam) {
-      const w = P.aspect >= 1 ? 1024 : Math.round(1024 * P.aspect), h = P.aspect >= 1 ? Math.round(1024 / P.aspect) : 1024;
+      const w = P.aspect >= 1 ? PROJ_RES : Math.round(PROJ_RES * P.aspect), h = P.aspect >= 1 ? Math.round(PROJ_RES / P.aspect) : PROJ_RES;
       P.cam = new THREE.PerspectiveCamera(v.fov, P.aspect, .3, 800);
-      P.rt = new THREE.WebGLRenderTarget(w, h, { depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType), depthBuffer: true });
+      P.rt = [makeDepthTarget(w, h), makeDepthTarget(w, h)];
     }
     P.cam.position.copy(v.p); P.cam.fov = v.fov; P.cam.updateProjectionMatrix(); P.cam.lookAt(v.look); P.cam.updateMatrixWorld();
-    U.uPxRad.value = P.rt.height / (2 * Math.tan(v.fov * Math.PI / 360));
-    renderer.setRenderTarget(P.rt); renderer.clear(); renderer.render(scene, P.cam); renderer.setRenderTarget(null);
-    const PU = pl.PU;
-    PU.uPaintDepth.value = P.rt.depthTexture; PU.uDepthSize.value.set(P.rt.width, P.rt.height); PU.uProjNF.value.set(P.cam.near, P.cam.far);
-    PU.uProjM.value.set(.5, 0, 0, .5, 0, .5, 0, .5, 0, 0, .5, .5, 0, 0, 0, 1).multiply(P.cam.projectionMatrix).multiply(P.cam.matrixWorldInverse);
-    PU.uProjPos.value.copy(v.p); P.ready = true;
+    // a boat that sits in his frame stays moored where he painted it; the others sail on
+    for (const b of boats) { if (!b.orbit || Math.hypot(b.x - v.p.x, b.z - v.p.z) > pl.radius) continue; const q = V(b.x, WATER_Y + .5, b.z).project(P.cam); if (Math.abs(q.x) < 1.05 && Math.abs(q.y) < 1.05 && q.z < 1) b.orbit = null; }
+    S.NF.set(P.cam.near, P.cam.far);
+    S.M.set(.5, 0, 0, .5, 0, .5, 0, .5, 0, 0, .5, .5, 0, 0, 0, 1).multiply(P.cam.projectionMatrix).multiply(P.cam.matrixWorldInverse);
+    S.pos.copy(v.p); P.ready = true;
     const rot = new THREE.Matrix4().extractRotation(P.cam.matrixWorld);
-    PU.uProjR.value.set(1, 0, 0).applyMatrix4(rot); PU.uProjU.value.set(0, 1, 0).applyMatrix4(rot); PU.uProjF.value.set(0, 0, -1).applyMatrix4(rot);
-    PU.uProjTan.value.set(Math.tan(v.fov * Math.PI / 360) * P.aspect, Math.tan(v.fov * Math.PI / 360));
-    if (P.tex && !params.has('noproj')) { PU.uPainting.value = P.tex; PU.uPaintSize.value.set(P.tex.image.width, P.tex.image.height); PU.uProjOn.value = 1; }
+    S.R.set(1, 0, 0).applyMatrix4(rot); S.U.set(0, 1, 0).applyMatrix4(rot); S.F.set(0, 0, -1).applyMatrix4(rot);
+    S.tan.set(Math.tan(v.fov * Math.PI / 360) * P.aspect, Math.tan(v.fov * Math.PI / 360));
+    renderProjectorDepth(P);
+    if (P.tex && !params.has('noproj')) P.on = true;
   }
-  U.uPxRad.value = savedPx; sky.visible = true;
 }
-function syncSkyProjector(w) {
-  const pl = places[placeIndex], PU = pl.PU;
-  for (const T of [SKYP, BASE.PU]) {
+// every material takes the projector of the place the eye is in, weighted by how much it is that place; none while the place has no canvas
+function projectorOn(pl, w) { const P = pl.painting; return P && P.on && P.own.depth ? sstep(w, .45, .75) * (P.reveal ?? 1) : 0; }
+function syncProjectors() {
+  const dom = places[placeIndex], on = projectorOn(dom, placeWeights()[placeIndex]);
+  const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
+  for (const T of targets) {
     if (!T) continue;
-    if (!pl.painting || !PU || !PU.uProjOn.value) { T.uProjOn.value = 0; continue; }
-    T.uPainting.value = PU.uPainting.value; T.uPaintDepth.value = PU.uPaintDepth.value; T.uProjM.value.copy(PU.uProjM.value); T.uProjPos.value.copy(PU.uProjPos.value);
-    T.uPaintSize.value.copy(PU.uPaintSize.value); T.uDepthSize.value.copy(PU.uDepthSize.value); T.uProjNF.value.copy(PU.uProjNF.value); T.uProjR.value.copy(PU.uProjR.value); T.uProjU.value.copy(PU.uProjU.value); T.uProjF.value.copy(PU.uProjF.value); T.uProjTan.value.copy(PU.uProjTan.value);
-    T.uGradeMul.value.copy(PU.uGradeMul.value); T.uGradeAdd.value.copy(PU.uGradeAdd.value);
-    T.uProjOn.value = PU.uProjOn.value * sstep(w, .45, .75);
+    if (!on) { T.uProjOn.value = 0; continue; }
+    const S = dom.painting.own;
+    T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
+    T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan);
+    if (T !== dom.PU) { T.uGradeMul.value.copy(dom.PU.uGradeMul.value); T.uGradeAdd.value.copy(dom.PU.uGradeAdd.value); }
+    T.uProjOn.value = on;
   }
+}
+// the depth map follows the world: while the canvas is in reach it is taken again every frame, so the boats, the wind in the leaves and
+// the water can never drift away from it
+let projMs = 0, projFrame = 0;
+function updateProjector() {
+  const dom = places[placeIndex], P = dom.painting;
+  if (monet.flags.noProjPass || !P || !P.cam || !projectorOn(dom, placeWeights()[placeIndex]) || camera.position.distanceTo(P.cam.position) > 20) return;
+  if ((projFrame++ & 1) && !STILL) return; // every other frame, between the reflection's
+  const t0 = performance.now(); renderProjectorDepth(P, placeIndex); projMs = performance.now() - t0; syncProjectors();
 }
 // the canvas over the view (key C): the painting at its true frame, half transparent, to see how the world sits under it
 const overlay = document.createElement('img'); overlay.id = 'overlay'; overlay.alt = ''; overlay.style.display = 'none'; document.body.appendChild(overlay);
@@ -2358,14 +2405,14 @@ function update(dt) {
   const cp = camera.position, d7 = Math.hypot(cp.x - 14, cp.z + 440), gate = sstep(cp.x, -40, -22) * sstep(-cp.z, 398, 408) * (1 - sstep(cp.y, 10, 16));
   const reveal = gate * sstep(d7, 8, 30); // 1 = still in the fog, 0 = arrived
   U.uFogNear.value *= 1 - reveal * .5; U.uFogFar.value *= 1 - reveal * .62;
-  const P7 = places[6]; if (P7.PU && P7.painting.ready && P7.painting.tex && !params.has('noproj')) P7.PU.uProjOn.value = 1 - reveal;
-  syncSkyProjector(placeWeights()[placeIndex]); updateOverlay();
+  places[6].painting.reveal = 1 - reveal;
+  syncProjectors(); updateOverlay();
   const high = camera.position.y > 60; if (high !== aerialMode) { aerialMode = high; renderer.setPixelRatio(Math.min(devicePixelRatio, high ? 1 : DPR_CAP[qualityName])); }
   // a place wholly beyond the fog is not drawn
   const limit = hourFog.far * fs * .95;
   for (const g of [placeGroup, waterGroup]) for (const m of g.children) { if (m.userData.place === undefined || m.userData.always) continue; const pl = places[m.userData.place]; m.visible = Math.hypot(camera.position.x - pl.center.x, camera.position.z - pl.center.z) - pl.radius < limit; }
 }
-function render() { U.uPxRad.value = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360)); camera.updateMatrixWorld(); sky.position.copy(camera.position); sky.updateMatrixWorld(); renderReflection(); renderer.render(scene, camera); }
+function render() { U.uPxRad.value = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360)); camera.updateMatrixWorld(); sky.position.copy(camera.position); sky.updateMatrixWorld(); updateProjector(); renderReflection(); renderer.render(scene, camera); }
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min((now - last) / 1000, .1); if (dt < 0) dt = 0; last = now;
@@ -2378,12 +2425,12 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm12-orangerie', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm13-spot', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
   at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, walkHeight(q.x, q.z) + EYE, q.z); update(0); },
-  U, hourFog,
+  U, hourFog, get projMs() { return projMs; },
 };
 
 // ============================================================ go
@@ -2409,6 +2456,7 @@ function start() {
     const measure = () => { monet.tick(0); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const t0 = performance.now(); for (let k = 0; k < 20; k++) { monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / 20; };
     for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) { if (!places[i].view) continue; applyViewNow(i); res.push(`${places[i].file || 'aerial'} ${measure().toFixed(1)}ms`); }
     applyViewNow(2); const withR = measure(); monet.flags.noRefl = true; const without = measure(); monet.flags.noRefl = false; res.push(`refl ${(withR - without).toFixed(1)}ms`);
+    monet.flags.noProjPass = true; const noP = measure(); monet.flags.noProjPass = false; res.push(`proj ${(withR - noP).toFixed(1)}ms`);
     applyViewNow(0); monet.tick(0);
     const d = $('#debug'); d.style.display = 'block'; d.textContent = `bench ${canvas.width}x${canvas.height} dpr ${renderer.getPixelRatio()}  ${res.join('  ')}\npatches ${patchTotal}  gen ${genMs.toFixed(0)} ms`; console.log(d.textContent);
   }
