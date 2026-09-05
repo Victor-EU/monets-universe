@@ -1145,3 +1145,10 @@ their own now covers them: 1 100 strokes a side (× density), tufts seven in ten
 the banked earth 1.4–3 m either side of the crossing and beyond the ends; the trodden strip of the crossing (.9 m each side of its
 line) and the shore band are left as they were. Build `m18c-shoulders`. Frames from the east bank, the eastern approach, the spot,
 the deck's end up close and the air.
+
+### Progress · M18d — reeds at the shoulders' waterline
+
+The shore's reeds and iris keep 1.6 m off the promenade and off the bridge's line, which left the shoulders' waterline bare. A band of
+their own now stands there: 520 a side (× density), in the shore band from 1.1 m into the shallows to 1.3 m up the shoulder's foot,
+1.1–3.4 m either side of the crossing's line, the same stems and palette as the shore's, the water under the deck left open.
+Build `m18d-reeds`. Frames from the east bank, the deck's end up close, the spot, from under the deck's end and the air.
