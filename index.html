@@ -214,7 +214,7 @@ const _hsl = {};
 function grade(hex, sat = 1.2, lift = .21) { const c = col(hex); c.getHSL(_hsl, THREE.SRGBColorSpace); let l = _hsl.l; if (l < lift) l = lift + (l - lift) * .35; c.setHSL(_hsl.h, Math.min(1, _hsl.s * sat + .04), l, THREE.SRGBColorSpace); return c; }
 function stop(o) {
   return {
-    name: o.name, pal: o.pal.map(h => grade(h)),
+    name: o.name, pal: o.pal.map(h => grade(h)), grade: o.grade || null,
     skyTop: grade(o.skyTop, 1.06, 0), skyHorizon: grade(o.skyHorizon, 1.06, 0), sunEl: o.sunEl, sunAz: o.sunAz, sunCol: col(o.sunCol), sunInt: o.sunInt,
     hemiSky: col(o.hemiSky), hemiGround: col(o.hemiGround), hemiInt: o.hemiInt, shadowTint: grade(o.shadowTint, 1.4, 0),
     fogNear: o.fogNear, fogFar: o.fogFar, fogCol: col(o.fogCol ?? o.skyHorizon), sunDisc: o.sunDisc ?? 0,
@@ -222,7 +222,7 @@ function stop(o) {
   };
 }
 const POND_STOPS = [
-  stop({ name: 'Morning green',
+  stop({ name: 'Morning green', grade: { mul: [.79, .72, .65], add: [-.013, .028, .028] },
     pal: ['#2a5148', '#5f8f78', '#c3d8b8', '#2f5c38', '#8ab462', '#eacfd8', '#27523a', '#57894a', '#b6cf6d', '#7aa052', '#a48a5c', '#4f8a62', '#a3cc92', '#544638', '#f0e2a0', '#6f7fb0', '#d58236', '#b8485a', '#7f6fb5', '#4a8244'],
     skyTop: '#c2d6de', skyHorizon: '#e6ead0', sunEl: 30, sunAz: 95, sunCol: '#fff2d0', sunInt: .6,
     hemiSky: '#d4e0d2', hemiGround: '#4b6a48', hemiInt: .9, shadowTint: '#b9c3e2', fogNear: 20, fogFar: 74, fogCol: '#d3dcc0',
@@ -273,7 +273,7 @@ const POPLAR_STOPS = [
     skyTop: '#3f78c0', skyHorizon: '#e0ecf4', sunEl: 45, sunAz: 220, sunCol: '#fff4e0', sunInt: 1.05,
     hemiSky: '#d0e2f0', hemiGround: '#5a7a48', hemiInt: .9, shadowTint: '#a0b0e0', fogNear: 50, fogFar: 170, fogCol: '#dce8f0',
     waterDeep: '#2e5f8a', waterTint: '#e6eef2', reflectivity: .8, ripple: .014, bands: .6, haze: .1 }),
-  stop({ name: 'Pink sunset',
+  stop({ name: 'Pink sunset', grade: { mul: [1.2, 1.32, 1.7], add: [-.09, -.09, -.07] },
     pal: ['#4a4878', '#907aa0', '#f4d0c8', '#2a2a3a', '#585466', '#c8a6c0', '#5a4a7a', '#8a6a98', '#d8a0b8', '#a08a80', '#b89a80', '#a08e88', '#dcc4b0', '#4a3a58', '#f4b090', '#8878b8', '#d6ac8a', '#5e5e84', '#e8cdb8', '#8a7898'],
     skyTop: '#8090c8', skyHorizon: '#f8c0a8', sunEl: 6, sunAz: 270, sunCol: '#ffb888', sunInt: .9,
     hemiSky: '#d8b8c8', hemiGround: '#5a4a58', hemiInt: .8, shadowTint: '#9888d0', fogNear: 40, fogFar: 150, fogCol: '#ecc4bc',
@@ -289,22 +289,22 @@ const STACK_STOPS = [
   stop({ name: 'End of summer',
     pal: ['#2e5f8a', '#5f92b8', '#e8f0f4', '#9a6a62', '#d9a45a', '#f4d27a', '#4a5a6a', '#6f7d86', '#9aa6a0', '#c9b46a', '#a58a56', '#a79c92', '#d6cbbd', '#5a4a48', '#e8894a', '#8a80c0', '#e2c47a', '#9fb090', '#e6d9c2', '#8fa0b8'],
     skyTop: '#9db8d4', skyHorizon: '#f2ead4', sunEl: 30, sunAz: 250, sunCol: '#fff0c8', sunInt: 1,
-    hemiSky: '#dfe6ea', hemiGround: '#8a7a50', hemiInt: .9, shadowTint: '#a9a4d8', fogNear: 45, fogFar: 175, fogCol: '#e6e4d8',
+    hemiSky: '#dfe6ea', hemiGround: '#8a7a50', hemiInt: .9, shadowTint: '#a9a4d8', fogNear: 40, fogFar: 118, fogCol: '#e6e4d8',
     waterDeep: '#2e5f8a', waterTint: '#e8f0f4', reflectivity: .8, ripple: .012, bands: .5, haze: .12 }),
-  stop({ name: 'Sunset',
+  stop({ name: 'Sunset', grade: { mul: [.89, .435, .94], add: [-.049, .067, .005] },
     pal: ['#4a4878', '#907aa0', '#f4d0c8', '#6a3e62', '#c86c48', '#ffb060', '#3c3a5a', '#5a5578', '#8a7e90', '#d08a52', '#a05a48', '#a08e88', '#dcc4b0', '#4a3040', '#ff9a4a', '#6a62b0', '#e8a060', '#b07a90', '#e8cdb8', '#7a6a98'],
     skyTop: '#6f7ab8', skyHorizon: '#ffb070', sunEl: 4, sunAz: 265, sunCol: '#ffb070', sunInt: .9,
-    hemiSky: '#c9a8c0', hemiGround: '#5a4050', hemiInt: .8, shadowTint: '#8f7ac8', fogNear: 40, fogFar: 150, fogCol: '#e8b090',
+    hemiSky: '#c9a8c0', hemiGround: '#5a4050', hemiInt: .8, shadowTint: '#8f7ac8', fogNear: 36, fogFar: 110, fogCol: '#e8b090',
     waterDeep: '#4a4878', waterTint: '#f4d0c8', reflectivity: .9, ripple: .008, bands: .3, haze: .16 }),
-  stop({ name: 'Morning frost',
+  stop({ name: 'Morning frost', grade: { mul: [1.06, .89, .869], add: [.101, .085, .081] },
     pal: ['#5a6080', '#a090a8', '#f4e4dc', '#7a6a98', '#d8b090', '#f8d8b0', '#5a6280', '#7a82a0', '#a8b0c8', '#e4d8d0', '#c0b0b8', '#b0a0a8', '#e4d4d0', '#5a5060', '#f0b898', '#98a0d0', '#f0dcd0', '#c8c8e0', '#ecdcd8', '#a8a8c8'],
     skyTop: '#b8c4dc', skyHorizon: '#f4dcd0', sunEl: 10, sunAz: 110, sunCol: '#ffe0c0', sunInt: .8,
-    hemiSky: '#e8e4ec', hemiGround: '#b8a8a8', hemiInt: .95, shadowTint: '#b0b0e0', fogNear: 35, fogFar: 140, fogCol: '#e8dcd8',
+    hemiSky: '#e8e4ec', hemiGround: '#b8a8a8', hemiInt: .95, shadowTint: '#b0b0e0', fogNear: 32, fogFar: 105, fogCol: '#e8dcd8',
     waterDeep: '#5a6080', waterTint: '#f4e4dc', reflectivity: .75, ripple: .007, bands: .2, haze: .1 }),
-  stop({ name: 'Snow effect',
+  stop({ name: 'Snow effect', grade: { mul: [1.02, .93, .93], add: [.13, .11, .11] },
     pal: ['#5c6a8a', '#98a4b8', '#f0f2f4', '#5c6aa0', '#c9a888', '#f0c8a0', '#4a5a78', '#6a7a98', '#9aa8c0', '#e8ecf4', '#b8c4e0', '#a8a8b0', '#dcdce4', '#5a5a70', '#e0b090', '#8090c8', '#f0e8e0', '#c0cce8', '#e8e8ec', '#a0acc4'],
     skyTop: '#a8b4c8', skyHorizon: '#e8e6e0', sunEl: 14, sunAz: 120, sunCol: '#ffe8d0', sunInt: .6,
-    hemiSky: '#e0e4ec', hemiGround: '#b0b8c8', hemiInt: 1, shadowTint: '#a8b0e0', fogNear: 30, fogFar: 120, fogCol: '#dcdce0',
+    hemiSky: '#e0e4ec', hemiGround: '#b0b8c8', hemiInt: 1, shadowTint: '#a8b0e0', fogNear: 28, fogFar: 96, fogCol: '#dcdce0',
     waterDeep: '#5c6a8a', waterTint: '#f0f2f4', reflectivity: .7, ripple: .006, bands: .2, haze: .08 }),
 ];
 
@@ -331,7 +331,7 @@ const ROUEN_STOPS = [
 const SUNRISE_STOPS = [
   stop({ name: 'Dawn',
     pal: ['#5a6480', '#8a90a4', '#c0c0c8', '#3a3e50', '#5a5e70', '#a8acb8', '#5a6068', '#6a7078', '#8a9098', '#6a7078', '#7a7880', '#3a3a48', '#9a9aa4', '#4a4a58', '#f07a3a', '#7a86a8', '#b89a90', '#606880', '#a8a8b0', '#9aa0b0'],
-    skyTop: '#7e8aa4', skyHorizon: '#c4b8b8', sunEl: 5, sunAz: 90, sunCol: '#f0762e', sunInt: .3, sunDisc: 1,
+    skyTop: '#7e8aa4', skyHorizon: '#c4b8b8', sunEl: 8, sunAz: 90, sunCol: '#f0762e', sunInt: .3, sunDisc: 1,
     hemiSky: '#a8b0c0', hemiGround: '#4a5060', hemiInt: .95, shadowTint: '#9098b8', fogNear: 10, fogFar: 80, fogCol: '#a4a8b4',
     waterDeep: '#5a6480', waterTint: '#b8b8c4', reflectivity: .85, ripple: .016, bands: .9, haze: .18 }),
 ];
@@ -340,25 +340,25 @@ const SUNRISE_STOPS = [
 const places = [
   { name: 'The Water-Lily Pond', place: 'Giverny, the water garden', year: '1899', swatch: '#6a9a4a', file: 'pond',
     center: V(0, 0, -12), radius: 40,
-    view: { p: V(.4, 1.55, 8.4), look: V(0, 1.05, -4.2), fov: 58 }, stops: POND_STOPS, build: buildPond },
+    view: { p: V(.4, 1.15, 8.4), look: V(0, 2.0, -4.2), fov: 62 }, painting: { src: 'paintings/pond.jpg', aspect: .7997, stop: 1 }, stops: POND_STOPS, build: buildPond },
   { name: 'Woman with a Parasol', place: 'a hilltop meadow, wind', year: '1875', swatch: '#8fb6d8', file: 'parasol',
     center: V(8, 0, -100), radius: 30,
-    view: { p: V(6.6, 4.6, -88.2), look: V(8.9, 8.2, -94.8), fov: 52 }, stops: HILL_STOPS, build: buildHill },
+    view: { p: V(7.43, 4.6, -89.62), look: V(8.9, 8.2, -94.8), fov: 48 }, painting: { src: 'paintings/parasol.jpg', aspect: .805, stop: 0 }, stops: HILL_STOPS, build: buildHill },
   { name: 'Sailboats at Argenteuil', place: 'the Seine, the road bridge', year: '1874', swatch: '#5f8fb8', file: 'argenteuil',
     center: V(12, 0, -170), radius: 46,
-    view: { p: V(-2, 2, -145.5), look: V(10, 1.4, -176), fov: 56 }, stops: RIVER_STOPS, build: buildRiver },
+    view: { p: V(-2, 2, -147), look: V(10, 1.4, -177.5), fov: 40 }, painting: { src: 'paintings/argenteuil.jpg', aspect: 1.3336, stop: 0 }, stops: RIVER_STOPS, build: buildRiver },
   { name: 'Poplars on the Epte', place: 'the riverbank, a curve of trees', year: '1891', swatch: '#c9a35a', file: 'poplars',
     center: V(50, 0, -262), radius: 40,
-    view: { p: V(36, 2, -252), look: V(54, 9, -264), fov: 60 }, stops: POPLAR_STOPS, build: buildPoplars },
+    view: { p: V(36, 2, -252), look: V(52.4, 1.5, -263.5), fov: 50 }, painting: { src: 'paintings/poplars.jpg', aspect: 1, stop: 0 }, stops: POPLAR_STOPS, build: buildPoplars },
   { name: 'Haystacks', place: 'Giverny, the fields', year: '1891', swatch: '#d9a457', file: 'haystacks',
     center: V(-30, 0, -280), radius: 45,
-    view: { p: V(-18, 2, -262), look: V(-31, 2.4, -282), fov: 55 }, stops: STACK_STOPS, build: buildHaystacks },
+    view: { p: V(-18, 2, -262), look: V(-31, 2.8, -282), fov: 31 }, painting: { src: 'paintings/haystacks.jpg', aspect: 1.6873, stop: 0 }, stops: STACK_STOPS, build: buildHaystacks },
   { name: 'Rouen Cathedral', place: 'the square, the west facade', year: '1894', swatch: '#b8a68e', file: 'rouen',
     center: V(-46, 0, -427), radius: 58,
-    view: { p: V(-47, 2.8, -414), look: V(-44, 18, -442), fov: 50 }, stops: ROUEN_STOPS, build: buildRouen },
+    view: { p: V(-46, 5, -376), look: V(-42.6, 26.7, -442), fov: 45 }, painting: { src: 'paintings/rouen.jpg', aspect: .6551, stop: 1 }, stops: ROUEN_STOPS, build: buildRouen },
   { name: 'Impression, Sunrise', place: 'Le Havre, the outer harbour', year: '1872', swatch: '#e07a3a', file: 'sunrise',
     center: V(34, 0, -445), radius: 60,
-    view: { p: V(14, 4.6, -440), look: V(70, 4.4, -452), fov: 55 }, stops: SUNRISE_STOPS, build: buildHavre },
+    view: { p: V(14, 4.6, -440), look: V(73.9, 7.7, -443.2), fov: 30 }, painting: { src: 'paintings/sunrise.jpg', aspect: 1.2892, stop: 0 }, stops: SUNRISE_STOPS, build: buildHavre },
   { name: 'The whole universe', place: 'One geography, seven paintings', year: '', swatch: '#8a8f7c', aerial: true,
     view: { p: V(0, 215, 85), look: V(0, 0, -225), fov: 60 } },
 ];
@@ -371,7 +371,7 @@ const U = {
   uFogCol: { value: new THREE.Color() }, uFogNear: { value: 15 }, uFogFar: { value: 60 },
   uSkyTop: { value: new THREE.Color() }, uSkyHorizon: { value: new THREE.Color() }, uHaze: { value: .16 }, uSunDisc: { value: 0 },
   uRefl: { value: null }, uReflMatrix: { value: new THREE.Matrix4() }, uWaterDeep: { value: new THREE.Color() }, uWaterTint: { value: new THREE.Color() }, uReflectivity: { value: .8 }, uRipple: { value: .012 }, uBands: { value: .25 },
-  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 },
+  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uDbg: { value: params.has('dbg') ? 1 : 0 },
 };
 
 // ============================================================ the brushes
@@ -466,7 +466,28 @@ float h1(float n){ return fract(sin(n) * 43758.5453); }
 float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
 vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
-uniform sampler2D uPaint, uPaintW; uniform float uPxRad;
+uniform sampler2D uPaint, uPaintW; uniform float uPxRad, uDbg;
+// the painting, projected from where Monet stood: its texture, the depth map seen from there, the projector matrix (world -> canvas uv, depth)
+uniform sampler2D uPainting, uPaintDepth; uniform mat4 uProjM; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
+// beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
+vec2 mirr(vec2 uv) { return 1. - abs(fract(uv * .5) * 2. - 1.); }
+// canvas coordinates of a direction from the painter, by angle: continuous all the way round, and the same as the projection near the frame
+vec2 dirUv(vec3 d) {
+  float x = dot(d, uProjR), y = dot(d, uProjU), z = dot(d, uProjF);
+  return vec2(atan(x, z) / (2. * atan(uProjTan.x)), atan(y, length(vec2(x, z))) / (2. * atan(uProjTan.y))) + .5;
+}
+// the picture carried on beyond its frame: a soft read of the canvas, mirrored, by direction
+vec3 extCol(vec3 d) { return textureLod(uPainting, mirr(dirUv(d)), 5.5).rgb * uGradeMul + uGradeAdd; }
+float linD(float z) { float n = uProjNF.x, f = uProjNF.y; return 2. * n * f / (f + n - (2. * z - 1.) * (f - n)); }
+// was this point in Monet's line of sight? four taps of the depth map, compared in metres
+float projVis(vec2 uv, float z, float loose) {
+  float lz = linD(z), tol = .12 + lz * .012 + loose * (1.2 + lz * .02); vec2 t = 1.2 / uDepthSize; float s = 0.;
+  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(-t.x, -t.y)).r) + tol);
+  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, -t.y)).r) + tol);
+  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(-t.x, t.y)).r) + tol);
+  s += step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, t.y)).r) + tol);
+  return s * .25;
+}
 const float STROKE = .012; // the width of a stroke, in radians of view: about a hundredth of the picture
 // the paint field read at one tile scale, on the three world planes weighted by the normal: offsets (hue, value, temperature, relief) about zero
 vec4 paintTri(sampler2D t, vec3 p, vec3 bw, float P) {
@@ -564,11 +585,11 @@ vec3 pal(float i){ int k = int(i + .5); return mix(uPalA[k], uPalB[k], uBlend); 
 vec3 reflAt(vec4 rp, vec2 off) { rp.xy += off * rp.w; return texture2DProj(uRefl, rp).rgb; }
 #endif
 void main(){
-  vec3 c; float a; vec4 O;
+  vec3 c; float a; vec4 O; float wrap = .6; vec3 S = vec3(1., .5, .5); vec2 offp = vec2(0.);
 #ifdef INSTANCED
   // one brush stroke per instance, from the atlas
   float cs = floor(vSeed * 16.); vec2 cell = vec2(mod(cs, 4.), floor(cs / 4.));
-  vec3 S = texture2D(uAtlas, (vUv * .5 + .5 + cell) * .25).rgb;
+  S = texture2D(uAtlas, (vUv * .5 + .5 + cell) * .25).rgb;
   a = S.r * vFade;
   if (a < .15) discard;
   O = vec4(h1(vSeed * 13.7 + 1.) - .5, h1(vSeed * 7.3 + 2.) - .5, 0., 0.);
@@ -593,7 +614,7 @@ void main(){
   vec3 vd = normalize(cameraPosition - vWorld);
   float fres = uReflectivity * (.55 + .45 * pow(1. - max(vd.y, 0.), 2.));
   float band = vn(vec2(vWorld.x * .35 + uTime * .05, vWorld.z * 2.2)) - .5, band2 = vn(vec2(vWorld.x * 1.3 - uTime * .04, vWorld.z * 6.)) - .5;
-  vec2 offp = vec2((band * 1.4 + band2 * .6) * uBands * 2., sin(uTime * .27 + vWorld.z * .9) * .5 + band * .8 * uBands) * uRipple * 2.;
+  offp = vec2((band * 1.4 + band2 * .6) * uBands * 2., sin(uTime * .27 + vWorld.z * .9) * .5 + band * .8 * uBands) * uRipple * 2.;
   // each stroke shifts the reflection a little: the mirror breaks into pieces of colour
   vec3 refl = reflAt(vRefl, offp + O.rg * uRipple * 6.) * uWaterTint;
   c = applyPaint(mix(uWaterDeep, refl, fres), O, .9);
@@ -605,7 +626,7 @@ void main(){
 #ifndef WATER
   // light: the lit side leans warm, the shadow side leans violet; both keep their chroma
   vec3 n = vN;
-  float wrap = max(0., dot(n, uSunDir) * .5 + .5);
+  wrap = max(0., dot(n, uSunDir) * .5 + .5);
   vec3 hemi = mix(uHemiGround, uHemiSky, n.y * .5 + .5) * uHemiInt;
   c = base * (hemi + uSunCol * uSunInt * wrap);
   float lit = smoothstep(.1, .8, wrap), l = dot(c, LW);
@@ -619,7 +640,37 @@ void main(){
   if (vKind > 3.5) fog *= .3;
 #endif
   c = mix(c, applyPaint(uFogCol, O, .5), fog);
-  gl_FragColor = vec4(tone(c), a);
+  vec3 fin = tone(c);
+  // the painting itself, thrown from Monet's viewpoint onto whatever he saw from there; beyond the canvas's edge its colours are
+  // carried on (a soft read of the nearest edge), so the world outside the frame is painted in the same key
+  vec4 pc = uProjM * vec4(vWorld, 1.);
+  float front = step(1e-3, pc.w) * uProjOn;
+  vec2 puv = pc.xy / max(pc.w, 1e-3); float pz = pc.z / max(pc.w, 1e-3);
+#ifdef WATER
+  puv += offp * .04; // the painted water keeps a slow breath
+#endif
+  vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
+  if (uProjOn > 0.) {
+    vec3 ecol = extCol(vWorld - uProjPos);
+    vec3 ex = mix(applyPaint(ecol, O, .8) * (.82 + .36 * wrap), mix(applyPaint(ecol, O, .3), applyPaint(uFogCol, O, .5), smoothstep(.55, .9, fog)), min(1., fog * 1.15));
+    fin = mix(fin, ex, .74 * uProjOn);
+#ifdef INSTANCED
+    float conf = front * (1. - smoothstep(.94, 1., em)) * projVis(puv, pz, 1.);
+#else
+    float conf = front * (1. - smoothstep(.94, 1., em)) * projVis(puv, pz, 0.);
+#endif
+    if (conf > 0.) {
+      vec2 tp = fwidth(puv) * uPaintSize; float mag = 1. / max(max(tp.x, tp.y), 1e-4); // how far the canvas is stretched: strokes return as it is magnified
+      vec3 pcol = texture2D(uPainting, puv).rgb * uGradeMul + uGradeAdd;
+      pcol = applyPaint(pcol, O, smoothstep(2., 10., mag) * .55);
+#ifdef INSTANCED
+      pcol *= 1. + (S.b - .5) * .12;
+#endif
+      fin = mix(fin, pcol, conf);
+      if (uDbg > .5) fin = vec3(.3 + .7 * conf);
+    } else if (uDbg > .5) fin = vec3(.3);
+  } else if (uDbg > .5) fin = vec3(0.);
+  gl_FragColor = vec4(fin, a);
   #include <colorspace_fragment>
 }`;
 
@@ -640,16 +691,29 @@ void main(){
   c *= 1. + (n - .5) * uHaze * 1.6;
   // the sky is painted in the same small strokes: pink and lavender among the blue
   vec3 bw = d * d * d * d; bw /= dot(bw, vec3(1.));
-  c = applyPaint(c, paintAt(uPaint, d, bw, 1., STROKE), .55);
+  vec4 O = paintAt(uPaint, d, bw, 1., STROKE);
+  c = applyPaint(c, O, .55);
   float s = max(dot(d, uSunDir), 0.);
   c += uSunCol * (pow(s, 700.) * 1.3 + pow(s, 14.) * .22 + pow(s, 3.) * .07);
   c = mix(c, vec3(.88, .24, .05), uSunDisc * smoothstep(.99972, .99984, s)); c += uSunCol * uSunDisc * (pow(s, 120.) * .3 + pow(s, 8.) * .1);
-  gl_FragColor = vec4(tone(c), 1.);
+  vec3 fin = tone(c);
+  // the painting's own sky, where the canvas covers this direction and nothing stood in front of it
+  vec4 pc = uProjM * vec4(uProjPos + d * 500., 1.);
+  float front = step(1e-3, pc.w) * uProjOn;
+  vec2 puv = pc.xy / max(pc.w, 1e-3);
+  vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
+  if (uProjOn > 0.) {
+    fin = mix(fin, applyPaint(extCol(d), O, .5), .85 * uProjOn);
+    float conf = front * (1. - smoothstep(.94, 1., em)) * step(.99995, texture2D(uPaintDepth, puv).r);
+    fin = mix(fin, texture2D(uPainting, puv).rgb * uGradeMul + uGradeAdd, conf);
+  }
+  gl_FragColor = vec4(fin, 1.);
   #include <colorspace_fragment>
 }`;
 
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
-function paletteUniforms() { return { uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 } }; }
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
+function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
   if (o.instanced !== false) defines.INSTANCED = 1;
@@ -746,8 +810,14 @@ const RIVER = { z: -172, half: 20 };
 function riverCenter(x) { return RIVER.z + 4 * Math.sin(x * .017 + .8); }
 function riverSDFRaw(x, z) { const dz = Math.abs(z - riverCenter(x)); if (dz > RIVER.half + 12) return dz - RIVER.half; return dz - (RIVER.half + (fbm(x * .05 + 11, z * .05 + 4) - .5) * 3); }
 // the Epte: a small river leaving the Seine's far bank and winding north; the poplars stand on its east bank
-function epteCenter(z) { return 50 + 8 * Math.sin((z + 200) * .05); }
-function epteSDFRaw(x, z) { if (z > -194 || z < -348) return 30; const dx = Math.abs(x - epteCenter(z)); if (dx > 18) return dx - 5; return dx - (5 + (fbm(x * .09 + 3, z * .09 + 7) - .5) * 1.6); }
+// the Epte's banks, x by z (north is -z): the far bank carries the poplars, curving away from the painter at (36, -252)
+const EPTE_F = [[-194, 54], [-230, 50], [-250, 48], [-257, 48.2], [-267, 56.6], [-279, 63.7], [-294, 72.9], [-311, 85.2], [-321, 91.9], [-348, 100]];
+const EPTE_N = [[-194, 46], [-230, 43], [-250, 41], [-260, 41], [-280, 46], [-300, 56], [-321, 70], [-348, 80]];
+function bankX(pts, z) { if (z >= pts[0][0]) return pts[0][1]; for (let i = 1; i < pts.length; i++) if (z >= pts[i][0]) { const [z0, x0] = pts[i - 1], [z1, x1] = pts[i], t = (z - z0) / (z1 - z0); return x0 + (x1 - x0) * (t * t * (3 - 2 * t)); } return pts[pts.length - 1][1]; }
+function epteCenter(z) { return (bankX(EPTE_N, z) + bankX(EPTE_F, z)) / 2; }
+function epteSDFRaw(x, z) { if (z > -194 || z < -348) return 30; const N = bankX(EPTE_N, z), F = bankX(EPTE_F, z); const d = Math.max(N - x, x - F); if (d > 13) return d; return d + (fbm(x * .09 + 3, z * .09 + 7) - .5) * 1.6; }
+// the poplars, by their place in the painter's frame: bearing from east toward north, and distance
+const POPLAR_ROW = [[19, 15, 24], [23, 18, 23], [28, 22, 22], [33, 27, 21], [38, 33, 20], [42, 40, 20], [45, 48, 19], [47, 57, 19], [48, 67, 18], [49, 78, 18], [50, 90, 17], [51, 104, 17]].map(([b, d, h]) => [36 + d * Math.cos(b * Math.PI / 180), -252 - d * Math.sin(b * Math.PI / 180), h]);
 // the hills of the Seine valley, a haze band along the west edge behind the fields
 function westHills(x, z) { return (11 + 5 * Math.sin(z * .045) + 3 * Math.sin(z * .11 + 1)) * sstep(-x, 92, 124) * sstep(-z, 195, 225); }
 // Rouen: the town sits on flattened land at the end of the road; the street runs from the fields to the square, the cathedral's facade closes it
@@ -1084,7 +1154,13 @@ function buildHill(D) {
     return y;
   }
   const wy = person(9.15, -92.55, 1, true);
-  places[1].view.p.y = walkHeight(places[1].view.p.x, places[1].view.p.z) + EYE; places[1].view.look.set(9.1, wy + 1.25, -92.6);
+  { // the painter three and a half metres down the slope; her feet a fifth of the frame below its centre, she a little right of it
+    const vp = places[1].view.p; vp.set(7.43, 0, -89.62); vp.y = walkHeight(vp.x, vp.z) + EYE;
+    const dx = 9.15 - vp.x, dz = -92.55 - vp.z, dist = Math.hypot(dx, dz), a = 2.0 * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+    const fx = dx / dist, fz = dz / dist, rx = -fz, rz = fx; // forward, right
+    const lx = fx * ca - rx * sa, lz = fz * ca - rz * sa, el = Math.atan2(wy - vp.y, dist) + 10.6 * Math.PI / 180;
+    places[1].view.look.set(vp.x + lx * 10 * Math.cos(el), vp.y + 10 * Math.sin(el), vp.z + lz * 10 * Math.cos(el));
+  }
   // the parasol: a shallow green dome, lit from behind, held up and to the right
   const px = 9.5, pz = -92.7, py = wy + 2.55;
   const dome = new THREE.SphereGeometry(.62, 14, 6, 0, TAU, 0, Math.PI * .42); dome.translate(px, py - .2, pz);
@@ -1187,10 +1263,10 @@ function buildRiver(D) {
 
   // --- foliage: a bush at the painter's left, trees on the near bank behind, the far bank's tree line
   const fol = new Patches(); const { bush, tree, trunks } = foliageTools(fol, D, sizeAt);
-  bush(-7.5, groundHeight(-7.5, -147) + .7, -147, 2.2, 1.2, 1.6, Math.floor(420 * D), .1, .05);
+  bush(-7.5, groundHeight(-7.5, -146) + .7, -146, 2.2, 1.2, 1.6, Math.floor(420 * D), .1, .05);
   for (const [x, z, h, w] of [[-16, -141, 12, 4], [-26, -139, 14, 4.5], [-38, -144, 11, 3.6], [-50, -142, 13, 4], [38, -138, 12, 3.8], [50, -141, 14, 4.4], [62, -139, 11, 3.5]]) tree(x, z, h, w, .12);
-  for (let i = 0; i < 34; i++) { const x = -78 + i * 4.8 + gauss() * 1.5, z = -212 - Math.abs(gauss()) * 6; if (Math.abs(x - ABRIDGE.x) < 9 || epteSDFRaw(x, z) < 4) continue; tree(x, z, rr(9, 16), rr(3, 5), .1); }
-  for (const [x, z] of [[-31, -205], [-20, -207], [14, -208], [70, -207]]) tree(x, z, rr(8, 12), rr(2.6, 3.8), .1);
+  for (let i = 0; i < 34; i++) { const x = -78 + i * 4.8 + gauss() * 1.5, z = -214 - Math.abs(gauss()) * 6; if (Math.abs(x - ABRIDGE.x) < 9 || epteSDFRaw(x, z) < 4) continue; tree(x, z, rr(6, 10), rr(2.6, 4), .1); }
+  for (const [x, z] of [[-31, -209], [-20, -210], [14, -211], [70, -210]]) tree(x, z, rr(5.5, 8), rr(2.2, 3.2), .1);
   if (trunks.length) placeGroup.add(baseMesh(mergeGeometries(trunks.map(t => t.toNonIndexed())), 13, MAT.base));
   placeGroup.add(fol.mesh(MAT.patch));
 
@@ -1206,7 +1282,7 @@ function buildRiver(D) {
     scatterOn(walls, Math.floor(w * h * 2.6 * D), (q, m) => { const dark = m.x * shade < -.3; town.lay(q, m, gauss() * .2, rr(.5, .9) * k, rr(.22, .4) * k, dark ? 15 : warm ? 16 : 18, 0, 0); });
     scatterOn(roof, Math.floor(w * d * 1.5 * D), (q, m) => { const r = rand(); town.lay(q, m, gauss() * .25, rr(.5, .9) * k, rr(.2, .36) * k, r < .78 ? 17 : r < .95 ? 12 : 14, 0, 0); });
   }
-  const H = [[-58, -204, 7, 5, 4, .1, 0], [-46, -205, 8, 6, 5.2, -.08, 1], [-37, -203, 6, 5, 3.4, .05, 0], [-27, -206, 8, 5, 4.8, 0, 0], [-14, -204, 9, 6, 5.4, .06, 1], [-5, -203, 6, 5, 3.6, -.1, 0], [4, -205, 8, 5, 4.6, .04, 0], [12, -204, 7, 5, 4, -.05, 1], [33, -204, 8, 5, 5, .05, 0], [62, -205, 6, 5, 3.6, -.06, 1], [86, -204, 9, 6, 5.4, .03, 0], [63, -205, 7, 5, 4.2, .08, 0], [76, -204, 8, 5, 4.6, -.04, 1]];
+  const H = [[-58, -212, 7, 5, 3.2, .1, 0], [-46, -213, 8, 6, 3.8, -.08, 1], [-37, -211, 6, 5, 2.8, .05, 0], [-27, -214, 8, 5, 3.6, 0, 0], [-14, -212, 9, 6, 4, .06, 1], [-5, -211, 6, 5, 3, -.1, 0], [4, -213, 8, 5, 3.4, .04, 0], [12, -212, 7, 5, 3.2, -.05, 1], [33, -212, 8, 5, 3.8, .05, 0], [62, -213, 6, 5, 3, -.06, 1], [86, -212, 9, 6, 4, .03, 0], [63, -213, 7, 5, 3.4, .08, 0], [76, -212, 8, 5, 3.6, -.04, 1]];
   for (const [x, z, w, d, h, yaw, warm] of H) house(x, z, w, d, h, yaw, warm);
   placeGroup.add(baseMesh(mergeParts(hp), q => 18, MAT.base));
   placeGroup.add(town.mesh(MAT.patch));
@@ -1265,10 +1341,10 @@ function buildRiver(D) {
     placeGroup.add(g);
     boats.push({ g, x, z, yaw, ph, orbit, sail });
   }
-  boat(-8.5, -157, .25, 6.2, false, 0.4, null);
-  boat(6, -160, -.2, 5.4, false, 2.1, null);
-  boat(-6, -167, 0, 6.4, true, 1.0, [13, 4.5]);
-  boat(2, -178, 0, 5.8, true, 3.6, [11, 4]);
+  boat(-.9, -151.6, .35, 6.2, false, 0.4, null);
+  boat(.6, -155.8, .2, 5.4, false, 2.1, null);
+  boat(.6, -167, 0, 6.4, true, 1.0, [13, 4.5]);
+  boat(-14, -178, 0, 5.8, true, 3.6, [11, 4]);
   boat(46, -172, 0, 6.0, true, 5.2, [12, 4]);
   boat(-40, -177, 0, 5.6, true, 2.6, [14, 4]);
   timings.river = 1;
@@ -1308,7 +1384,7 @@ function buildPoplars(D) {
   }
   // reeds along the Epte
   for (let i = 0; i < Math.floor(1600 * D); i++) {
-    const z = rr(-340, -198), x = epteCenter(z) + rr(-9, 9), e = epteSDFRaw(x, z);
+    const z = rr(-340, -198), x = epteCenter(z) + rr(-16, 16), e = epteSDFRaw(x, z);
     if (e < -.6 || e > 1.6 || Math.hypot(x - viewP.x, z - viewP.z) < 3 || pathDist(x, z) < 1.4) continue;
     const y = Math.max(groundHeight(x, z), WATER_Y - .1); p.set(x, y, z);
     const h = rr(.5, 1.1) * clamp(sizeAt(p), .8, 2); p.y += h * .45; f.set(rand() - .5, 0, rand() - .5);
@@ -1316,12 +1392,12 @@ function buildPoplars(D) {
   }
   placeGroup.add(ground.mesh(MAT.patch));
   // the Epte's water
-  const wb = new THREE.PlaneGeometry(44, 150, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(50, WATER_Y - .03, -271);
+  const wb = new THREE.PlaneGeometry(80, 156, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(70, WATER_Y - .03, -271);
   waterGroup.add(baseMesh(wb, 0, MAT.waterBase));
   const water = new Patches();
   let NW = Math.floor(5000 * D), tries = 0;
   while (NW > 0 && tries++ < 200000) {
-    const z = rr(-345, -196), x = epteCenter(z) + rr(-9, 9); if (groundHeight(x, z) > WATER_Y - .1) continue;
+    const z = rr(-345, -196), x = epteCenter(z) + rr(-16, 16); if (groundHeight(x, z) > WATER_Y - .1) continue;
     const dd = Math.hypot(x - viewP.x, z - viewP.z); if (rand() > Math.min(1, 120 / (dd * dd))) continue;
     NW--; const layer = rand() < .6 ? 0 : rand() < .6 ? 1 : 2;
     p.set(x, WATER_Y + .012 + layer * .012, z); const k = clamp(dd / 12, .8, 3);
@@ -1347,8 +1423,8 @@ function buildPoplars(D) {
       fol.lay(p, n, rand() * TAU + Math.PI / 2, rr(.3, .55) * k, rr(.22, .4) * k, pal, 1, .08 + t * .28);
     }
   }
-  for (let i = 0; i < 19; i++) { const z = -234 - i * 4.4 + gauss() * .6, x = epteCenter(z) + 6.6 + gauss() * .5; poplar(x, z, rr(17, 24) * (i < 4 ? 1.06 : 1)); }
-  for (let i = 0; i < 6; i++) { const z = -304 - i * 5, x = epteCenter(z) - 7 + gauss() * .6; poplar(x, z, rr(15, 20)); }
+  for (const [x, z, h] of POPLAR_ROW) { const F = bankX(EPTE_F, z); poplar(F + 1.6 + gauss() * .3, z + gauss() * .3, h * rr(.96, 1.04)); }
+  for (let i = 0; i < 5; i++) { const z = -236 + i * 5.5, F = bankX(EPTE_F, z); poplar(F + 1.8 + gauss() * .4, z, rr(14, 18)); } // the row continues south, out of the frame
   // the meadow's far trees
   for (let i = 0; i < 12; i++) { const x = 70 + rand() * 40, z = -230 - rand() * 100; if (epteSDFRaw(x, z) < 4) continue; tree(x, z, rr(8, 13), rr(3, 4.5), .1); }
   if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
@@ -1393,7 +1469,7 @@ function buildHaystacks(D) {
       st.lay(q, m, (m.y > .5 ? rand() * TAU : gauss() * .35), rr(.34, .6) * k, rr(.12, .22) * k, rim && rand() < .5 ? 5 : r < .4 ? 3 : r < .8 ? 4 : rand() < .5 ? 14 : 15, 0, 0);
     });
   }
-  stack(-32, -276, 1.0); stack(-23, -293, .72);
+  stack(-26.6, -282.3, 1.0); stack(-41, -284.2, .72);
   placeGroup.add(baseMesh(mergeParts(parts), 3, MAT.base));
   placeGroup.add(st.mesh(MAT.patch));
   // the tree line before the hills, and a few trees behind the stacks
@@ -1476,48 +1552,48 @@ function buildRouen(D) {
   // the under-painting is the shadow colour; the lit stone is a crust of patches over it, so the gaps read as the shadows of tracery
   const cat = [], catBack = [], catDeep = [], misc = [];
   const arch = (path, cx, y0, w, ys, ya) => { path.moveTo(cx - w / 2, y0); path.lineTo(cx - w / 2, ys); path.bezierCurveTo(cx - w / 2, ys + (ya - ys) * .7, cx - w * .2, ya, cx, ya); path.bezierCurveTo(cx + w * .2, ya, cx + w / 2, ys + (ya - ys) * .7, cx + w / 2, ys); path.lineTo(cx + w / 2, y0); path.closePath(); };
-  const front = new THREE.Shape(); front.moveTo(CX - 9, -.5); front.lineTo(CX + 9, -.5); front.lineTo(CX + 9, 46); front.lineTo(CX - 9, 46); front.closePath();
-  for (const [cx, y0, w, ys, ya] of [[CX, -.5, 6, 7, 13], [CX - 7, -.5, 3.4, 5, 8.6], [CX + 7, -.5, 3.4, 5, 8.6], [CX, 20, 12, 27, 38]]) { const h = new THREE.Path(); arch(h, cx, y0, w, ys, ya); front.holes.push(h); }
+  const front = new THREE.Shape(); front.moveTo(CX - 6, -.5); front.lineTo(CX + 6, -.5); front.lineTo(CX + 6, 46); front.lineTo(CX - 6, 46); front.closePath();
+  for (const [cx, y0, w, ys, ya] of [[CX, -.5, 4.2, 7, 13], [CX - 4.5, -.5, 2.3, 5, 8.6], [CX + 4.5, -.5, 2.3, 5, 8.6], [CX, 20, 8.4, 27, 38]]) { const h = new THREE.Path(); arch(h, cx, y0, w, ys, ya); front.holes.push(h); }
   const frontGeom = new THREE.ExtrudeGeometry(front, { depth: 2.5, bevelEnabled: false, curveSegments: 10 }); frontGeom.translate(0, 0, ZF - 2.5); cat.push(frontGeom);
-  const slab = new THREE.BoxGeometry(18, 44, 38); slab.translate(CX, 22, ZF - 2.5 - 19); catBack.push(slab);
-  const nave = prism(38, 18, 5).rotateY(Math.PI / 2); nave.translate(CX, 44, ZF - 2.5 - 19); catBack.push(nave);
-  const pback = new THREE.BoxGeometry(18, 15, .6); pback.translate(CX, 7, ZF - 2.5 - .3); catDeep.push(pback);
-  const aback = new THREE.BoxGeometry(12.2, 19, .6); aback.translate(CX, 29.5, ZF - 2.5 - .3); catDeep.push(aback);
-  const rose = new THREE.CylinderGeometry(5, 5, .5, 24); rose.rotateX(Math.PI / 2); rose.translate(CX, 29.5, ZF - 2.5 + .25);
+  const slab = new THREE.BoxGeometry(12, 44, 38); slab.translate(CX, 22, ZF - 2.5 - 19); catBack.push(slab);
+  const nave = prism(38, 12, 5).rotateY(Math.PI / 2); nave.translate(CX, 44, ZF - 2.5 - 19); catBack.push(nave);
+  const pback = new THREE.BoxGeometry(12, 15, .6); pback.translate(CX, 7, ZF - 2.5 - .3); catDeep.push(pback);
+  const aback = new THREE.BoxGeometry(8.6, 19, .6); aback.translate(CX, 29.5, ZF - 2.5 - .3); catDeep.push(aback);
+  const rose = new THREE.CylinderGeometry(3.6, 3.6, .5, 24); rose.rotateX(Math.PI / 2); rose.translate(CX, 29.5, ZF - 2.5 + .25);
   const tower = (x, zf, w, h, kind) => {
     const b = new THREE.BoxGeometry(w, h, w); b.translate(x, h / 2, zf - w / 2); cat.push(b);
     for (const sx of [-1, 1]) { const pil = new THREE.BoxGeometry(1.2, h - 6, 1.2); pil.translate(x + sx * (w / 2 - 1), (h - 6) / 2, zf + .3); cat.push(pil); misc.push(pil); }
     if (kind === 0) { const sp = new THREE.ConeGeometry(w * .62 * Math.SQRT2, 14, 4); sp.rotateY(Math.PI / 4); sp.translate(x, h + 7, zf - w / 2); cat.push(sp); misc.push(sp); }
     else { const cr = new THREE.CylinderGeometry(w * .34, w * .42, 7, 8); cr.translate(x, h + 3.5, zf - w / 2); cat.push(cr); misc.push(cr); for (let i = 0; i < 8; i++) { const a = i / 8 * TAU, pin = new THREE.ConeGeometry(.8, 4.5, 5); pin.translate(x + Math.cos(a) * (w / 2 - .7), h + 2.2, zf - w / 2 + Math.sin(a) * (w / 2 - .7)); cat.push(pin); misc.push(pin); } }
   };
-  const TX = [CX - 14, CX + 14]; tower(TX[0], ZF + .6, 10, 60, 0); tower(TX[1], ZF + 1.6, 10, 58, 1);
+  const TX = [CX - 11, CX + 11]; tower(TX[0], ZF + .6, 10, 60, 0); tower(TX[1], ZF + 1.6, 10, 58, 1);
   const butt = (x, y0, y1, w, dpt) => { const b = new THREE.BoxGeometry(w, y1 - y0, dpt); b.translate(x, (y0 + y1) / 2, ZF + dpt / 2 - .1); cat.push(b); misc.push(b); const pin = new THREE.ConeGeometry(w * .55, 4.5, 5); pin.translate(x, y1 + 2.2, ZF + dpt / 2 - .1); cat.push(pin); misc.push(pin); };
-  butt(CX - 4.4, -.5, 20, 1.6, 1.3); butt(CX + 4.4, -.5, 20, 1.6, 1.3); butt(CX - 8.5, 17, 44, 1.2, 1.0); butt(CX + 8.5, 17, 44, 1.2, 1.0);
-  for (const y of [17.4, 41]) { const l = new THREE.BoxGeometry(18, .7, .9); l.translate(CX, y, ZF + .45); cat.push(l); misc.push(l); }
-  const gable = new THREE.ConeGeometry(9 * Math.SQRT2, 7, 4); gable.rotateY(Math.PI / 4); gable.scale(1, 1, .15); gable.translate(CX, 49.5, ZF - .9); cat.push(gable); misc.push(gable);
+  butt(CX - 2.9, -.5, 20, 1.2, 1.3); butt(CX + 2.9, -.5, 20, 1.2, 1.3); butt(CX - 5.6, 17, 44, 1.0, 1.0); butt(CX + 5.6, 17, 44, 1.0, 1.0);
+  for (const y of [17.4, 41]) { const l = new THREE.BoxGeometry(12, .7, .9); l.translate(CX, y, ZF + .45); cat.push(l); misc.push(l); }
+  const gable = new THREE.ConeGeometry(6 * Math.SQRT2, 7, 4); gable.rotateY(Math.PI / 4); gable.scale(1, 1, .15); gable.translate(CX, 49.5, ZF - .9); cat.push(gable); misc.push(gable);
   const catGeom = mergeParts(cat), backGeom = mergeParts(catBack), deepGeom = mergeParts(catDeep);
   placeGroup.add(baseMesh(catGeom, 4, MAT.base)); placeGroup.add(baseMesh(backGeom, 4, MAT.base)); placeGroup.add(baseMesh(deepGeom, 3, MAT.base)); placeGroup.add(baseMesh(rose, 15, MAT.base));
   const st = new Patches(), L = V(.35, .5, .78).normalize();
   // lancet windows: dark vertical slots in tiers, two per tower face and a pair flanking the rose
   const lancet = q => {
     const y = q.y; for (const tx of TX) { const dx = Math.abs(q.x - tx); if (dx > 1.3 && dx < 2.3 && ((y > 9 && y < 18) || (y > 22 && y < 35) || (y > 39 && y < 52))) return true; }
-    const dc = Math.abs(q.x - CX); return dc > 6.4 && dc < 7.4 && y > 21 && y < 36;
+    const dc = Math.abs(q.x - CX); return dc > 4.4 && dc < 5.2 && y > 21 && y < 36;
   };
   const stone = (q, m, deep) => {
     const k = kAt(q), lit = m.dot(L), tr = fbm(q.x * .7 + 3, q.y * .7 + 1, 3), dc = Math.abs(q.x - CX);
     const band = (q.y > 14 && q.y < 17.5) || (q.y > 38.5 && q.y < 41.5) ? -.2 : 0;
-    const occ = (dc < 9 ? .35 * (1 - sstep(9 - dc, 0, 2.5)) : 0) + ((q.y > 15.9 && q.y < 17.4) || (q.y > 39.5 && q.y < 41) ? .3 : 0);
+    const occ = (dc < 6 ? .35 * (1 - sstep(6 - dc, 0, 2)) : 0) + ((q.y > 15.9 && q.y < 17.4) || (q.y > 39.5 && q.y < 41) ? .3 : 0);
     let r = lit * .5 + tr * .45 + rand() * .35 + band - occ;
     if (deep || lancet(q)) r -= .6;
     const pal = r < .1 ? 3 : r < .36 ? 4 : r < .78 ? 5 : rand() < .85 ? 14 : 15;
     st.lay(q, m, Math.abs(m.y) < .5 ? Math.PI / 2 + gauss() * .1 : rand() * TAU, rr(.6, 1.3) * k, rr(.35, .65) * k, pal, 0, 0);
   };
   // the faces the square sees are sampled directly (rectangles minus the arches), so the budget goes where the eye is; the reveals and the small parts through the geometry
-  const ARCHES = [[CX, -.5, 6, 7, 13], [CX - 7, -.5, 3.4, 5, 8.6], [CX + 7, -.5, 3.4, 5, 8.6], [CX, 20, 12, 27, 38]];
+  const ARCHES = [[CX, -.5, 4.2, 7, 13], [CX - 4.5, -.5, 2.3, 5, 8.6], [CX + 4.5, -.5, 2.3, 5, 8.6], [CX, 20, 8.4, 27, 38]];
   const inArch = (x, y) => ARCHES.some(([cx, y0, w, ys, ya]) => { const u = Math.abs(x - cx) / (w / 2); return u < 1 && y > y0 && y < ys + (ya - ys) * Math.pow(1 - u * u, .6); });
   const face = (count, fx, deep) => { for (let i = 0; i < count; i++) { const r = fx(); if (!r) continue; stone(r[0], r[1], deep); } };
   const q = V(), m = V();
-  face(Math.floor(4200 * D), () => { q.set(CX + (rand() - .5) * 18, rr(-.5, 46), ZF); if (inArch(q.x, q.y)) return null; m.set(0, 0, 1); return [q, m]; }, false);
+  face(Math.floor(4200 * D), () => { q.set(CX + (rand() - .5) * 12, rr(-.5, 46), ZF); if (inArch(q.x, q.y)) return null; m.set(0, 0, 1); return [q, m]; }, false);
   for (const [tx, zf, h] of [[TX[0], ZF + .6, 60], [TX[1], ZF + 1.6, 58]]) {
     face(Math.floor(3000 * D), () => { q.set(tx + (rand() - .5) * 10, rr(0, h), zf); m.set(0, 0, 1); return [q, m]; }, false);
     for (const sx of [-1, 1]) face(Math.floor(1300 * D), () => { q.set(tx + sx * 5, rr(0, h), zf - rand() * 10); m.set(sx, 0, 0); return [q, m]; }, false);
@@ -1527,7 +1603,7 @@ function buildRouen(D) {
   scatterOn(mergeParts(misc), Math.floor(2600 * D), (q, m) => { if (m.z < -.5 && rand() < .7) return; stone(q, m, false); });
   scatterOn(backGeom, Math.floor(1800 * D), (q, m) => { if (m.z < -.5 || q.y < 20 && q.z < ZF - 3) return; stone(q, m, false); });
   scatterOn(deepGeom, Math.floor(900 * D), (q, m) => { if (m.z < .5) return; stone(q, m, true); });
-  scatterOn(rose, Math.floor(500 * D), (q, m) => { if (m.z < .5) return; const k = kAt(q), a = Math.atan2(q.y - 29.5, q.x - CX), rad = Math.hypot(q.y - 29.5, q.x - CX); const tr = rad > 4.4 || Math.abs(Math.sin(a * 6)) > .9 || rad < .7; st.lay(q, m, rand() * TAU, rr(.4, .6) * k, rr(.3, .45) * k, tr ? (rand() < .6 ? 5 : 14) : rand() < .8 ? 15 : 3, 0, 0); });
+  scatterOn(rose, Math.floor(500 * D), (q, m) => { if (m.z < .5) return; const k = kAt(q), a = Math.atan2(q.y - 29.5, q.x - CX), rad = Math.hypot(q.y - 29.5, q.x - CX); const tr = rad > 3.1 || Math.abs(Math.sin(a * 6)) > .9 || rad < .5; st.lay(q, m, rand() * TAU, rr(.4, .6) * k, rr(.3, .45) * k, tr ? (rand() < .6 ? 5 : 14) : rand() < .8 ? 15 : 3, 0, 0); });
   placeGroup.add(st.mesh(MAT.patch));
   timings.rouen = 1;
 }
@@ -1606,7 +1682,8 @@ function buildHavre(D) {
 }
 
 // ============================================================ sky
-const sky = new THREE.Mesh(new THREE.SphereGeometry(700, 40, 20), new THREE.ShaderMaterial({ uniforms: U, vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false }));
+const SKYP = projectorUniforms();
+const sky = new THREE.Mesh(new THREE.SphereGeometry(700, 40, 20), new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, SKYP), vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false }));
 sky.frustumCulled = false; sky.renderOrder = -1; scene.add(sky);
 
 // ============================================================ reflection (a painted mirror, rendered once per frame)
@@ -1654,7 +1731,11 @@ function placeWeights() {
 const _acc = {}; const GLOBAL_COLORS = ['sunCol', 'hemiSky', 'hemiGround', 'shadowTint', 'fogCol', 'skyTop', 'skyHorizon', 'waterDeep', 'waterTint'], GLOBAL_SCALARS = ['sunEl', 'sunAz', 'sunInt', 'hemiInt', 'fogNear', 'fogFar', 'haze', 'reflectivity', 'ripple', 'bands', 'sunDisc'];
 function applyHour() {
   // each place: its own palette from its own stops
-  for (const pl of places) if (pl.stops && pl.PU) { const { A, B, b } = stopBlend(pl.stops, hourT); for (let i = 0; i < 20; i++) { pl.PU.uPalA.value[i].copy(A.pal[i]); pl.PU.uPalB.value[i].copy(B.pal[i]); } pl.PU.uBlend.value = b; }
+  for (const pl of places) if (pl.stops && pl.PU) {
+    const { A, B, b } = stopBlend(pl.stops, hourT); for (let i = 0; i < 20; i++) { pl.PU.uPalA.value[i].copy(A.pal[i]); pl.PU.uPalB.value[i].copy(B.pal[i]); } pl.PU.uBlend.value = b;
+    if (pl.painting) { const ga = gradeOf(pl, A), gb = gradeOf(pl, B); for (let i = 0; i < 3; i++) { pl.PU.uGradeMul.value.setComponent(i, lerp(ga.mul[i], gb.mul[i], b)); pl.PU.uGradeAdd.value.setComponent(i, lerp(ga.add[i], gb.add[i], b)); } }
+  }
+  if (BASE.PU) { const P0 = places[0].PU; for (let i = 0; i < 20; i++) { BASE.PU.uPalA.value[i].copy(P0.uPalA.value[i]); BASE.PU.uPalB.value[i].copy(P0.uPalB.value[i]); } BASE.PU.uBlend.value = P0.uBlend.value; }
   // the light: blended by how near each place is
   const w = placeWeights(); let dom = 0;
   for (const k of GLOBAL_COLORS) _acc[k] = _acc[k] || new THREE.Color(); for (const k of GLOBAL_COLORS) _acc[k].setRGB(0, 0, 0); for (const k of GLOBAL_SCALARS) _acc[k] = 0;
@@ -1677,6 +1758,13 @@ function applyHour() {
   $('#hourLabel').firstChild.textContent = near.name; $('#hour').value = hourT; $('#hour').setAttribute('aria-valuetext', near.name); $('#hourSub').textContent = `${pl.name} · ${pl.year}`;
   const fixed = pl.stops.length < 2; if (fixed !== hourFixed) { hourFixed = fixed; $('#hour').disabled = fixed; $('#hourNote').textContent = fixed ? 'This one is always dawn.' : 'Each place keeps the hours Monet painted it in.'; }
 }
+// how a stop re-colours the painting: from Monet's own series picture of that hour where we have one, else from the stop's light relative to the painting's hour
+function gradeOf(pl, st) {
+  if (st.grade) return st.grade;
+  const ref = pl.stops[pl.painting.stop], L = s => [s.hemiSky.r * s.hemiInt + s.sunCol.r * s.sunInt * .6, s.hemiSky.g * s.hemiInt + s.sunCol.g * s.sunInt * .6, s.hemiSky.b * s.hemiInt + s.sunCol.b * s.sunInt * .6];
+  const a = L(st), r = L(ref);
+  return st.grade = { mul: a.map((v, i) => clamp(v / r[i], .45, 1.8)), add: [0, 0, 0] };
+}
 function currentStops() { return places[placeIndex].stops; }
 function setHour(t) { hourT = clamp(t, 0, 1); applyHour(); }
 function stepStop(dir) { const n = currentStops().length; if (n < 2) return; const i = Math.round(hourT * (n - 1)) + dir; setHour(clamp(i, 0, n - 1) / (n - 1)); awake(); }
@@ -1686,8 +1774,10 @@ let yaw = 0, pitch = 0, fly = false, photoMode = false, travel = null;
 let drifting = false, driftS = 0, driftTarget = 0, recover = null;
 const velocity = V(), keys = new Set(), EYE = 1.45;
 function lookAtTarget(look) { camera.lookAt(look); yaw = camera.rotation.y; pitch = camera.rotation.x; }
+function fitFov(pl) { const f = pl.view.fov || 58; if (!pl.painting) return f; const sa = innerWidth / innerHeight; return sa >= pl.painting.aspect ? f : 2 * Math.atan(Math.tan(f * Math.PI / 360) * pl.painting.aspect / sa) * 180 / Math.PI; }
+function paintingHour(pl) { if (!pl.painting || !pl.stops || params.has('hour')) return; hourT = pl.stops.length < 2 ? 0 : pl.painting.stop / (pl.stops.length - 1); }
 function applyViewNow(i) {
-  const v = places[i].view; camera.position.copy(v.p); camera.fov = v.fov || 58; camera.updateProjectionMatrix(); lookAtTarget(v.look);
+  const v = places[i].view; camera.position.copy(v.p); camera.fov = fitFov(places[i]); camera.updateProjectionMatrix(); lookAtTarget(v.look); paintingHour(places[i]);
   fly = !!places[i].aerial; syncFly(); travel = null; drifting = false; velocity.set(0, 0, 0);
   applyHour(); showLocation(places[i]); selectView(i);
 }
@@ -1699,7 +1789,7 @@ function goView(i) {
   const fromLook = camera.getWorldDirection(V()).multiplyScalar(10).add(start);
   const height = Math.max(start.y, pl.view.p.y, dist > 20 ? 20 : 6) + Math.min(28, dist * .16);
   const pts = [start, start.clone().lerp(pl.view.p, .15).setY(height), start.clone().lerp(pl.view.p, .8).setY(height), pl.view.p.clone()];
-  travel = { curve: new THREE.CatmullRomCurve3(pts), l0: fromLook, lm: pl.view.p.clone(), l1: pl.view.look.clone(), f0: camera.fov, f1: pl.view.fov || 58, t: 0, dur: clamp(2.2 + dist * .03, 2.4, 7), i };
+  travel = { curve: new THREE.CatmullRomCurve3(pts), l0: fromLook, lm: pl.view.p.clone(), l1: pl.view.look.clone(), f0: camera.fov, f1: fitFov(pl), t: 0, dur: clamp(2.2 + dist * .03, 2.4, 7), i };
   velocity.set(0, 0, 0); drifting = false; selectView(i);
 }
 function updateTravel(dt) {
@@ -1707,7 +1797,7 @@ function updateTravel(dt) {
   camera.position.copy(travel.curve.getPoint(e));
   // look: where you were looking, then down at the place you are flying to (the land passes below), then the painting's own look
   lookAtTarget(travel.l0.clone().lerp(travel.lm, sstep(e, 0, .3)).lerp(travel.l1, sstep(e, .62, 1))); camera.fov = lerp(travel.f0, travel.f1, e); camera.updateProjectionMatrix();
-  if (k >= 1) { const i = travel.i; travel = null; fly = !!places[i].aerial; syncFly(); applyHour(); showLocation(places[i]); }
+  if (k >= 1) { const i = travel.i; travel = null; fly = !!places[i].aerial; syncFly(); paintingHour(places[i]); applyHour(); showLocation(places[i]); }
 }
 const _fwd = V(), _right = V(), _move = V();
 function updateWalk(dt) {
@@ -1797,6 +1887,7 @@ addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
   if (k === 'f') toggleFly();
   else if (k === 'p') photo();
+  else if (k === 'c') { overlayOn = !overlayOn; updateOverlay(); }
   else if (k === 'm') toggleSound();
   else if (k === 'r') goView(0);
   else if (k === '[') stepStop(-1);
@@ -1866,7 +1957,66 @@ $('#hour').addEventListener('input', e => setHour(+e.target.value));
 document.querySelectorAll('[data-quality]').forEach(b => b.addEventListener('click', () => setQuality(b.dataset.quality)));
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
 
+// ============================================================ the paintings, projected
+// Each place is one of Monet's canvases (public domain; see paintings/CREDITS.md). After the world is built, the scene is rendered
+// once from where he stood, to know what he could see; the shader then throws the canvas onto exactly those surfaces.
+const texLoader = new THREE.TextureLoader();
+function loadPaintings() {
+  for (const pl of places) { if (!pl.painting) continue; const P = pl.painting;
+    texLoader.load(P.src, tex => {
+      tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
+      tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      P.tex = tex; if (pl.PU) { pl.PU.uPainting.value = tex; pl.PU.uPaintSize.value.set(tex.image.width, tex.image.height); if (P.ready && !params.has('noproj')) pl.PU.uProjOn.value = 1; }
+    });
+  }
+}
+function buildProjectors() {
+  const savedPx = U.uPxRad.value; sky.visible = false;
+  for (const g of [placeGroup, waterGroup]) for (const m of g.children) m.visible = true;
+  for (const pl of places) { if (!pl.painting || !pl.PU) continue; const P = pl.painting, v = pl.view;
+    if (!P.cam) {
+      const w = P.aspect >= 1 ? 1024 : Math.round(1024 * P.aspect), h = P.aspect >= 1 ? Math.round(1024 / P.aspect) : 1024;
+      P.cam = new THREE.PerspectiveCamera(v.fov, P.aspect, .3, 800);
+      P.rt = new THREE.WebGLRenderTarget(w, h, { depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType), depthBuffer: true });
+    }
+    P.cam.position.copy(v.p); P.cam.fov = v.fov; P.cam.updateProjectionMatrix(); P.cam.lookAt(v.look); P.cam.updateMatrixWorld();
+    U.uPxRad.value = P.rt.height / (2 * Math.tan(v.fov * Math.PI / 360));
+    renderer.setRenderTarget(P.rt); renderer.clear(); renderer.render(scene, P.cam); renderer.setRenderTarget(null);
+    const PU = pl.PU;
+    PU.uPaintDepth.value = P.rt.depthTexture; PU.uDepthSize.value.set(P.rt.width, P.rt.height); PU.uProjNF.value.set(P.cam.near, P.cam.far);
+    PU.uProjM.value.set(.5, 0, 0, .5, 0, .5, 0, .5, 0, 0, .5, .5, 0, 0, 0, 1).multiply(P.cam.projectionMatrix).multiply(P.cam.matrixWorldInverse);
+    PU.uProjPos.value.copy(v.p); P.ready = true;
+    const rot = new THREE.Matrix4().extractRotation(P.cam.matrixWorld);
+    PU.uProjR.value.set(1, 0, 0).applyMatrix4(rot); PU.uProjU.value.set(0, 1, 0).applyMatrix4(rot); PU.uProjF.value.set(0, 0, -1).applyMatrix4(rot);
+    PU.uProjTan.value.set(Math.tan(v.fov * Math.PI / 360) * P.aspect, Math.tan(v.fov * Math.PI / 360));
+    if (P.tex && !params.has('noproj')) { PU.uPainting.value = P.tex; PU.uPaintSize.value.set(P.tex.image.width, P.tex.image.height); PU.uProjOn.value = 1; }
+  }
+  U.uPxRad.value = savedPx; sky.visible = true;
+}
+function syncSkyProjector(w) {
+  const pl = places[placeIndex], PU = pl.PU;
+  for (const T of [SKYP, BASE.PU]) {
+    if (!T) continue;
+    if (!pl.painting || !PU || !PU.uProjOn.value) { T.uProjOn.value = 0; continue; }
+    T.uPainting.value = PU.uPainting.value; T.uPaintDepth.value = PU.uPaintDepth.value; T.uProjM.value.copy(PU.uProjM.value); T.uProjPos.value.copy(PU.uProjPos.value);
+    T.uPaintSize.value.copy(PU.uPaintSize.value); T.uDepthSize.value.copy(PU.uDepthSize.value); T.uProjNF.value.copy(PU.uProjNF.value); T.uProjR.value.copy(PU.uProjR.value); T.uProjU.value.copy(PU.uProjU.value); T.uProjF.value.copy(PU.uProjF.value); T.uProjTan.value.copy(PU.uProjTan.value);
+    T.uGradeMul.value.copy(PU.uGradeMul.value); T.uGradeAdd.value.copy(PU.uGradeAdd.value);
+    T.uProjOn.value = PU.uProjOn.value * sstep(w, .45, .75);
+  }
+}
+// the canvas over the view (key C): the painting at its true frame, half transparent, to see how the world sits under it
+const overlay = document.createElement('img'); overlay.id = 'overlay'; overlay.alt = ''; overlay.style.display = 'none'; document.body.appendChild(overlay);
+let overlayOn = params.has('overlay'), overlayAlpha = parseFloat(params.get('overlay')) || .5;
+function updateOverlay() {
+  const pl = places[placeIndex];
+  if (!overlayOn || !pl.painting) { overlay.style.display = 'none'; return; }
+  const P = pl.painting, hf = Math.tan(pl.view.fov * Math.PI / 360) / Math.tan(camera.fov * Math.PI / 360), h = innerHeight * hf, w = h * P.aspect;
+  if (overlay.getAttribute('src') !== P.src) overlay.src = P.src;
+  overlay.style.cssText = `display:block;position:fixed;left:${(innerWidth - w) / 2}px;top:${(innerHeight - h) / 2}px;width:${w}px;height:${h}px;opacity:${overlayAlpha};pointer-events:none;z-index:5`;
+}
+
 // ============================================================ building, quality
+const BASE = {}; // the terrain under every place: the pond's palette, no canvas
 let genMs = 0;
 function clearPlace() { for (const g of [placeGroup, waterGroup]) { for (const m of [...g.children]) { g.remove(m); m.traverse(o => o.geometry && o.geometry.dispose()); } } boats.length = 0; }
 function buildAll() {
@@ -1875,8 +2025,10 @@ function buildAll() {
   places.forEach((pl, i) => { if (!pl.build) return; const n0 = placeGroup.children.length, w0 = waterGroup.children.length; pl.build(D); for (const g of [[placeGroup, n0], [waterGroup, w0]]) for (let k = g[1]; k < g[0].children.length; k++) g[0].children[k].userData.place = i; });
   const bw = new THREE.PlaneGeometry(520, 720, 130, 180); bw.rotateX(-Math.PI / 2); bw.translate(5, 0, -270);
   const bp = bw.getAttribute('position'); for (let i = 0; i < bp.count; i++) bp.setY(i, groundHeight(bp.getX(i), bp.getZ(i)) - .06); bw.computeVertexNormals();
-  const base = baseMesh(bw, q => q.y < WATER_Y - .3 ? 0 : 9, materialsFor(places[0]).base); base.userData.always = true; placeGroup.add(base);
+  if (!BASE.mat) { BASE.PU = paletteUniforms(); BASE.mat = patchMaterial({ instanced: false }, BASE.PU); }
+  const base = baseMesh(bw, q => q.y < WATER_Y - .3 ? 0 : 9, BASE.mat); base.userData.always = true; placeGroup.add(base);
   patchTotal = 0; for (const g of [placeGroup, waterGroup]) g.traverse(m => { if (m.userData.patches) patchTotal += m.userData.patches; });
+  buildProjectors();
   genMs = performance.now() - t0;
 }
 function setQuality(name) {
@@ -1903,6 +2055,8 @@ function update(dt) {
   const cp = camera.position, d7 = Math.hypot(cp.x - 14, cp.z + 440), gate = sstep(cp.x, -40, -22) * sstep(-cp.z, 398, 408) * (1 - sstep(cp.y, 10, 16));
   const reveal = gate * sstep(d7, 8, 30); // 1 = still in the fog, 0 = arrived
   U.uFogNear.value *= 1 - reveal * .5; U.uFogFar.value *= 1 - reveal * .62;
+  const P7 = places[6]; if (P7.PU && P7.painting.ready && P7.painting.tex && !params.has('noproj')) P7.PU.uProjOn.value = 1 - reveal;
+  syncSkyProjector(placeWeights()[placeIndex]); updateOverlay();
   const high = camera.position.y > 60; if (high !== aerialMode) { aerialMode = high; renderer.setPixelRatio(Math.min(devicePixelRatio, high ? 1 : DPR_CAP[qualityName])); }
   // a place wholly beyond the fog is not drawn
   const limit = hourFog.far * fs * .95;
@@ -1921,7 +2075,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm10-brush', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm11-canvas', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
@@ -1931,6 +2085,7 @@ window.monet = {
 
 // ============================================================ go
 function start() {
+  loadPaintings();
   try { buildAll(); } catch (e) { $('#error').style.display = 'block'; $('#error').textContent = 'The paint would not mix: ' + e.message; $('#loading').classList.add('gone'); throw e; }
   const v = parseInt(params.get('view'));
   applyViewNow(v >= 1 && v <= places.length && places[v - 1].view ? v - 1 : 0);

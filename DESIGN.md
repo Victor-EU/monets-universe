@@ -396,3 +396,9 @@ a half-world.
   arches and the path until everything else stands.
 - **Name.** "Monet's universe" is the folder. The title tag could be
   something more Monet-shaped ("A place made of light"). Not urgent.
+
+---
+
+## Addendum (M11): the canvases are the source
+
+§2's aim of keeping clear of reproducing the paintings is withdrawn. After showing the procedural version to people, the verdict was that it did not feel like the paintings. Each place is now painted by its own canvas, projected from the painter's viewpoint onto the geometry (see BUILD.md, M11, and `paintings/CREDITS.md`). The paintings are public domain. The procedural paint of §6 remains the surface where the canvas does not reach.
