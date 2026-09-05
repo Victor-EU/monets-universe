@@ -1164,3 +1164,21 @@ end on both sides, the east bank, the spot and the air.
 Nearly half the shoulders' pads now carry a flower where the bands' carry one in five: two crossed petal strokes (.16–.22 m) in the
 light or the warm accent slot, half of them with a small warm heart. Build `m18f-blooms`. Frames from under the deck's end on both
 sides, up close, from the water's level and the spot.
+
+### Progress · M18g — dragonflies over the shoulders' rafts
+
+Six dragonflies, three a side, each a small group of strokes (`dragonflies`, `updateDragonflies`): a dark body of five overlapping
+segments along its heading on two planes tilted 45° either way, and two fans of three pale wing strokes tilted outward — a dab of
+about half a metre, not an insect's size. Each glides on two slow sines round its raft (radius .5–1.1 m) with a quick tremor over
+them, .8–1.3 m above the water, turns into its own motion, and moves at about a metre a second. Built with the pond, cleared with it.
+Build `m18g-dragonflies`.
+
+**What it took.** The first versions were invisible, and the reasons are worth keeping: `lay` caps a stroke's length at 2.3 times
+its width, and the patch vertex shader shortens any stroke past ~2 % of its distance from the eye, so a long thin body becomes a
+dot — hence the overlapping segments; the pond's "dark" slot 3 is a pad green, so the body is slot 0, deep water; the pane's
+WebGL cannot be read back or screenshotted here, so the checks were headless stills — a 3 000-stroke blob put into each group
+showed the groups exactly where the motion places them, and a diff against the previous build found the single stroke. At the
+spot itself every surface wears the canvas, so the dragonflies, like every world stroke, are invisible there by design; off the
+spot they show in the picture's key as small pale-winged marks with a dark centre.
+
+**Still visible.** They are small; end-on they read as a pale fleck. Whether they should be larger, or fewer, is a matter of taste.

@@ -1333,6 +1333,24 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
     }
   }
   placeGroup.add(lil.mesh(MAT.patch)); mark('lilies');
+  // dragonflies over the shoulders' rafts: each a body stroke and four wing strokes in a small group that glides, darts and turns
+  // (see updateDragonflies); a blue or a dark one, wings pale
+  for (let side = -1; side <= 1; side += 2) for (let i = 0; i < 3; i++) {
+    const ax = side * rr(BRIDGE_HALF - 4.6, BRIDGE_HALF - 2), az = BRIDGE_Z + (rand() < .5 ? -1 : 1) * rr(1.6, 3.6);
+    const g = new THREE.Group(); g.position.set(ax, WATER_Y + .5, az);
+    const df = new Patches(), k = clamp(Math.hypot(ax - viewP.x, az - viewP.z) / 14, 1, 3) * 1.8, body = 0; // a dab's size, not an insect's; the body dark as deep water, so it tells against the pads
+    // the strokes are set directly (lay would cap a stroke at 2.3 times its width, and the shader shortens any stroke past 2 % of its
+    // distance, so the body is five short segments overlapping in a line, a solid dark bar at any distance): the body along x on two
+    // planes tilted 45° either way, so it shows from above and from either side; the wings two fans of three pale strokes, tilted outward
+    const u = V(1, 0, 0), v = V(), nn = V();
+    for (const sx of [-.14, -.07, 0, .07, .14]) for (const t of [1, -1]) { p.set(sx * k, 0, 0); v.set(0, .707, .707 * t); nn.set(0, .707, -.707 * t); df.add(p, u, v, .11 * k, .045 * k, nn, body, 0, 0); }
+    for (const dz of [.06, -.06]) for (const dx of [-.05, 0, .05]) {
+      u.set(.3 * Math.sign(dx || 1) * Math.sign(dz), 0, Math.sign(dz) * .95).normalize(); nn.set(.5 * Math.sign(dz), .86, 0).normalize(); v.crossVectors(nn, u).normalize();
+      p.set(dx * k, .01 * k, dz * k); df.add(p, u, v, .15 * k, .07 * k, nn, 5, 0, 0);
+    }
+    g.add(df.mesh(MAT.patch)); placeGroup.add(g);
+    dragonflies.push({ g, ax, az, ph: rand() * TAU, r: rr(.5, 1.1), h: rr(.8, 1.3), sp: rr(.9, 1.5) }); // a hand's breadth to an arm's length over the pads
+  }
 
 }
 
@@ -1432,7 +1450,7 @@ function buildHill(D) {
 }
 
 // ============================================================ the river: Sailboats at Argenteuil
-const boats = [];
+const boats = [], dragonflies = [];
 const mergeParts = list => mergeGeometries(list.map(g => { const q = g.toNonIndexed(); q.deleteAttribute('uv'); return q; }));
 // a hull: stations along x (bow at +x), half-ellipse ribs from gunwale to keel, a flat deck; triangles wound outward
 function hullGeometry(L, B, Dp) {
@@ -1588,6 +1606,16 @@ function buildRiver(D) {
   boat(46, -172, 0, 6.0, true, 5.2, [12, 4]);
   boat(-40, -177, 0, 5.6, true, 2.6, [14, 4]);
   timings.river = 1;
+}
+// a dragonfly glides on two slow sines over its raft, with a quick tremor over them, keeps its height above the pads and turns
+// into its own motion
+function updateDragonflies() {
+  for (const d of dragonflies) {
+    const t = simTime * d.sp + d.ph, g = d.g;
+    const x = d.ax + Math.sin(t * .7) * d.r + Math.sin(t * 2.3) * .12, z = d.az + Math.sin(t * .9 + 1.3) * d.r * .8 + Math.cos(t * 2.9) * .1, y = WATER_Y + d.h + Math.sin(t * 1.7) * .08;
+    const vx = x - g.position.x, vz = z - g.position.z; g.position.set(x, y, z);
+    if (Math.hypot(vx, vz) > 1e-4) g.rotation.y = Math.atan2(-vz, vx);
+  }
 }
 function updateBoats() {
   for (const b of boats) {
@@ -2617,7 +2645,7 @@ function updateOverlay() {
 // ============================================================ building, quality
 const BASE = {}; // the terrain under every place: the pond's palette, no canvas
 let genMs = 0;
-function clearPlace() { for (const g of [placeGroup, waterGroup]) { for (const m of [...g.children]) { g.remove(m); m.traverse(o => o.geometry && o.geometry.dispose()); } } boats.length = 0; }
+function clearPlace() { for (const g of [placeGroup, waterGroup]) { for (const m of [...g.children]) { g.remove(m); m.traverse(o => o.geometry && o.geometry.dispose()); } } boats.length = 0; dragonflies.length = 0; }
 function buildAll() {
   const t0 = performance.now(); clearPlace();
   const D = QUALITY[qualityName] / .73;
@@ -2649,7 +2677,7 @@ function update(dt) {
   if (locationTimer && realTime > locationTimer) { $('#location').classList.remove('show'); locationTimer = 0; }
   if (sayTimer && realTime > sayTimer) { $('#hint').classList.remove('show'); sayTimer = 0; }
   applyHour(dt);
-  U.uTime.value = simTime; updateBoats(); updateAudio(dt);
+  U.uTime.value = simTime; updateBoats(); updateDragonflies(); updateAudio(dt);
   const fs = 1 + clamp((camera.position.y - 8) / 30, 0, 1) * 3.6 + clamp((camera.position.y - 40) / 150, 0, 1) * 9; U.uFogNear.value = hourFog.near * fs; U.uFogFar.value = hourFog.far * fs;
   // the reveal: east of the square the fog stays thick until the last stretch of the quay, so the harbour and the sun resolve on arrival
   const cp = camera.position, d7 = Math.hypot(cp.x - 14, cp.z + 440), gate = sstep(cp.x, -40, -22) * sstep(-cp.z, 398, 408) * (1 - sstep(cp.y, 10, 16));
@@ -2676,7 +2704,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm18f-blooms', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm18g-dragonflies', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
