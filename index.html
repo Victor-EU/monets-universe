@@ -340,25 +340,25 @@ const SUNRISE_STOPS = [
 const places = [
   { name: 'The Water-Lily Pond', place: 'Giverny, the water garden', year: '1899', swatch: '#6a9a4a', file: 'pond',
     center: V(0, 0, -12), radius: 40,
-    view: { p: V(.4, 1.15, 8.4), look: V(0, 2.0, -4.2), fov: 62 }, painting: { src: 'paintings/pond.jpg', aspect: .7997, stop: 1 }, stops: POND_STOPS, build: buildPond },
+    view: { p: V(.4, 1.15, 8.4), look: V(0, 2.0, -4.2), fov: 62 }, painting: { src: 'paintings/pond.jpg', hz: .5, aspect: .7997, stop: 1 }, stops: POND_STOPS, build: buildPond },
   { name: 'Woman with a Parasol', place: 'a hilltop meadow, wind', year: '1875', swatch: '#8fb6d8', file: 'parasol',
     center: V(8, 0, -100), radius: 30,
-    view: { p: V(7.43, 4.6, -89.62), look: V(8.9, 8.2, -94.8), fov: 48 }, painting: { src: 'paintings/parasol.jpg', aspect: .805, stop: 0 }, stops: HILL_STOPS, build: buildHill },
+    view: { p: V(7.43, 4.6, -89.62), look: V(8.9, 8.2, -94.8), fov: 48 }, painting: { src: 'paintings/parasol.jpg', hz: .74, aspect: .805, stop: 0 }, stops: HILL_STOPS, build: buildHill },
   { name: 'Sailboats at Argenteuil', place: 'the Seine, the road bridge', year: '1874', swatch: '#5f8fb8', file: 'argenteuil',
     center: V(12, 0, -170), radius: 46,
-    view: { p: V(-2, 2, -147), look: V(10, 1.4, -177.5), fov: 40 }, painting: { src: 'paintings/argenteuil.jpg', aspect: 1.3336, stop: 0 }, stops: RIVER_STOPS, build: buildRiver },
+    view: { p: V(-2, 2, -147), look: V(10, 1.4, -177.5), fov: 40 }, painting: { src: 'paintings/argenteuil.jpg', hz: .46, aspect: 1.3336, stop: 0 }, stops: RIVER_STOPS, build: buildRiver },
   { name: 'Poplars on the Epte', place: 'the riverbank, a curve of trees', year: '1891', swatch: '#c9a35a', file: 'poplars',
     center: V(50, 0, -262), radius: 40,
-    view: { p: V(36, 2, -252), look: V(52.4, 1.5, -263.5), fov: 50 }, painting: { src: 'paintings/poplars.jpg', aspect: 1, stop: 0 }, stops: POPLAR_STOPS, build: buildPoplars },
+    view: { p: V(36, 2, -252), look: V(52.4, 1.5, -263.5), fov: 50 }, painting: { src: 'paintings/poplars.jpg', hz: .48, aspect: 1, stop: 0 }, stops: POPLAR_STOPS, build: buildPoplars },
   { name: 'Haystacks', place: 'Giverny, the fields', year: '1891', swatch: '#d9a457', file: 'haystacks',
     center: V(-30, 0, -280), radius: 45,
-    view: { p: V(-18, 2, -262), look: V(-31, 2.8, -282), fov: 31 }, painting: { src: 'paintings/haystacks.jpg', aspect: 1.6873, stop: 0 }, stops: STACK_STOPS, build: buildHaystacks },
+    view: { p: V(-18, 2, -262), look: V(-31, 2.8, -282), fov: 31 }, painting: { src: 'paintings/haystacks.jpg', hz: .33, aspect: 1.6873, stop: 0 }, stops: STACK_STOPS, build: buildHaystacks },
   { name: 'Rouen Cathedral', place: 'the square, the west facade', year: '1894', swatch: '#b8a68e', file: 'rouen',
     center: V(-46, 0, -427), radius: 58,
-    view: { p: V(-46, 5, -376), look: V(-42.6, 26.7, -442), fov: 45 }, painting: { src: 'paintings/rouen.jpg', aspect: .6551, stop: 1 }, stops: ROUEN_STOPS, build: buildRouen },
+    view: { p: V(-46, 5, -376), look: V(-42.6, 26.7, -442), fov: 45 }, painting: { src: 'paintings/rouen.jpg', hz: .5, aspect: .6551, stop: 1 }, stops: ROUEN_STOPS, build: buildRouen },
   { name: 'Impression, Sunrise', place: 'Le Havre, the outer harbour', year: '1872', swatch: '#e07a3a', file: 'sunrise',
     center: V(34, 0, -445), radius: 60,
-    view: { p: V(14, 4.6, -440), look: V(73.9, 7.7, -443.2), fov: 30 }, painting: { src: 'paintings/sunrise.jpg', aspect: 1.2892, stop: 0 }, stops: SUNRISE_STOPS, build: buildHavre },
+    view: { p: V(14, 4.6, -440), look: V(73.9, 7.7, -443.2), fov: 30 }, painting: { src: 'paintings/sunrise.jpg', hz: .5, aspect: 1.2892, stop: 0 }, stops: SUNRISE_STOPS, build: buildHavre },
   { name: 'The whole universe', place: 'One geography, seven paintings', year: '', swatch: '#8a8f7c', aerial: true,
     view: { p: V(0, 215, 85), look: V(0, 0, -225), fov: 60 } },
 ];
@@ -476,8 +476,22 @@ vec2 dirUv(vec3 d) {
   float x = dot(d, uProjR), y = dot(d, uProjU), z = dot(d, uProjF);
   return vec2(atan(x, z) / (2. * atan(uProjTan.x)), atan(y, length(vec2(x, z))) / (2. * atan(uProjTan.y))) + .5;
 }
-// the picture carried on beyond its frame: a soft read of the canvas, mirrored, by direction
-vec3 extCol(vec3 d) { return textureLod(uPainting, mirr(dirUv(d)), 5.5).rgb * uGradeMul + uGradeAdd; }
+// the picture's colour carried on beyond its frame: a read of the canvas so soft that nothing of the picture is left in it, only its
+// colour in that direction; the world outside the frame takes this colour and keeps its own light and structure
+vec3 extCol(vec3 d) { return textureLod(uPainting, mirr(dirUv(d)), 7.).rgb * uGradeMul + uGradeAdd; }
+// the world outside the frame, painted in the picture's key: the picture's colour for this direction, carrying the world's own light
+// (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves
+vec3 inKey(vec3 world, vec3 key, float ex, float lo, float hi) {
+  float lk = max(dot(key, LW), .015), r = pow(max(dot(world, LW), .015) / lk, ex);
+  key = mix(vec3(lk), key, 1.4); // the soft read greys the picture's colour a little; give it back
+  return max(key, 0.) * clamp(r, lo, hi);
+}
+// the canvas's edge: not a straight line but a feathered, wandering one, so that no rectangle is left on the view
+float frameEdge(vec2 puv) {
+  vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
+  em += (vn(puv * 5.) - .5) * .16 + (vn(puv * 13. + 7.) - .5) * .06;
+  return 1. - smoothstep(.78, 1., em);
+}
 float linD(float z) { float n = uProjNF.x, f = uProjNF.y; return 2. * n * f / (f + n - (2. * z - 1.) * (f - n)); }
 // was this point in Monet's line of sight? four taps of the depth map, compared in metres
 float projVis(vec2 uv, float z, float loose) {
@@ -652,12 +666,13 @@ void main(){
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0.) {
     vec3 ecol = extCol(vWorld - uProjPos);
-    vec3 ex = mix(applyPaint(ecol, O, .8) * (.82 + .36 * wrap), mix(applyPaint(ecol, O, .3), applyPaint(uFogCol, O, .5), smoothstep(.55, .9, fog)), min(1., fog * 1.15));
-    fin = mix(fin, ex, .74 * uProjOn);
+    vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 1.8), O, .6);
+    ex = mix(ex, applyPaint(ecol, O, .3), smoothstep(.7, .95, fog)); // far off, the picture's own distance takes over from the fog
+    fin = mix(fin, ex, .85 * uProjOn);
 #ifdef INSTANCED
-    float conf = front * (1. - smoothstep(.94, 1., em)) * projVis(puv, pz, 1.);
+    float conf = front * frameEdge(puv) * projVis(puv, pz, 1.);
 #else
-    float conf = front * (1. - smoothstep(.94, 1., em)) * projVis(puv, pz, 0.);
+    float conf = front * frameEdge(puv) * projVis(puv, pz, 0.);
 #endif
     if (conf > 0.) {
       vec2 tp = fwidth(puv) * uPaintSize; float mag = 1. / max(max(tp.x, tp.y), 1e-4); // how far the canvas is stretched: strokes return as it is magnified
@@ -669,6 +684,12 @@ void main(){
       fin = mix(fin, pcol, conf);
       if (uDbg > .5) fin = vec3(.3 + .7 * conf);
     } else if (uDbg > .5) fin = vec3(.3);
+    // the canvas carries the painter's own distance; seen from farther away than he stood, the rest of the way is fog
+    float fogP = smoothstep(uFogNear, uFogFar, distance(vWorld, uProjPos)) * .9;
+#ifdef INSTANCED
+    if (vKind > 3.5) fogP *= .3;
+#endif
+    fin = mix(fin, applyPaint(uFogCol, O, .5), clamp((fog - fogP) / max(1. - fogP, .05), 0., 1.) * uProjOn);
   } else if (uDbg > .5) fin = vec3(0.);
   gl_FragColor = vec4(fin, a);
   #include <colorspace_fragment>
@@ -703,8 +724,8 @@ void main(){
   vec2 puv = pc.xy / max(pc.w, 1e-3);
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0.) {
-    fin = mix(fin, applyPaint(extCol(d), O, .5), .85 * uProjOn);
-    float conf = front * (1. - smoothstep(.94, 1., em)) * step(.99995, texture2D(uPaintDepth, puv).r);
+    fin = mix(fin, applyPaint(inKey(fin, extCol(d), .5, .6, 1.45), O, .5), .85 * uProjOn);
+    float conf = front * frameEdge(puv) * step(.99995, texture2D(uPaintDepth, puv).r);
     fin = mix(fin, texture2D(uPainting, puv).rgb * uGradeMul + uGradeAdd, conf);
   }
   gl_FragColor = vec4(fin, 1.);
@@ -1961,11 +1982,21 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 // Each place is one of Monet's canvases (public domain; see paintings/CREDITS.md). After the world is built, the scene is rendered
 // once from where he stood, to know what he could see; the shader then throws the canvas onto exactly those surfaces.
 const texLoader = new THREE.TextureLoader();
+// the colour of the picture's distance: a band across the horizon, read from the canvas itself. It becomes the fog of every hour at that
+// place (through the hour's grade), so that what dissolves into the distance dissolves into the painting's own sky, not an invented one
+function horizonColor(img, hz) {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); g.drawImage(img, 0, 0, 64, 64);
+  const y0 = Math.max(0, Math.round((hz - .04) * 64)), y1 = Math.min(64, Math.round((hz + .04) * 64) + 1);
+  const d = g.getImageData(0, y0, 64, y1 - y0).data; let r = 0, gg = 0, b = 0, n = 0;
+  for (let i = 0; i < d.length; i += 4) { r += d[i]; gg += d[i + 1]; b += d[i + 2]; n++; }
+  return new THREE.Color().setRGB(r / n / 255, gg / n / 255, b / n / 255, THREE.SRGBColorSpace);
+}
 function loadPaintings() {
   for (const pl of places) { if (!pl.painting) continue; const P = pl.painting;
     texLoader.load(P.src, tex => {
       tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
       tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      try { const hc = horizonColor(tex.image, P.hz ?? .5); for (const st of pl.stops) { const g = gradeOf(pl, st); st.fogCol.setRGB(clamp(hc.r * g.mul[0] + g.add[0], 0, 1), clamp(hc.g * g.mul[1] + g.add[1], 0, 1), clamp(hc.b * g.mul[2] + g.add[2], 0, 1)); } } catch (e) { console.warn('monet: horizon colour', e); }
       P.tex = tex; if (pl.PU) { pl.PU.uPainting.value = tex; pl.PU.uPaintSize.value.set(tex.image.width, tex.image.height); if (P.ready && !params.has('noproj')) pl.PU.uProjOn.value = 1; }
     });
   }
@@ -2075,7 +2106,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm11-canvas', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm11b-key', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },

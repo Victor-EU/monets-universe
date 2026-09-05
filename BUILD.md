@@ -783,3 +783,33 @@ The texture field costs about half of the per-pixel dab field, so Balanced retur
 Extra cost: one painting sample, one soft sample and four depth taps per fragment; seven depth passes at build (~0.3 s).
 
 **Known tells.** Away from the viewpoint the canvas stretches over the geometry and the surfaces hidden from the painter show the soft continuation with a hard visibility edge (a ring behind the haystack). Outside the frame the world is soft-focus. Foliage above a painted tree line takes the sky's colour but keeps its stroke texture. Rouen's houses either side are blurred slabs; the cathedral's towers are still wider than the painted ones. The reproduction of the haystacks is only 3000 px (the Art Institute's server refused a larger one behind a bot check). DESIGN.md §2's line about keeping clear of the paintings is superseded: the canvases are public domain and are now the source. Deployment still waits for the explicit go-ahead, with the domain.
+
+### Progress · M11b — the key (fix: "a faded picture over the scene")
+
+**What was wrong.** Outside each frame the world was carried on by a soft *mirrored* read of the canvas (LOD 5.5), blended 74 % over the
+geometry. Softened, mirrored, it was still the picture: a ghost woman left of the parasol, ghost towers beside Rouen, and a straight
+rectangle where the sharp canvas met the blur. On a 16:9 screen a portrait painting is under half the width, so most of the view was ghost.
+
+**What changed** (`index.html`, build `m11b-key`).
+- `extCol` now reads the canvas at LOD 7: nothing of the picture is left, only its colour in that direction (`mirr(dirUv)` kept, so it is
+  continuous and equals the frame's colour at the frame's edge).
+- `inKey(world, key, ex, lo, hi)`: outside the frame every fragment takes the picture's colour for its direction and keeps its own value
+  (world luminance / key luminance, compressed by `ex` = .8 for patches, .5 for the sky, clamped). The soft read greys the key; it is
+  re-saturated ×1.4. Strokes over it at .6 (sky .5). Blend 85 %. Trees, sky, ground stay themselves, in the painting's key.
+- `frameEdge(puv)`: the canvas's boundary is a feather from 78 % to 100 % of the half-size, wandered by two octaves of value noise
+  (±8 %, ±3 %); no straight edge remains. Applied to patches, water and sky alike.
+- Far off (fog > .7) the extension goes to the key colour, not the fog colour.
+- Viewer-distance fog over the canvas: `fogP` = fog at the painter's distance; the fraction the viewer adds,
+  `(fog − fogP) / (1 − fogP)`, is mixed in after the projection. From the viewpoint it is zero; from the haystacks the Rouen facade
+  (which carries its own canvas) dissolves instead of standing in white tracery at the top right.
+- Fog colour from the painting: `horizonColor(img, hz)` averages a band ±4 % around the painting's horizon (`painting.hz`, per place:
+  pond .5, parasol .74, argenteuil .46, poplars .48, haystacks .33, rouen .5, sunrise .5) at load and sets every stop's `fogCol`
+  through that stop's grade. What dissolves into the distance dissolves into the painting's own sky.
+
+**Verified.** Headless 1600×900 at all seven viewpoints (`scratchpad/key-1..7.png`, sheet `key-sheet.jpg`): no rectangle, no ghost,
+no console errors; live tab reloads clean. Bench Balanced 2× (3840×1550): pond 11.3, parasol 8.6, argenteuil 8.5, poplars 9.9,
+haystacks 11.0, rouen 9.2, sunrise 5.0, aerial 4.9 ms; reflection 1.4 ms.
+
+**Still visible.** Away from the viewpoint the canvas stretches and its visibility edges are hard (`key-3off.jpg`). Le Havre's chimneys
+still show dark from the poplars (solid kinds take only 30 % fog, a M10 rule). Outside the frame the grass is smoother and lighter than
+Monet's; Rouen's flanking houses stay plain slabs. A faint pale mass of the cathedral remains above the haystacks at the far right.
