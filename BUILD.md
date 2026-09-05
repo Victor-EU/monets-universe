@@ -899,3 +899,62 @@ as the control:
 **Still visible.** Between 4° and 14° of parallax the near canvas is half there; walking slowly past a spot one sees it go soft and
 give way, which is the design. The Rouen houses either side are still plain slabs. A painted crown wider than its 3D tree still hangs
 on the sky until the eye has walked 8 m. Deployment still waits for the explicit go-ahead, with the domain.
+
+### Progress · M14 — the figure (fix: "another silhouette in the scene", "the statue became the persona, sudden and abrupt")
+
+**What was wrong.** The user's frame was the hill seen from the promenade beside the spot, looking left: a small dark cone with a stick
+and a ball on it, in the meadow. That was the *boy* — placed at build (4.6, −93.6), 64° left of the painter's look, far outside his frame,
+while the painting has him nine degrees left of centre, beyond the crest. So the painted boy landed on the sky and the 3D boy stood by
+himself in the field: the other silhouette. Behind that, three more things made the arrival abrupt and the figure a statue:
+- the woman's 3D body was 15 % taller than the painted one and her parasol dome half a metre above the painted parasol (the depth map
+  at the spot, `?dbg=3`, showed the cone's top and the dome above the frame's top edge);
+- the promenade passed 1.1 m beside the spot and never through it, and the flight to a painting came straight down onto it; a figure
+  3.5 m from the spot only paints in within a quarter to nine tenths of a metre of it (the 4°–14° parallax window), so she snapped from
+  statue to persona in the last step;
+- off the spot the painted woman's outline stayed on the sky where the painter saw it (the sky dissolves by distance only), four times
+  her size from ten metres back, while the 3D body walked out of it: a ghost beside a statue. And the stroke cloud, 100 m off, wore
+  pieces of the canvas that no longer matched the sky's.
+
+**What changed** (`index.html`, build `m14-figure`).
+- **The boy where the picture has him**: seven metres along the painter's ray through his painted head, (9.63, −96.06), scale .5, with
+  the hat; the crest hides his legs as in the painting (checked numerically: the ray to his painted hem passes below ground from 3 to
+  6.5 m out). The stray figure is gone from the field.
+- **The woman sized to the picture**: scale .84 (hat's top at a fifth of the frame from 3.5 m, hem at .71); the body is one turned
+  profile (hem, skirt, waist, bust, shoulders, neck) instead of a cylinder on a cone, so off the spot she is a figure, not a cone; the
+  parasol dome (r .44) sits where the painted parasol is, tilted toward him so its near rim dips beside her hat; the veil and hem
+  strokes stream half as far.
+- **Arrival along his gaze.** The promenade now runs through the spot, its last six metres along his line of sight; the flight to a
+  painting (`goView`) comes down nine metres behind the spot and glides in along the gaze (at eye height where the gaze, which goes up,
+  would run into the ground). Along that line the parallax of everything in the frame is near zero, so the canvas assembles as one thing
+  by the distance fade (18 → 8 m), nothing snapping in last.
+- **The figure carries its own outline** (`figureQuad`, `FIGURE_FRAG`): each figure has a quad at its place, turned to the eye, showing
+  the canvas wherever the live depth map has the figure within a quarter of its depth, glass elsewhere, fading past 6°–25° off his line.
+  The parts of the painted figure the stroke body does not reach (the veil, the skirt's billow) stay on her from anywhere near the line.
+- **The sky lets go of the outline** (`buildPlate`, the *sky plate*): a near map (16 × 16 minima of the depth map, two 4 × 4 passes, half
+  float) marks the canvas cells that held something within 400 m; once per painting, at load, the painting is read at that size and the
+  sky is diffused over those cells above the horizon (100 sweeps). Sky pixels inside the outline proper always take the plate; those in
+  the dilated band around it take it as the eye leaves the spot in proportion to the thing's nearness (`smoothstep(.1, .4, dist / nd)`),
+  with the clear sky's detail from 30 % of the frame aside laid over, in strokes. So her outline does not hang on the sky: a soft cloud is
+  there instead. Cost: one 52 × 64 readback and ~50 ms of JS per painting at load.
+- **The stroke cloud** never takes the canvas (kind 4) and thins out stroke by stroke (`uFadeK`) as the painted sky comes in (8–18 m).
+- **The extension behind him** reads softer the farther round from the frame (LOD 7 → 10 by 2.4 frames out): the radial bands of the
+  frame's bottom edge fanning over the meadow from the spot are gone.
+- Diagnostics: `?dbg=4` the near map on the world, `?dbg=5` the sky's fill (red), near map (green), clear (blue); `monet.places`.
+
+**Verified.** Headless 1600×900 (`scratchpad/approach-sheet.jpg`): the promenade from 10, 6, 3 m before the spot, at it, 3 m past, and
+the user's view (s = 272 looking left) — the figure emerges gradually along the approach and the field to the left is empty;
+`user-view-before-after.jpg` the user's frame before and after; the seven spots unchanged (`spots-m14.jpg`); `?dbg=3` at the spot
+shows the 3D woman, parasol and boy inside their painted outlines. Live tab: the flight from the pond, frames at 9.5, 5, 2 and 0 m
+from the spot: the painted woman at 9.5 m already, complete at 2 m, no statue at any step; no console errors. Bench Balanced 2×
+(3840×1550), the M13 build re-benched alongside as the control, two M14 runs (the first had two spikes, Argenteuil 13.3 and Orangerie
+11.5 — the Orangerie has no projector, so noise):
+
+| | pond | parasol | argenteuil | poplars | haystacks | rouen | sunrise | orangerie | aerial | refl |
+|---|---|---|---|---|---|---|---|---|---|---|
+| M13 (control, now) | 11.6 | 8.5 | 9.5 | 9.5 | 10.9 | 9.3 | 5.1 | 8.7 | 5.8 | 4.5 |
+| M14 | 11.4 | 9.4 | 9.7 | 9.7 | 10.9 | 9.3 | 5.8 | 9.3 | 5.9 | 4.0 |
+
+**Still visible.** Where her outline was on the sky, a soft cloud sits from off the spot (the plate: right in colour and texture, but a
+cloud the painting does not have). Walking past her within a metre or two, the parasol dome is a green cap seen from below. Seen from
+her far side she is the stroke figure in the key, a figure now rather than a cone, still not her. The other near things (the sail, the
+poplars) have no quad yet; their outlines get the plate's fill only. Deployment still waits for the explicit go-ahead, with the domain.

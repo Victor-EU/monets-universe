@@ -395,7 +395,7 @@ const U = {
   uFogCol: { value: new THREE.Color() }, uFogNear: { value: 15 }, uFogFar: { value: 60 },
   uSkyTop: { value: new THREE.Color() }, uSkyHorizon: { value: new THREE.Color() }, uHaze: { value: .16 }, uSunDisc: { value: 0 },
   uRefl: { value: null }, uReflMatrix: { value: new THREE.Matrix4() }, uWaterDeep: { value: new THREE.Color() }, uWaterTint: { value: new THREE.Color() }, uReflectivity: { value: .8 }, uRipple: { value: .012 }, uBands: { value: .25 },
-  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uDbg: { value: params.has('dbg') ? (parseFloat(params.get('dbg')) || 1) : 0 },
+  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uFadeK: { value: 1 }, uDbg: { value: params.has('dbg') ? (parseFloat(params.get('dbg')) || 1) : 0 },
 };
 
 // ============================================================ the brushes
@@ -492,7 +492,7 @@ float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); re
 vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
 uniform sampler2D uPaint, uPaintW; uniform float uPxRad, uDbg;
 // the painting, projected from where Monet stood: its texture, the depth map seen from there, the projector matrix (world -> canvas uv, depth)
-uniform sampler2D uPainting, uPaintDepth; uniform mat4 uProjM; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
+uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate; uniform mat4 uProjM; uniform vec2 uNearSize; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
 vec2 mirr(vec2 uv) { return 1. - abs(fract(uv * .5) * 2. - 1.); }
 // canvas coordinates of a direction from the painter, by angle: continuous all the way round, and the same as the projection near the frame
@@ -502,7 +502,9 @@ vec2 dirUv(vec3 d) {
 }
 // the picture's colour carried on beyond its frame: a read of the canvas so soft that nothing of the picture is left in it, only its
 // colour in that direction; the world outside the frame takes this colour and keeps its own light and structure
-vec3 extCol(vec3 d) { return textureLod(uPainting, mirr(dirUv(d)), 7.).rgb * uGradeMul + uGradeAdd; }
+// farther round from the frame it is read softer still, down to the edge's one colour: behind him the columns of the edge would otherwise
+// fan out over the ground in bands from where he stood
+vec3 extCol(vec3 d) { vec2 uv = dirUv(d); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.; return textureLod(uPainting, mirr(uv), 7. + 3. * smoothstep(1.1, 2.4, em)).rgb * uGradeMul + uGradeAdd; }
 // the world outside the frame, painted in the picture's key: the picture's colour for this direction, carrying the world's own light
 // (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves
 vec3 inKey(vec3 world, vec3 key, float ex, float lo, float hi) {
@@ -527,6 +529,12 @@ float projVis(vec2 uv, float z, float loose) {
   s = max(s, step(lz, linD(texture2D(uPaintDepth, uv + vec2(t.x, t.y)).r) + tol));
   return s;
 }
+// the nearest thing in his view around this texel of the canvas: a small map of the depth map's minima over 16 x 16 texels, read 3 x 3
+float nearD(vec2 uv) {
+  vec2 t = 1. / uNearSize; float m = 1e9;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) m = min(m, texture2D(uPaintNear, uv + vec2(float(i), float(j)) * t).r);
+  return m;
+}
 // the canvas belongs to the spot where he stood. Seen from elsewhere it would stretch over the ground and hang in the air, so it dissolves:
 // per point, by the parallax between the painter's ray and the eye's (near things first, the far view last), and altogether as the eye
 // walks off (8 to 18 m). What remains is the world in the picture's key.
@@ -536,6 +544,7 @@ float canvasHere(vec3 w, vec3 eye) {
 }
 // and toward its edge, and as it dissolves, it goes soft rather than cut: a mip bias for the canvas read
 float canvasBias(float here, float em) { return (1. - here) * 4. + smoothstep(.72, 1., em) * 3.; }
+
 const float STROKE = .012; // the width of a stroke, in radians of view: about a hundredth of the picture
 // the paint field read at one tile scale, on the three world planes weighted by the normal: offsets (hue, value, temperature, relief) about zero
 vec4 paintTri(sampler2D t, vec3 p, vec3 bw, float P) {
@@ -574,7 +583,7 @@ vec3 tone(vec3 c) {
 
 // ============================================================ the patch shader
 const PATCH_VERT = /* glsl */`
-uniform float uTime; uniform vec3 uWind; uniform float uPxRad;
+uniform float uTime; uniform vec3 uWind; uniform float uPxRad, uFadeK;
 #ifdef INSTANCED
 attribute vec3 iPos; attribute vec3 iU; attribute vec3 iV; attribute vec3 iN; attribute vec4 iMisc;
 #else
@@ -600,7 +609,7 @@ void main(){
   // no stroke is painted longer than a few percent of the view, and none smaller than a few pixels: it fades rather than sparkles
   float dd = max(distance(cameraPosition, (modelMatrix * vec4(c, 1.)).xyz), .05), lu = max(length(iU), 1e-4);
   float px = 2. * lu * uPxRad / dd, f = min(1., .016 * (.7 + .7 * fract(seed * 7.31)) * dd / lu);
-  vFade = smoothstep(1.5, 4.5, px);
+  vFade = smoothstep(1.5, 4.5, px) * step(fract(seed * 5.13 + .37), uFadeK); // uFadeK < 1: the strokes go one by one
   vec3 anchor = c - iU * step(.7, iU.y / lu); // an upright stroke shrinks toward its foot
   c = anchor + (c - anchor) * f;
   vec3 wp = (modelMatrix * vec4(c + iU * q.x * f + iV * q.y * f, 1.)).xyz;
@@ -706,6 +715,7 @@ void main(){
     float here = canvasHere(vWorld, cameraPosition);
 #ifdef INSTANCED
     float conf = front * frameEdge(puv) * projVis(puv, pz, 1.) * here;
+    if (vKind > 3.5) conf = 0.; // the stroke cloud is the world's own; it gives way to the painted one (see uFadeK), never wears pieces of it
 #else
     float conf = front * frameEdge(puv) * projVis(puv, pz, 0.) * here;
 #endif
@@ -722,6 +732,7 @@ void main(){
     // ?dbg=2: the depth map against this point, in metres: red where the map is nearer (hidden from him), blue where it is farther (not in it)
     if (uDbg > 1.5) { float dd = linD(texture2D(uPaintDepth, puv).r) - linD(pz); fin = dd < 0. ? vec3(clamp(-dd / 10., 0., 1.), 0., 0.) : vec3(0., 0., clamp(dd / 10., 0., 1.)); if (front < .5) fin = vec3(0., 1., 0.); if (em > 1.) fin = vec3(.25); }
     if (uDbg > 2.5) fin = vec3(linD(texture2D(uPaintDepth, puv).r) / 120.); // ?dbg=3: the depth map itself, black near, white at 120 m
+    if (uDbg > 3.5) fin = vec3(nearD(puv) / 20.); // ?dbg=4: the near map, black at his feet, white from 20 m
     // the canvas carries the painter's own distance; seen from farther away than he stood, the rest of the way is fog
     float fogP = smoothstep(uFogNear, uFogFar, distance(vWorld, uProjPos)) * .9;
 #ifdef INSTANCED
@@ -733,6 +744,35 @@ void main(){
   #include <colorspace_fragment>
 }`;
 
+// a figure near him carries its own painted outline: a quad at its place, turned to the eye, that shows the picture wherever his depth map
+// has the figure (within a third of its depth) and is glass elsewhere. The stroke body gives it depth and its edges; the quad gives the
+// parts of the painted figure the body does not reach (the veil, the billow of a skirt) a place to be, at her, from wherever you look
+const FIGURE_VERT = /* glsl */`
+uniform vec3 uCenter; uniform vec2 uSize; varying vec3 vWorld;
+void main() { vec3 to = cameraPosition - uCenter; vec3 right = normalize(vec3(to.z, 0., -to.x));
+  vWorld = uCenter + right * position.x * uSize.x + vec3(0., (position.y + .5) * uSize.y, 0.);
+  gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.); }`;
+const FIGURE_FRAG = /* glsl */`
+uniform vec3 uCenter; varying vec3 vWorld;
+${PAINT_GLSL}
+void main() {
+  if (uProjOn <= 0.) discard;
+  vec4 pc = uProjM * vec4(vWorld, 1.); if (pc.w < 1e-3) discard;
+  vec2 uv = pc.xy / pc.w; vec2 e = abs(uv - .5) * 2.; float em = max(e.x, e.y); if (em > 1.) discard;
+  float nd = distance(uCenter, uProjPos), lim = nd * .25 + .5; vec2 t = 1.2 / uDepthSize;
+  float on = step(abs(linD(texture2D(uPaintDepth, uv + vec2(-t.x, -t.y)).r) - nd), lim) + step(abs(linD(texture2D(uPaintDepth, uv + vec2(t.x, -t.y)).r) - nd), lim)
+           + step(abs(linD(texture2D(uPaintDepth, uv + vec2(-t.x, t.y)).r) - nd), lim) + step(abs(linD(texture2D(uPaintDepth, uv + vec2(t.x, t.y)).r) - nd), lim);
+  float here = 1. - smoothstep(8., 18., distance(cameraPosition, uProjPos));
+  float par = 1. - dot(normalize(uCenter - uProjPos), normalize(uCenter - cameraPosition)); // off his line the quad's projection collapses: it goes (6 to 25 degrees)
+  float a = on * .25 * uProjOn * frameEdge(uv) * here * (1. - smoothstep(.0055, .094, par)); if (a < .01) discard;
+  vec3 col = texture2D(uPainting, uv, canvasBias(here, em)).rgb * uGradeMul + uGradeAdd;
+  gl_FragColor = vec4(col, a);
+  #include <colorspace_fragment>
+}`;
+function figureQuad(pl, x, y, z, w, h) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, pl.PU, { uCenter: { value: V(x, y, z) }, uSize: { value: new THREE.Vector2(w, h) } }), vertexShader: FIGURE_VERT, fragmentShader: FIGURE_FRAG, transparent: true, depthWrite: false }));
+  m.frustumCulled = false; m.renderOrder = 2; return m;
+}
 const SKY_VERT = /* glsl */`
 varying vec3 vDir;
 void main(){ vDir = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.); gl_Position = p.xyww; }`;
@@ -763,14 +803,20 @@ void main(){
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0.) {
     fin = mix(fin, applyPaint(inKey(fin, extCol(d), .5, .6, 1.45), O, .5), .85 * uProjOn);
-    float here = 1. - smoothstep(8., 18., distance(cameraPosition, uProjPos)), bias = canvasBias(here, em);
+    float dist = distance(cameraPosition, uProjPos), here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
     float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
-    vec3 pc = texture2D(uPainting, puv, bias).rgb;
-    if (clear < .5 && conf > 0.) { // something stood here in his view: take the sky just above it, if there is one within reach
-      vec3 up = extCol(d); float found = 0.;
-      for (int i = 1; i <= 8; i++) { vec2 uv2 = puv + vec2(0., .06 * float(i)); if (found < .5 && uv2.y < 1. && texture2D(uPaintDepth, uv2).r > .99995) { up = textureLod(uPainting, uv2, 3. + bias).rgb * uGradeMul + uGradeAdd; found = 1.; } }
-      pc = up; conf *= mix(.7, 1., found);
-    } else pc = pc * uGradeMul + uGradeAdd;
+    vec3 pc = texture2D(uPainting, puv, bias).rgb * uGradeMul + uGradeAdd;
+    // the sky inside the outline of something near him (her, a mast), and just around it: from his spot it is the picture; from anywhere
+    // else the thing has moved off it (the figure's own quad carries its outline, see FIGURE_FRAG), and what is there is the sky behind,
+    // which the picture does not have. It takes the painted sky beside and above the outline: inside always, around it as the eye leaves
+    // the spot, in proportion to how near the thing is
+    float fill = clear < .5 ? 1. : (nd > .5 && nd < 400. ? smoothstep(.1, .4, dist / nd) : 0.);
+    if (uDbg > 4.5) { gl_FragColor = vec4(fill, nd / 20., clear, 1.); return; } // ?dbg=5: red the filled sky, green the near map, blue clear
+    if (fill > 0. && conf > 0.) { // the plate: the painted sky diffused over what stood in it; with the detail of the clear sky beside it laid over
+      vec2 uv2 = puv + vec2(-.3, 0.); if (texture2D(uPaintNear, mirr(uv2)).r < 400.) uv2 = puv + vec2(.3, 0.);
+      vec3 detail = texture2D(uPainting, mirr(uv2), bias).rgb - textureLod(uPainting, mirr(uv2), 5.).rgb;
+      pc = mix(pc, (texture2D(uPaintPlate, puv).rgb + detail * .8) * uGradeMul + uGradeAdd, fill);
+    }
     fin = mix(fin, pc, conf);
   }
   gl_FragColor = vec4(fin, 1.);
@@ -779,8 +825,8 @@ void main(){
 
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 // each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
-function projectorState() { return { tex: null, depth: null, M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
-function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
+function projectorState() { return { tex: null, depth: null, near: null, plate: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
@@ -1012,7 +1058,7 @@ const ORANG_PATH = (() => {
 
 // ============================================================ the promenade: one path through every place
 // Ground-plane spline; height always comes from walkHeight, so the bridge arch and banks are handled like walking.
-const PROMENADE_PTS = [...ORANG_PATH, [.4, 8.4], [4.6, 9.9], [9.4, 5.2], [9.9, -1], [8.3, -4], [4, -4], [0, -4], [-4, -4], [-8.3, -4], [-11.6, -6.8], [-14.8, -13], [-12, -19.5], [-7.2, -26], [-3.2, -30.6], [0, -36], [.6, -46], [0, -56], [.6, -64], [2.4, -74], [5, -83], [6.2, -88], [6.6, -95], [8, -104], [8, -113], [6.5, -124], [3.5, -135], [0, -142.5], [-2, -145.5], [3, -146.8], [8, -146.5], [13, -141], [19, -134], [24, -131], [24, -140], [24, -149], [24, -160], [24, -172], [24, -184], [24, -196], [24, -206], [24, -212], [28, -216], [32, -222], [32, -232], [33, -242], [36, -252], [36, -262], [38, -272], [40, -282], [38, -292], [30, -298], [20, -299], [8, -293], [-4, -280], [-18, -262], [-26, -256], [-34, -260], [-42, -266], [-50, -276], [-56, -290], [-57, -305], [-55, -322], [-53, -340], [-52, -357], [-50, -372], [-48, -387], [-46.5, -402], [-46, -417], [-36, -420], [-24, -420], [-14, -419], [-4, -422], [4, -428], [10, -434], [14, -440]];
+const PROMENADE_PTS = [...ORANG_PATH, [.4, 8.4], [4.6, 9.9], [9.4, 5.2], [9.9, -1], [8.3, -4], [4, -4], [0, -4], [-4, -4], [-8.3, -4], [-11.6, -6.8], [-14.8, -13], [-12, -19.5], [-7.2, -26], [-3.2, -30.6], [0, -36], [.6, -46], [0, -56], [.6, -64], [2.4, -74], [5.8, -83.9], [7.43, -89.62], [6.6, -95], [8, -104], [8, -113], [6.5, -124], [3.5, -135], [0, -142.5], [-2, -145.5], [3, -146.8], [8, -146.5], [13, -141], [19, -134], [24, -131], [24, -140], [24, -149], [24, -160], [24, -172], [24, -184], [24, -196], [24, -206], [24, -212], [28, -216], [32, -222], [32, -232], [33, -242], [36, -252], [36, -262], [38, -272], [40, -282], [38, -292], [30, -298], [20, -299], [8, -293], [-4, -280], [-18, -262], [-26, -256], [-34, -260], [-42, -266], [-50, -276], [-56, -290], [-57, -305], [-55, -322], [-53, -340], [-52, -357], [-50, -372], [-48, -387], [-46.5, -402], [-46, -417], [-36, -420], [-24, -420], [-14, -419], [-4, -422], [4, -428], [10, -434], [14, -440]];
 const promenade = new THREE.CatmullRomCurve3(PROMENADE_PTS.map(([x, z]) => V(x, 0, z)), false, 'centripetal', .5);
 promenade.arcLengthDivisions = 1500;
 const PROM_LEN = promenade.getLength();
@@ -1281,22 +1327,24 @@ function buildHill(D) {
   const fig = new Patches(); const parts = [];
   function person(x, z, sc, hat) {
     const y = groundHeight(x, z);
-    const dress = new THREE.CylinderGeometry(.2 * sc, .56 * sc, 1.35 * sc, 10, 4); dress.translate(x, y + .68 * sc, z);
-    const torso = new THREE.CylinderGeometry(.16 * sc, .2 * sc, .55 * sc, 8); torso.translate(x, y + 1.6 * sc, z);
+    // the body is one turned profile, hem to neck: a skirt that flares, a waist, a bust, shoulders. Seen off his spot it is a figure, not a cone
+    const prof = [[.42, 0], [.42, .25], [.4, .55], [.35, .85], [.28, 1.1], [.2, 1.3], [.21, 1.45], [.25, 1.6], [.22, 1.72], [.08, 1.8], [.1, 1.88]];
+    const body = new THREE.LatheGeometry(prof.map(([r, h]) => new THREE.Vector2(r * sc, h * sc)), 16); body.translate(x, y, z);
     const head = new THREE.SphereGeometry(.12 * sc, 8, 6); head.translate(x, y + 2.0 * sc, z);
     const arm = new THREE.CylinderGeometry(.04 * sc, .05 * sc, .55 * sc, 5); arm.rotateZ(-.9); arm.translate(x + .22 * sc, y + 1.75 * sc, z);
-    parts.push(dress, torso, head, arm);
+    parts.push(body, head, arm);
     const dp = new THREE.Vector3();
-    scatterOn(dress, Math.floor(520 * D * sc), (q, m) => { const lit = q.z < z - .05 ? .6 : 0; const r = rand() + lit; fig.lay(q, m, Math.PI / 2 + gauss() * .3, rr(.14, .26) * sc, rr(.08, .14) * sc, r < .55 ? 15 : r < .9 ? 11 : 2, 1, .03); });
-    scatterOn(torso, Math.floor(140 * D * sc), (q, m) => fig.lay(q, m, gauss() * .3, .12 * sc, .08 * sc, rand() < .6 ? 11 : 2, 0, 0));
+    scatterOn(body, Math.floor(660 * D * sc), (q, m) => {
+      if (q.y < y + 1.3 * sc) { const lit = q.z < z - .05 ? .6 : 0; const r = rand() + lit; fig.lay(q, m, Math.PI / 2 + gauss() * .3, rr(.14, .26) * sc, rr(.08, .14) * sc, r < .55 ? 15 : r < .9 ? 11 : 2, 1, .03); }
+      else fig.lay(q, m, gauss() * .3, .12 * sc, .08 * sc, rand() < .6 ? 11 : 2, 0, 0); });
     scatterOn(head, Math.floor(70 * D * sc), (q, m) => fig.lay(q, m, gauss() * .3, .07 * sc, .05 * sc, q.y > y + 2.03 * sc ? 13 : 10, 0, 0));
     if (hat) { const brim = new THREE.CylinderGeometry(.24 * sc, .24 * sc, .03 * sc, 12); brim.translate(x, y + 2.09 * sc, z); parts.push(brim); scatterOn(brim, Math.floor(60 * D), (q, m) => fig.lay(q, m, rand() * TAU, .1 * sc, .06 * sc, rand() < .5 ? 2 : 12, 0, 0)); }
     // the hem and the veil stream downwind
-    for (let i = 0; i < Math.floor(90 * D); i++) { const t = rand(); dp.set(x, y + .12 * sc + t * .3 * sc, z).addScaledVector(wind, (.45 + t * .6) * sc).add(_a.set(gauss() * .2, 0, gauss() * .2).multiplyScalar(sc)); fig.lay(dp, n.set(0, 1, 0), Math.atan2(wind.z, wind.x) + gauss() * .3, rr(.2, .38) * sc, rr(.08, .14) * sc, rand() < .6 ? 2 : 15, 1, .08 + t * .1); }
-    if (hat) for (let i = 0; i < Math.floor(70 * D); i++) { const t = rand(); dp.set(x, y + 2.05 * sc - t * .35 * sc + gauss() * .06, z).addScaledVector(wind, (.15 + t * 1.1) * sc).add(_a.set(gauss() * .12, 0, gauss() * .12)); fig.lay(dp, n.set(0, 0, 1), Math.atan2(wind.z, wind.x) + gauss() * .25, rr(.16, .3) * sc, rr(.06, .1) * sc, rand() < .7 ? 2 : 15, 1, .12 + t * .16); }
+    for (let i = 0; i < Math.floor(90 * D); i++) { const t = rand(); dp.set(x, y + .12 * sc + t * .3 * sc, z).addScaledVector(wind, (.3 + t * .5) * sc).add(_a.set(gauss() * .2, 0, gauss() * .2).multiplyScalar(sc)); fig.lay(dp, n.set(0, 1, 0), Math.atan2(wind.z, wind.x) + gauss() * .3, rr(.2, .38) * sc, rr(.08, .14) * sc, rand() < .6 ? 2 : 15, 1, .08 + t * .1); }
+    if (hat) for (let i = 0; i < Math.floor(70 * D); i++) { const t = rand(); dp.set(x, y + 2.05 * sc - t * .35 * sc + gauss() * .06, z).addScaledVector(wind, (.1 + t * .6) * sc).add(_a.set(gauss() * .12, 0, gauss() * .12)); fig.lay(dp, n.set(0, 0, 1), Math.atan2(wind.z, wind.x) + gauss() * .25, rr(.16, .3) * sc, rr(.06, .1) * sc, rand() < .7 ? 2 : 15, 1, .12 + t * .16); }
     return y;
   }
-  const wy = person(9.15, -92.55, 1, true);
+  const wy = person(9.15, -92.55, .84, true); // sized to the picture: from his spot her hat's top is at a fifth of the frame, her hem at .71
   { // the painter three and a half metres down the slope; her feet a fifth of the frame below its centre, she a little right of it
     const vp = places[1].view.p; vp.set(7.43, 0, -89.62); vp.y = walkHeight(vp.x, vp.z) + EYE;
     const dx = 9.15 - vp.x, dz = -92.55 - vp.z, dist = Math.hypot(dx, dz), a = 2.0 * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
@@ -1304,13 +1352,16 @@ function buildHill(D) {
     const lx = fx * ca - rx * sa, lz = fz * ca - rz * sa, el = Math.atan2(wy - vp.y, dist) + 10.6 * Math.PI / 180;
     places[1].view.look.set(vp.x + lx * 10 * Math.cos(el), vp.y + 10 * Math.sin(el), vp.z + lz * 10 * Math.cos(el));
   }
-  // the parasol: a shallow green dome, lit from behind, held up and to the right
-  const px = 9.5, pz = -92.7, py = wy + 2.55;
-  const dome = new THREE.SphereGeometry(.62, 14, 6, 0, TAU, 0, Math.PI * .42); dome.translate(px, py - .2, pz);
-  const stick = new THREE.CylinderGeometry(.015, .015, 1.0, 4); stick.rotateZ(-.25); stick.translate(px - .12, py - .6, pz);
+  // the parasol: a shallow green dome where the picture has it, just above and left of her head, tilted toward him so that its near rim
+  // dips beside her hat and its underside shows, as in the picture
+  const px = 9.15 - .22, pz = -92.55 - .12, py = wy + 1.87;
+  const dome = new THREE.SphereGeometry(.44, 14, 6, 0, TAU, 0, Math.PI * .4); dome.translate(0, -.14, 0);
+  dome.applyMatrix4(new THREE.Matrix4().makeRotationAxis(V(.879, 0, .476), .5)); dome.translate(px, py, pz);
+  const stick = new THREE.CylinderGeometry(.015, .015, .7, 4); stick.rotateZ(-.25); stick.translate(px + .02, py - .38, pz);
   parts.push(dome, stick);
   scatterOn(dome, Math.floor(560 * D), (q, m) => { const under = m.y < .2; fig.lay(q, m, rand() * TAU, rr(.12, .22), rr(.08, .14), under ? (rand() < .6 ? 8 : 7) : (rand() < .5 ? 7 : 6), 0, 0); });
-  person(4.6, -93.6, .58, false);
+  person(9.63, -96.06, .5, true); // the boy: where the picture has him, seven metres along his ray, beyond the crest that hides his legs
+  placeGroup.add(figureQuad(places[1], 9.15, wy, -92.55, 1.9, 2.6)); placeGroup.add(figureQuad(places[1], 9.63, groundHeight(9.63, -96.06), -96.06, 1.1, 1.4));
   const partsGeom = mergeGeometries(parts.map(g => g.toNonIndexed()));
   placeGroup.add(baseMesh(partsGeom, 11, MAT.base));
   placeGroup.add(fig.mesh(MAT.patch));
@@ -1330,7 +1381,9 @@ function buildHill(D) {
   }
   // flat grey base under the cumulus
   for (let i = 0; i < Math.floor(320 * D); i++) { p.set(CX + gauss() * 42, CY - 3 + gauss() * 1.2, CZ + gauss() * 10); cl.lay(p, n.set(0, 1, 0), gauss() * .2, rr(4, 7), rr(1.2, 2), rand() < .6 ? 15 : 12, 4, 5); }
-  const cloudMesh = cl.mesh(MAT.patch); cloudMesh.userData.always = true; placeGroup.add(cloudMesh);
+  // the stroke cloud gives way to the painted one as you come to his spot (the canvas takes the sky there): its own fade uniform
+  const cloudFade = { value: 1 }; places[1].cloudFade = cloudFade;
+  const cloudMesh = cl.mesh(patchMaterial({}, Object.assign({}, places[1].PU, { uFadeK: cloudFade }))); cloudMesh.userData.always = true; placeGroup.add(cloudMesh);
   timings.hill = 1;
 }
 
@@ -2099,7 +2152,14 @@ function goView(i) {
   if (dist < .3) { applyViewNow(i); return; }
   const fromLook = camera.getWorldDirection(V()).multiplyScalar(10).add(start);
   const height = Math.max(start.y, pl.view.p.y, dist > 20 ? 20 : 6) + Math.min(28, dist * .16);
-  const pts = [start, start.clone().lerp(pl.view.p, .15).setY(height), start.clone().lerp(pl.view.p, .8).setY(height), pl.view.p.clone()];
+  // the last stretch is along his own line of sight, from nine metres behind his spot: the picture assembles as one thing as you come down
+  // into it, no part of it ahead of another, instead of the near figure snapping into place last
+  const gaze = pl.painting && !pl.aerial && dist > 14 ? pl.view.look.clone().sub(pl.view.p).normalize() : null;
+  const along = k => { const q = pl.view.p.clone().addScaledVector(gaze, -k); q.y = Math.max(q.y, walkHeight(q.x, q.z) + EYE); return q; }; // his gaze goes up: behind him it would run into the ground
+  const back = gaze ? along(9) : pl.view.p;
+  const pts = [start, start.clone().lerp(back, .15).setY(height), start.clone().lerp(back, .8).setY(height)];
+  if (gaze) pts.push(back, along(3.5));
+  pts.push(pl.view.p.clone());
   travel = { curve: new THREE.CatmullRomCurve3(pts), l0: fromLook, lm: pl.view.p.clone(), l1: pl.view.look.clone(), f0: camera.fov, f1: fitFov(pl), t: 0, dur: clamp(2.2 + dist * .03, 2.4, 7), i };
   velocity.set(0, 0, 0); drifting = false; selectView(i);
 }
@@ -2287,7 +2347,7 @@ function loadPaintings() {
       tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
       tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
       try { const hc = horizonColor(tex.image, P.hz ?? .5); for (const st of pl.stops) { const g = gradeOf(pl, st); st.fogCol.setRGB(clamp(hc.r * g.mul[0] + g.add[0], 0, 1), clamp(hc.g * g.mul[1] + g.add[1], 0, 1), clamp(hc.b * g.mul[2] + g.add[2], 0, 1)); } } catch (e) { console.warn('monet: horizon colour', e); }
-      P.tex = tex; const S = P.own || (P.own = projectorState()); S.tex = tex; S.paintSize.set(tex.image.width, tex.image.height); if (P.ready && !params.has('noproj')) P.on = true;
+      P.tex = tex; const S = P.own || (P.own = projectorState()); S.tex = tex; S.paintSize.set(tex.image.width, tex.image.height); if (P.ready) { buildPlate(P); if (!params.has('noproj')) P.on = true; }
     });
   }
   for (const P of PANELS) texLoader.load(`paintings/orangerie/${P.file}.jpg`, tex => {
@@ -2298,6 +2358,21 @@ function loadPaintings() {
 }
 const PROJ_RES = 1024;
 function makeDepthTarget(w, h) { return new THREE.WebGLRenderTarget(w, h, { depthTexture: new THREE.DepthTexture(w, h, THREE.UnsignedIntType), depthBuffer: true }); }
+// the near map: for each 16 x 16 cell of the depth map, the nearest thing in it, in metres (see haloPoint)
+// It is made in two stages of 4 x 4 minima (a depth map of 1024 -> 256 -> 64), in metres, half float
+const NEAR_DIV = 16;
+function makeNearTarget(w, h, div) { return new THREE.WebGLRenderTarget(Math.ceil(w / div), Math.ceil(h / div), { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false }); }
+const nearPass = (() => {
+  const mk = first => new THREE.ShaderMaterial({ uniforms: { uSrc: { value: null }, uSize: { value: new THREE.Vector2() }, uNF: { value: new THREE.Vector2(.3, 800) } },
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }',
+    fragmentShader: `uniform sampler2D uSrc; uniform vec2 uSize, uNF; varying vec2 vUv;
+float linD(float z) { float n = uNF.x, f = uNF.y; return 2. * n * f / (f + n - (2. * z - 1.) * (f - n)); }
+void main() { vec2 c = floor(vUv * uSize / 4.) * 4.; float m = 1e9;
+  for (int j = 0; j < 4; j++) for (int i = 0; i < 4; i++) { float v = texture2D(uSrc, (c + vec2(float(i), float(j)) + .5) / uSize).r; m = min(m, ${first ? 'linD(v)' : 'v'}); }
+  gl_FragColor = vec4(m, 0., 0., 1.); }`, depthTest: false, depthWrite: false });
+  const mats = [mk(true), mk(false)], scenes = mats.map(m => { const sc = new THREE.Scene(); sc.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m)); return sc; });
+  return { mats, scenes, cam: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1) };
+})();
 // the scene seen from the painter's spot, into the next of the painting's two depth maps (the other may be bound as a texture meanwhile)
 // 'only' = the index of the one place whose meshes (with the ground and the water) are drawn, to keep the pass cheap; the other places
 // are then absent from the map, which paints them as if nothing stood in his way: right at his spot, and harmless elsewhere
@@ -2308,6 +2383,35 @@ function renderProjectorDepth(P, only) {
   renderer.setRenderTarget(rt); renderer.clear(); renderer.render(scene, P.cam); renderer.setRenderTarget(null);
   U.uPxRad.value = savedPx; sky.visible = true; for (const m of hidden) m.visible = true;
   P.own.depth = rt.depthTexture; P.own.depthSize.set(rt.width, rt.height);
+  const mid = P.nt[2], nt = P.nt[P.rtIndex];
+  let NU = nearPass.mats[0].uniforms; NU.uSrc.value = rt.depthTexture; NU.uSize.value.set(rt.width, rt.height); NU.uNF.value.set(P.cam.near, P.cam.far);
+  renderer.setRenderTarget(mid); renderer.render(nearPass.scenes[0], nearPass.cam);
+  NU = nearPass.mats[1].uniforms; NU.uSrc.value = mid.texture; NU.uSize.value.set(mid.width, mid.height);
+  renderer.setRenderTarget(nt); renderer.render(nearPass.scenes[1], nearPass.cam); renderer.setRenderTarget(null);
+  P.own.near = nt.texture; P.own.nearSize.set(nt.width, nt.height);
+}
+// the sky plate: the painting at the near map's size, with the painted sky diffused over every cell that held something near him
+// (within 400 m: the figure, the boats, the trees; not the far hills). The sky reads it where a near thing's outline has moved off the sky
+const halfToFloat = h => { const e = (h >> 10) & 31, f = h & 1023, sg = h & 32768 ? -1 : 1; return e === 0 ? sg * f / 1024 * Math.pow(2, -14) : e === 31 ? (f ? NaN : sg * Infinity) : sg * (1 + f / 1024) * Math.pow(2, e - 15); };
+function buildPlate(P) {
+  if (P.own.plate || !P.tex || !P.nt || !P.own.near) return;
+  const nt = P.nt[P.rtIndex || 0], w = nt.width, h = nt.height, near = new Uint16Array(w * h * 4);
+  try { renderer.readRenderTargetPixels(nt, 0, 0, w, h, near); } catch (e) { console.warn('monet: no plate', e); return; }
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const cx = cv.getContext('2d'); cx.drawImage(P.tex.image, 0, 0, w, h);
+  // cells: 1 sky (fixed), 2 something near him on the sky's side of the horizon (to be filled from the sky round it), 0 the ground below (left as painted)
+  const px = cx.getImageData(0, 0, w, h).data, col = new Float32Array(w * h * 3), kind = new Uint8Array(w * h), S = P.own, dir = V(); let n = 0; const mean = [0, 0, 0];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, j = ((h - 1 - y) * w + x) * 4; // the map's rows run upward, the image's downward
+    dir.copy(S.F).addScaledVector(S.R, ((x + .5) / w - .5) * 2 * S.tan.x).addScaledVector(S.U, ((y + .5) / h - .5) * 2 * S.tan.y).normalize();
+    kind[i] = halfToFloat(near[i * 4]) > 400 ? 1 : dir.y > -.035 ? 2 : 0;
+    for (let c = 0; c < 3; c++) col[i * 3 + c] = px[j + c] / 255; if (kind[i] === 1) { n++; for (let c = 0; c < 3; c++) mean[c] += col[i * 3 + c]; } }
+  if (n) for (let c = 0; c < 3; c++) mean[c] /= n;
+  for (let i = 0; i < w * h; i++) if (kind[i] === 2) for (let c = 0; c < 3; c++) col[i * 3 + c] = mean[c];
+  for (let it = 0; it < 100; it++) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (kind[i] !== 2) continue;
+    let k = 0; const a = [0, 0, 0]; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (!kind[j]) continue; k++; for (let c = 0; c < 3; c++) a[c] += col[j * 3 + c]; }
+    if (k) for (let c = 0; c < 3; c++) col[i * 3 + c] = a[c] / k; }
+  const data = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(clamp(col[i * 3 + c], 0, 1) * 255); data[i * 4 + 3] = 255; }
+  const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = t.magFilter = THREE.LinearFilter; t.needsUpdate = true;
+  P.own.plate = t;
 }
 function buildProjectors() {
   for (const g of [placeGroup, waterGroup]) for (const m of g.children) m.visible = true;
@@ -2315,7 +2419,7 @@ function buildProjectors() {
     if (!P.cam) {
       const w = P.aspect >= 1 ? PROJ_RES : Math.round(PROJ_RES * P.aspect), h = P.aspect >= 1 ? Math.round(PROJ_RES / P.aspect) : PROJ_RES;
       P.cam = new THREE.PerspectiveCamera(v.fov, P.aspect, .3, 800);
-      P.rt = [makeDepthTarget(w, h), makeDepthTarget(w, h)];
+      P.rt = [makeDepthTarget(w, h), makeDepthTarget(w, h)]; P.nt = [makeNearTarget(w, h, NEAR_DIV), makeNearTarget(w, h, NEAR_DIV), makeNearTarget(w, h, 4)];
     }
     P.cam.position.copy(v.p); P.cam.fov = v.fov; P.cam.updateProjectionMatrix(); P.cam.lookAt(v.look); P.cam.updateMatrixWorld();
     // a boat that sits in his frame stays moored where he painted it; the others sail on
@@ -2326,12 +2430,12 @@ function buildProjectors() {
     const rot = new THREE.Matrix4().extractRotation(P.cam.matrixWorld);
     S.R.set(1, 0, 0).applyMatrix4(rot); S.U.set(0, 1, 0).applyMatrix4(rot); S.F.set(0, 0, -1).applyMatrix4(rot);
     S.tan.set(Math.tan(v.fov * Math.PI / 360) * P.aspect, Math.tan(v.fov * Math.PI / 360));
-    renderProjectorDepth(P);
+    renderProjectorDepth(P); buildPlate(P);
     if (P.tex && !params.has('noproj')) P.on = true;
   }
 }
 // every material takes the projector of the place the eye is in, weighted by how much it is that place; none while the place has no canvas
-function projectorOn(pl, w) { const P = pl.painting; return P && P.on && P.own.depth ? sstep(w, .45, .75) * (P.reveal ?? 1) : 0; }
+function projectorOn(pl, w) { const P = pl.painting; return P && P.on && P.own.depth && P.own.plate ? sstep(w, .45, .75) * (P.reveal ?? 1) : 0; }
 function syncProjectors() {
   const dom = places[placeIndex], on = projectorOn(dom, placeWeights()[placeIndex]);
   const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
@@ -2339,7 +2443,7 @@ function syncProjectors() {
     if (!T) continue;
     if (!on) { T.uProjOn.value = 0; continue; }
     const S = dom.painting.own;
-    T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
+    T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
     T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan);
     if (T !== dom.PU) { T.uGradeMul.value.copy(dom.PU.uGradeMul.value); T.uGradeAdd.value.copy(dom.PU.uGradeAdd.value); }
     T.uProjOn.value = on;
@@ -2406,6 +2510,7 @@ function update(dt) {
   const reveal = gate * sstep(d7, 8, 30); // 1 = still in the fog, 0 = arrived
   U.uFogNear.value *= 1 - reveal * .5; U.uFogFar.value *= 1 - reveal * .62;
   places[6].painting.reveal = 1 - reveal;
+  if (places[1].cloudFade) places[1].cloudFade.value = 1 - (placeIndex === 1 ? projectorOn(places[1], placeWeights()[1]) : 0) * (1 - sstep(cp.distanceTo(places[1].view.p), 8, 18));
   syncProjectors(); updateOverlay();
   const high = camera.position.y > 60; if (high !== aerialMode) { aerialMode = high; renderer.setPixelRatio(Math.min(devicePixelRatio, high ? 1 : DPR_CAP[qualityName])); }
   // a place wholly beyond the fog is not drawn
@@ -2425,7 +2530,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm13-spot', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm14-figure', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
