@@ -1071,3 +1071,25 @@ a metre off the Parasol spot trades the ghost woman for a soft sky patch. Bench 
 The pond's bridge still parts from its painting on the far willows when the eye moves (the painted deck lands on the far bank, a
 geometry mismatch, not the dome). The haystacks double on the ground behind them, the intended dissolve stretching the canvas.
 Lifted higher (4 m and up) the canvas dissolves as designed and the world in the picture's key remains.
+
+### Progress · M17b — the fill (fix: "the Parasol sky patch and the diagonal stroke")
+
+**What was wrong.** Two things. The fill's content was the sky mirrored down over the place; at the Parasol nearly all the sky is
+stroke clouds 40–100 m off, which the plate counted as "not sky", so there was almost nothing to mirror from, the copies landed on the
+figure (the diagonal stroke was her parasol's handle, reflected), and the plate under it was one grey. And the hill counted as a near
+thing, so its halo lifted a band of fill along the whole horizon, with no sky beside it to draw on.
+
+**What changed.** No copies of the picture at all: the fill is the world's own sky in the plate's key — the painted sky's colour
+diffused over the place, carrying the world's light and strokes — the same rule the world outside the frame follows, so nothing of
+the thing can come with it and the fill reads soft beside the canvas, as the dissolve does. Only what stands above the horizon within
+30 m casts a halo, which now reaches eight cells so a painted veil or handle lies inside it; everything outside every halo counts as
+sky, the stroke clouds and the far trees included, and they keep the picture. The plate takes each filled cell's colour from the
+nearest sky cell and smooths it a little, instead of seeding from the top strip and smoothing to one average. The sky-edge maps
+for the mirror are gone. Build `m17-off-the-spot`.
+
+**Verified.** `fly-m17b.jpg`: the Parasol lifted and walked a metre, the pond lifted and at 4 m, Argenteuil, the poplars, Rouen.
+The spots unchanged (mean difference .03 at the Parasol; .34 at the pond, where the water's reflection now fills a little, since the
+reflected eye is 2.3 m from the spot).
+
+**Still visible.** The filled sky is a shade paler or greyer than the painted sky beside it, a soft patch where the figure or the
+bridge's top stood; it has the world's strokes, not the picture's.

@@ -810,20 +810,17 @@ void main(){
     // from anywhere else the thing has moved off it (the figure's own quad carries its outline, see FIGURE_FRAG), and what is there is the
     // sky behind, which the picture does not have. Inside the outline it is always filled; in the halo (see buildPlate) as the eye leaves
     // the spot, in proportion to how near the thing is: a lift of 4 % of its distance begins it, 14 % completes it. The halo is soft, and
-    // reaches past the outline, because a painted thing spills past the depth map's silhouette of it (the bridge's top rail)
+    // reaches past the outline, because a painted thing spills past the depth map's silhouette of it (the bridge's top rail). Things
+    // farther than 30 m (the stroke clouds, the far trees) hardly move for a lift of a metre or two, and keep the picture
     vec4 H = texture2D(uPaintHalo, puv); float ndH = max(H.g * 120., .5);
-    float fill = clear < .5 ? 1. : H.r * smoothstep(.04, .14, dist / ndH);
+    float fill = H.r * smoothstep(.04, .14, dist / ndH);
     if (uDbg > 4.5) { gl_FragColor = vec4(fill, ndH / 20., clear, 1.); return; } // ?dbg=5: red the filled sky, green the halo's depth, blue clear
     if (fill > 0. && conf > 0.) {
-      // what fills it: the sky above (failing that, beside), mirrored down over the place about its own edge, so the seam is continuous and the
-      // clouds, the willow tops, run on through; the plate (the sky's colour diffused over the place) where the mirror lands on no sky
-      // (a thin sky above reflects back onto the place: there the sky beside serves; each copy counts by how squarely it lands on sky)
-      vec2 uvV = mirr(vec2(puv.x, 2. * H.b - puv.y + .01)), uvH = mirr(vec2(2. * H.a - puv.x, puv.y));
-      float okV = step(.01, H.b) * smoothstep(.3, .7, texture2D(uPaintPlate, uvV).a), okH = step(.01, H.a) * smoothstep(.3, .7, texture2D(uPaintPlate, uvH).a);
-      vec3 fillC = texture2D(uPaintPlate, puv).rgb; // the plate's colour, and over it the copies read a little soft
-      fillC = mix(fillC, texture2D(uPainting, uvH, bias + 1.5).rgb, okH * .8);
-      fillC = mix(fillC, texture2D(uPainting, uvV, bias + 1.5).rgb, okV * .8);
-      pc = mix(pc, fillC * uGradeMul + uGradeAdd, fill);
+      // what fills it: the world's own sky in the plate's key (the painted sky's colour diffused over the place, see buildPlate), carrying
+      // the world's light and strokes — as the world outside the frame does. Nothing of the picture is copied, so nothing of the thing can
+      // come with it; the fill reads soft beside the canvas, as the dissolve does
+      vec3 key = texture2D(uPaintPlate, puv).rgb * uGradeMul + uGradeAdd;
+      pc = mix(pc, applyPaint(inKey(fin, key, .5, .6, 1.45), O, .5), fill);
     }
     fin = mix(fin, pc, conf);
   }
@@ -2485,8 +2482,9 @@ function renderProjectorDepth(P, only) {
 }
 // the sky plate: the painting at the near map's size, with the painted sky diffused over every cell that held something near him
 // (within 400 m: the figure, the boats, the trees; not the far hills). The sky reads it where a near thing's outline has moved off the sky.
-// With it the halo map: round everything nearer than 60 m a weight that is 1 over the thing and fades out four cells past it, the depth
-// of the nearest such thing, and where the sky is from here (the first sky row above, the nearest sky column beside) for the mirror
+// With it the halo map: round everything nearer than 30 m that stands above the horizon (the ground below it never uncovers the sky) a
+// weight that is 1 over the thing and fades out eight cells past it, and the depth of the nearest such thing. 'Sky' here is whatever lies
+// outside every halo: the painted sky, but also the stroke clouds and the far trees, which keep the picture
 const halfToFloat = h => { const e = (h >> 10) & 31, f = h & 1023, sg = h & 32768 ? -1 : 1; return e === 0 ? sg * f / 1024 * Math.pow(2, -14) : e === 31 ? (f ? NaN : sg * Infinity) : sg * (1 + f / 1024) * Math.pow(2, e - 15); };
 function buildPlate(P) {
   if (P.own.plate || !P.tex || !P.nt || !P.own.near) return;
@@ -2497,30 +2495,27 @@ function buildPlate(P) {
   const px = cx.getImageData(0, 0, w, h).data, col = new Float32Array(w * h * 3), kind = new Uint8Array(w * h), S = P.own, dir = V(); let n = 0; const mean = [0, 0, 0];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, j = ((h - 1 - y) * w + x) * 4; // the map's rows run upward, the image's downward
     dir.copy(S.F).addScaledVector(S.R, ((x + .5) / w - .5) * 2 * S.tan.x).addScaledVector(S.U, ((y + .5) / h - .5) * 2 * S.tan.y).normalize();
-    kind[i] = halfToFloat(near[i * 4]) > 400 ? 1 : dir.y > -.035 ? 2 : 0;
+    kind[i] = dir.y > -.035 ? 2 : 0;
     for (let c = 0; c < 3; c++) col[i * 3 + c] = px[j + c] / 255; }
-  // the halo: for each cell the nearest cell holding something within 60 m, and how far off it is; a cell in the halo is not sky
-  const nm = new Float32Array(w * h), halo = new Float32Array(w * h * 2); for (let i = 0; i < w * h; i++) nm[i] = halfToFloat(near[i * 4]);
+  // the halo: for each cell the nearest cell above the horizon holding something within 30 m, and how far off it is; outside every halo is sky
+  const nm = new Float32Array(w * h), halo = new Float32Array(w * h * 2); for (let i = 0; i < w * h; i++) nm[i] = kind[i] ? halfToFloat(near[i * 4]) : 800;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; let best = 1e9, nd = 800;
-    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (nm[j] >= 60) continue; const dd = Math.hypot(dx, dy); if (dd < best || (dd === best && nm[j] < nd)) { best = dd; nd = nm[j]; } }
-    halo[i * 2] = 1 - sstep(best, 1.5, 5.5); halo[i * 2 + 1] = nd; if (kind[i] === 1 && halo[i * 2] > 0) kind[i] = 2; }
+    for (let dy = -9; dy <= 9; dy++) for (let dx = -9; dx <= 9; dx++) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (nm[j] >= 30) continue; const dd = Math.hypot(dx, dy); if (dd < best || (dd === best && nm[j] < nd)) { best = dd; nd = nm[j]; } }
+    halo[i * 2] = 1 - sstep(best, 1.5, 8); halo[i * 2 + 1] = nd; if (halo[i * 2] === 0 && kind[i] === 2) kind[i] = 1; }
   for (let i = 0; i < w * h; i++) if (kind[i] === 1) { n++; for (let c = 0; c < 3; c++) mean[c] += col[i * 3 + c]; }
   if (n) for (let c = 0; c < 3; c++) mean[c] /= n;
-  // each cell to be filled starts from the sky straight above it (the mean where there is none), then the fill is smoothed
-  for (let x = 0; x < w; x++) { let last = null; for (let y = h - 1; y >= 0; y--) { const i = y * w + x; if (kind[i] === 1) last = i; else if (kind[i] === 2) for (let c = 0; c < 3; c++) col[i * 3 + c] = last === null ? mean[c] : col[last * 3 + c]; } }
-  for (let it = 0; it < 300; it++) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (kind[i] !== 2) continue;
+  // each cell to be filled takes the nearest sky cell's colour (the mean where there is none within reach), then the fill is smoothed a little,
+  // so it keeps the colour of the sky it borders rather than one average of the whole
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (kind[i] !== 2) continue; let best = 1e9, src = -1;
+    for (let dy = -16; dy <= 16; dy++) for (let dx = -16; dx <= 16; dx++) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (kind[j] !== 1) continue; const dd = dx * dx + dy * dy; if (dd < best) { best = dd; src = j; } }
+    for (let c = 0; c < 3; c++) col[i * 3 + c] = src < 0 ? mean[c] : col[src * 3 + c]; }
+  for (let it = 0; it < 24; it++) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (kind[i] !== 2) continue;
     let k = 0; const a = [0, 0, 0]; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (!kind[j]) continue; k++; for (let c = 0; c < 3; c++) a[c] += col[j * 3 + c]; }
     if (k) for (let c = 0; c < 3; c++) col[i * 3 + c] = a[c] / k; }
-  const data = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(clamp(col[i * 3 + c], 0, 1) * 255); data[i * 4 + 3] = kind[i] === 1 ? 255 : 0; } // alpha: sky
+  const data = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(clamp(col[i * 3 + c], 0, 1) * 255); data[i * 4 + 3] = 255; }
   const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = t.magFilter = THREE.LinearFilter; t.needsUpdate = true;
   P.own.plate = t;
-  // where the sky is from each cell: the first sky row above it in its column, the nearest sky column in its row (0 where there is none;
-  // a column with no sky above takes its neighbour's, so the map stays smooth between cells)
-  const skyV = new Float32Array(w * h), skyU = new Float32Array(w * h);
-  for (let x = 0; x < w; x++) { let last = -1; for (let y = h - 1; y >= 0; y--) { const i = y * w + x; if (kind[i] === 1) last = y; skyV[i] = last < 0 ? 0 : (last + .5) / h; } }
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; let best = 1e9, bx = -1; for (let X = 0; X < w; X++) { if (kind[y * w + X] !== 1) continue; const dd = Math.abs(X - x); if (dd < best) { best = dd; bx = X; } } skyU[i] = bx < 0 ? 0 : (bx + .5) / w; }
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (skyV[i] > 0) continue; for (let r = 1; r < w; r++) { const a = x - r, b = x + r; if (a >= 0 && skyV[y * w + a] > 0) { skyV[i] = skyV[y * w + a]; break; } if (b < w && skyV[y * w + b] > 0) { skyV[i] = skyV[y * w + b]; break; } } }
-  const hd = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { hd[i * 4] = Math.round(halo[i * 2] * 255); hd[i * 4 + 1] = Math.round(clamp(halo[i * 2 + 1] / 120, 0, 1) * 255); hd[i * 4 + 2] = Math.round(skyV[i] * 255); hd[i * 4 + 3] = Math.round(skyU[i] * 255); }
+  const hd = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { hd[i * 4] = Math.round(halo[i * 2] * 255); hd[i * 4 + 1] = Math.round(clamp(halo[i * 2 + 1] / 120, 0, 1) * 255); hd[i * 4 + 2] = 0; hd[i * 4 + 3] = 255; }
   const ht = new THREE.DataTexture(hd, w, h, THREE.RGBAFormat); ht.minFilter = ht.magFilter = THREE.LinearFilter; ht.needsUpdate = true;
   P.own.halo = ht;
 }
