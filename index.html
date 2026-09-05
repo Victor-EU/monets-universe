@@ -492,7 +492,7 @@ float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); re
 vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
 uniform sampler2D uPaint, uPaintW; uniform float uPxRad, uDbg;
 // the painting, projected from where Monet stood: its texture, the depth map seen from there, the projector matrix (world -> canvas uv, depth)
-uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate; uniform mat4 uProjM; uniform vec2 uNearSize; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
+uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; uniform mat4 uProjM; uniform vec2 uNearSize; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
 vec2 mirr(vec2 uv) { return 1. - abs(fract(uv * .5) * 2. - 1.); }
 // canvas coordinates of a direction from the painter, by angle: continuous all the way round, and the same as the projection near the frame
@@ -806,16 +806,24 @@ void main(){
     float dist = distance(cameraPosition, uProjPos), here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
     float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
     vec3 pc = texture2D(uPainting, puv, bias).rgb * uGradeMul + uGradeAdd;
-    // the sky inside the outline of something near him (her, a mast), and just around it: from his spot it is the picture; from anywhere
-    // else the thing has moved off it (the figure's own quad carries its outline, see FIGURE_FRAG), and what is there is the sky behind,
-    // which the picture does not have. It takes the painted sky beside and above the outline: inside always, around it as the eye leaves
-    // the spot, in proportion to how near the thing is
-    float fill = clear < .5 ? 1. : (nd > .5 && nd < 400. ? smoothstep(.1, .4, dist / nd) : 0.);
-    if (uDbg > 4.5) { gl_FragColor = vec4(fill, nd / 20., clear, 1.); return; } // ?dbg=5: red the filled sky, green the near map, blue clear
-    if (fill > 0. && conf > 0.) { // the plate: the painted sky diffused over what stood in it; with the detail of the clear sky beside it laid over
-      vec2 uv2 = puv + vec2(-.3, 0.); if (texture2D(uPaintNear, mirr(uv2)).r < 400.) uv2 = puv + vec2(.3, 0.);
-      vec3 detail = texture2D(uPainting, mirr(uv2), bias).rgb - textureLod(uPainting, mirr(uv2), 5.).rgb;
-      pc = mix(pc, (texture2D(uPaintPlate, puv).rgb + detail * .8) * uGradeMul + uGradeAdd, fill);
+    // the sky inside the outline of something near him (her, a mast, the bridge), and in a halo round it: from his spot it is the picture;
+    // from anywhere else the thing has moved off it (the figure's own quad carries its outline, see FIGURE_FRAG), and what is there is the
+    // sky behind, which the picture does not have. Inside the outline it is always filled; in the halo (see buildPlate) as the eye leaves
+    // the spot, in proportion to how near the thing is: a lift of 4 % of its distance begins it, 14 % completes it. The halo is soft, and
+    // reaches past the outline, because a painted thing spills past the depth map's silhouette of it (the bridge's top rail)
+    vec4 H = texture2D(uPaintHalo, puv); float ndH = max(H.g * 120., .5);
+    float fill = clear < .5 ? 1. : H.r * smoothstep(.04, .14, dist / ndH);
+    if (uDbg > 4.5) { gl_FragColor = vec4(fill, ndH / 20., clear, 1.); return; } // ?dbg=5: red the filled sky, green the halo's depth, blue clear
+    if (fill > 0. && conf > 0.) {
+      // what fills it: the sky above (failing that, beside), mirrored down over the place about its own edge, so the seam is continuous and the
+      // clouds, the willow tops, run on through; the plate (the sky's colour diffused over the place) where the mirror lands on no sky
+      // (a thin sky above reflects back onto the place: there the sky beside serves; each copy counts by how squarely it lands on sky)
+      vec2 uvV = mirr(vec2(puv.x, 2. * H.b - puv.y + .01)), uvH = mirr(vec2(2. * H.a - puv.x, puv.y));
+      float okV = step(.01, H.b) * smoothstep(.3, .7, texture2D(uPaintPlate, uvV).a), okH = step(.01, H.a) * smoothstep(.3, .7, texture2D(uPaintPlate, uvH).a);
+      vec3 fillC = texture2D(uPaintPlate, puv).rgb; // the plate's colour, and over it the copies read a little soft
+      fillC = mix(fillC, texture2D(uPainting, uvH, bias + 1.5).rgb, okH * .8);
+      fillC = mix(fillC, texture2D(uPainting, uvV, bias + 1.5).rgb, okV * .8);
+      pc = mix(pc, fillC * uGradeMul + uGradeAdd, fill);
     }
     fin = mix(fin, pc, conf);
   }
@@ -825,8 +833,8 @@ void main(){
 
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 // each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
-function projectorState() { return { tex: null, depth: null, near: null, plate: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
-function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
+function projectorState() { return { tex: null, depth: null, near: null, plate: null, halo: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
@@ -2476,7 +2484,9 @@ function renderProjectorDepth(P, only) {
   P.own.near = nt.texture; P.own.nearSize.set(nt.width, nt.height);
 }
 // the sky plate: the painting at the near map's size, with the painted sky diffused over every cell that held something near him
-// (within 400 m: the figure, the boats, the trees; not the far hills). The sky reads it where a near thing's outline has moved off the sky
+// (within 400 m: the figure, the boats, the trees; not the far hills). The sky reads it where a near thing's outline has moved off the sky.
+// With it the halo map: round everything nearer than 60 m a weight that is 1 over the thing and fades out four cells past it, the depth
+// of the nearest such thing, and where the sky is from here (the first sky row above, the nearest sky column beside) for the mirror
 const halfToFloat = h => { const e = (h >> 10) & 31, f = h & 1023, sg = h & 32768 ? -1 : 1; return e === 0 ? sg * f / 1024 * Math.pow(2, -14) : e === 31 ? (f ? NaN : sg * Infinity) : sg * (1 + f / 1024) * Math.pow(2, e - 15); };
 function buildPlate(P) {
   if (P.own.plate || !P.tex || !P.nt || !P.own.near) return;
@@ -2488,15 +2498,31 @@ function buildPlate(P) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x, j = ((h - 1 - y) * w + x) * 4; // the map's rows run upward, the image's downward
     dir.copy(S.F).addScaledVector(S.R, ((x + .5) / w - .5) * 2 * S.tan.x).addScaledVector(S.U, ((y + .5) / h - .5) * 2 * S.tan.y).normalize();
     kind[i] = halfToFloat(near[i * 4]) > 400 ? 1 : dir.y > -.035 ? 2 : 0;
-    for (let c = 0; c < 3; c++) col[i * 3 + c] = px[j + c] / 255; if (kind[i] === 1) { n++; for (let c = 0; c < 3; c++) mean[c] += col[i * 3 + c]; } }
+    for (let c = 0; c < 3; c++) col[i * 3 + c] = px[j + c] / 255; }
+  // the halo: for each cell the nearest cell holding something within 60 m, and how far off it is; a cell in the halo is not sky
+  const nm = new Float32Array(w * h), halo = new Float32Array(w * h * 2); for (let i = 0; i < w * h; i++) nm[i] = halfToFloat(near[i * 4]);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; let best = 1e9, nd = 800;
+    for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (nm[j] >= 60) continue; const dd = Math.hypot(dx, dy); if (dd < best || (dd === best && nm[j] < nd)) { best = dd; nd = nm[j]; } }
+    halo[i * 2] = 1 - sstep(best, 1.5, 5.5); halo[i * 2 + 1] = nd; if (kind[i] === 1 && halo[i * 2] > 0) kind[i] = 2; }
+  for (let i = 0; i < w * h; i++) if (kind[i] === 1) { n++; for (let c = 0; c < 3; c++) mean[c] += col[i * 3 + c]; }
   if (n) for (let c = 0; c < 3; c++) mean[c] /= n;
-  for (let i = 0; i < w * h; i++) if (kind[i] === 2) for (let c = 0; c < 3; c++) col[i * 3 + c] = mean[c];
-  for (let it = 0; it < 100; it++) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (kind[i] !== 2) continue;
+  // each cell to be filled starts from the sky straight above it (the mean where there is none), then the fill is smoothed
+  for (let x = 0; x < w; x++) { let last = null; for (let y = h - 1; y >= 0; y--) { const i = y * w + x; if (kind[i] === 1) last = i; else if (kind[i] === 2) for (let c = 0; c < 3; c++) col[i * 3 + c] = last === null ? mean[c] : col[last * 3 + c]; } }
+  for (let it = 0; it < 300; it++) for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (kind[i] !== 2) continue;
     let k = 0; const a = [0, 0, 0]; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const X = x + dx, Y = y + dy; if (X < 0 || Y < 0 || X >= w || Y >= h) continue; const j = Y * w + X; if (!kind[j]) continue; k++; for (let c = 0; c < 3; c++) a[c] += col[j * 3 + c]; }
     if (k) for (let c = 0; c < 3; c++) col[i * 3 + c] = a[c] / k; }
-  const data = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(clamp(col[i * 3 + c], 0, 1) * 255); data[i * 4 + 3] = 255; }
+  const data = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { for (let c = 0; c < 3; c++) data[i * 4 + c] = Math.round(clamp(col[i * 3 + c], 0, 1) * 255); data[i * 4 + 3] = kind[i] === 1 ? 255 : 0; } // alpha: sky
   const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat); t.colorSpace = THREE.SRGBColorSpace; t.minFilter = t.magFilter = THREE.LinearFilter; t.needsUpdate = true;
   P.own.plate = t;
+  // where the sky is from each cell: the first sky row above it in its column, the nearest sky column in its row (0 where there is none;
+  // a column with no sky above takes its neighbour's, so the map stays smooth between cells)
+  const skyV = new Float32Array(w * h), skyU = new Float32Array(w * h);
+  for (let x = 0; x < w; x++) { let last = -1; for (let y = h - 1; y >= 0; y--) { const i = y * w + x; if (kind[i] === 1) last = y; skyV[i] = last < 0 ? 0 : (last + .5) / h; } }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; let best = 1e9, bx = -1; for (let X = 0; X < w; X++) { if (kind[y * w + X] !== 1) continue; const dd = Math.abs(X - x); if (dd < best) { best = dd; bx = X; } } skyU[i] = bx < 0 ? 0 : (bx + .5) / w; }
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const i = y * w + x; if (skyV[i] > 0) continue; for (let r = 1; r < w; r++) { const a = x - r, b = x + r; if (a >= 0 && skyV[y * w + a] > 0) { skyV[i] = skyV[y * w + a]; break; } if (b < w && skyV[y * w + b] > 0) { skyV[i] = skyV[y * w + b]; break; } } }
+  const hd = new Uint8Array(w * h * 4); for (let i = 0; i < w * h; i++) { hd[i * 4] = Math.round(halo[i * 2] * 255); hd[i * 4 + 1] = Math.round(clamp(halo[i * 2 + 1] / 120, 0, 1) * 255); hd[i * 4 + 2] = Math.round(skyV[i] * 255); hd[i * 4 + 3] = Math.round(skyU[i] * 255); }
+  const ht = new THREE.DataTexture(hd, w, h, THREE.RGBAFormat); ht.minFilter = ht.magFilter = THREE.LinearFilter; ht.needsUpdate = true;
+  P.own.halo = ht;
 }
 function buildProjectors() {
   for (const g of [placeGroup, waterGroup]) for (const m of g.children) m.visible = true;
@@ -2528,7 +2554,7 @@ function syncProjectors() {
     if (!T) continue;
     if (!on) { T.uProjOn.value = 0; continue; }
     const S = dom.painting.own;
-    T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
+    T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uPaintHalo.value = S.halo; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
     T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan);
     if (T !== dom.PU) { T.uGradeMul.value.copy(dom.PU.uGradeMul.value); T.uGradeAdd.value.copy(dom.PU.uGradeAdd.value); }
     T.uProjOn.value = on;
@@ -2616,7 +2642,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm16b-hours', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm17-off-the-spot', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },

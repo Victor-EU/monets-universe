@@ -1042,3 +1042,32 @@ the Haystacks the dial reads End of summer, `]` gives Sunset and the field goes 
 re-bases to Full sun and the Haystacks field returns to end of summer.
 
 **Still visible.** A teleport (`monet.at`, the `?s=` param) snaps the left place back instead of easing, since it runs with dt 0.
+
+### Progress · M17 — the picture off the spot (fix: "in fly mode the picture breaks")
+
+**What was wrong.** The painting is thrown from Monet's spot onto two things: the world's geometry, and the sky dome wherever nothing
+stood in his view. Lift the eye 1.6 m (flight) and the geometry moves down in the view while the dome does not, so every near thing
+the painting had put on the dome stayed where it was and appeared twice: the pond's bridge, the Parasol figure, the Argenteuil bridge
+and masts, the poplars, the cathedral's top. At the pond the whole top rail was on the dome, because the world's bridge is lower than
+the painted one from the spot (the painted deck sits ~1.5 m higher, the top rail ~4° above the trellis; matching it would need a
+taller bridge with ramps — not done). The dome already had a fill for this (the plate) but it began only at a tenth of the thing's
+distance, and its near map reached one cell, so a painted outline spilling past the depth silhouette counted as clear sky.
+
+**What changed.** With the plate, a halo map (`uPaintHalo`) is built once per painting at the near map's size: round everything nearer
+than 60 m a weight that is 1 over the thing and fades out 1.5–5.5 cells past it, the depth of the nearest such thing, and where the
+sky is from each cell (the first sky row above, the nearest sky column beside). The dome's fill is the halo times the eye's offset
+over that depth (4 % begins it, 14 % completes it), so it has no hard edge; inside a thing's own depth silhouette it is 1 as before.
+What fills it: the sky above (or beside) mirrored down about its own edge, read a little soft, at .8 over the plate's colour, each
+copy weighted by how squarely it lands on sky (the plate's alpha marks sky); the plate itself now seeds each filled cell from the sky
+straight above it and smooths 300 passes. Build `m17-off-the-spot`.
+
+**Verified.** `fly-m17.jpg`: the pond, the Parasol, Argenteuil and the poplars lifted 1.6 m, before and after; the pond at 4 m; the
+spots unchanged (mean pixel difference .25 at the pond, .02 at the Parasol); a metre's walk off the pond spot unchanged (.6);
+a metre off the Parasol spot trades the ghost woman for a soft sky patch. Bench at DPR 2, previous → new: pond 20.1 → 18.2, parasol
+17.5 → 13.3, argenteuil 16.3 → 17.3, poplars 16.0 → 15.5, haystacks 18.3 → 18.8, rouen 18.8 → 17.9, sunrise 14.0 → 11.7, orangerie
+16.5 → 13.0, aerial 10.2 → 10.3 ms (this session's machine runs slower than M16's table; the two runs are within noise).
+
+**Still visible.** At the Parasol, off the spot, the filled sky is a soft patch with a dark diagonal stroke from the mirrored copy.
+The pond's bridge still parts from its painting on the far willows when the eye moves (the painted deck lands on the far bank, a
+geometry mismatch, not the dome). The haystacks double on the ground behind them, the intended dissolve stretching the canvas.
+Lifted higher (4 m and up) the canvas dissolves as designed and the world in the picture's key remains.
