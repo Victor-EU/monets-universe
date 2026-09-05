@@ -1122,3 +1122,18 @@ patches 258 379 → 260 229 (the extra lily band).
 
 **Still visible.** The arch is steep — a 2 m rise over 15 m, ending in a .3 m step at each bank. Positions along the promenade (`?s=`)
 beyond the pond have shifted by about 4 m with the new crossing.
+
+### Progress · M18b — the bridge's ends (fix: "smooth the bridge ends into the banks")
+
+**What was wrong.** The deck ended .5 m above the water at x ±7.6 while the bank there lies at about .3, a step of .2 m, and for its
+last two metres over the bank the deck hung in the air.
+
+**What changed.** The terrain itself carries the abutments (`bridgeAbutment`, in `terrainHeight`, so the height grid, the grass, the
+walk height and the shoreline all follow): set back from the water's edge (from .6 to 2.2 m inland), a shoulder rises under the
+deck's last stretch to its underside, and from each end a ramp comes down to the bank over 4 m; both fade out 1.4–3 m from the
+bridge's line. A first version rose from the water's edge itself and stood 1.3 m tall inside the shore band, which the pond paints as
+bare earth — two dirt mounds beside the bridge; set back, the shoulders are low and grassy. Build `m18b-abutments`.
+
+**Verified.** Walk height along the crossing at z .4: the deck 1.95 m at x ±4, .80 at ±7, .55 at ±7.5; the bank beyond .49–.50 at
+±8, easing to .32–.5 by ±11 — no step. Frames from the east bank, the deck's end, the eastern approach, the spot and the air.
+The spot's stroke layout reshuffled with the terrain (the scatter is seeded, the terrain feeds it), the composition unchanged.
