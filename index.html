@@ -1638,7 +1638,7 @@ function buildHaystacks(D) {
   const gp = gg.getAttribute('position');
   for (let i = 0; i < gp.count; i++) gp.setY(i, groundHeight(gp.getX(i), gp.getZ(i)));
   gg.computeVertexNormals();
-  placeGroup.add(baseMesh(gg, q => q.x < -94 ? 19 : pathDist(q.x, q.z) < 1.6 ? 10 : 9, MAT.base));
+  placeGroup.add(baseMesh(gg, q => q.x < -94 ? 17 : pathDist(q.x, q.z) < 1.6 ? 10 : 9, MAT.base));
   // stubble: short upright strokes, the field's colour per season
   const ground = new Patches();
   for (let i = 0; i < Math.floor(10800 * D); i++) {
@@ -1650,6 +1650,13 @@ function buildHaystacks(D) {
     const pal = path ? (rand() < .8 ? 10 : 9) : rc < .55 ? 9 : rc < .85 ? 16 : rc < .94 ? 17 : 10;
     if (rand() < .55 && !path) { f.set(rand() - .5, 0, rand() - .5); ground.stand(p.setY(y + .12 * k), f, rr(.05, .09) * k, rr(.14, .32) * k, pal, 0, 0, .3, null, n); }
     else ground.lay(p, n, rand() * TAU, rr(.35, .7) * k, rr(.14, .26) * k, pal, 0, 0);
+  }
+  // the west hills: green-grey with the haze's violet in it, so from the spot they sit back and from the air they are a painted hillside,
+  // not a violet flat; greener toward the plane's edge, where the world's own ground takes over
+  for (let i = 0; i < Math.floor(1600 * D); i++) {
+    const x = rr(-120, -93), z = rr(-345, -215); const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
+    const k = sizeAt(p), t = sstep(-x, 96, 120), rc = rand();
+    ground.lay(p, n, rand() * TAU, rr(.9, 1.7) * k, rr(.3, .5) * k, rc < .3 + t * .3 ? 9 : rc < .55 + t * .3 ? 17 : rc < .88 ? 19 : 7, 0, 0);
   }
   placeGroup.add(ground.mesh(MAT.patch));
   // the stacks: a cone on a drum, heavily patched; the lit side warm, the shadow side cool, the rim glowing
@@ -1706,7 +1713,7 @@ function buildRouen(D) {
     ground.lay(p, n, rand() * TAU, rr(.5, 1.0) * k, rr(.2, .36) * k, r < .55 ? 12 : r < .8 ? 10 : r < .93 ? 4 : 14, 0, 0);
   }
   for (let i = 0; i < Math.floor(1200 * D); i++) {
-    const x = rr(-100, 2), z = rr(-535, -346); if (inSquare(x, z) || pathDist(x, z) < 3) continue; const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
+    const x = rr(-104, 2), z = rr(-535, -346); if (inSquare(x, z) || pathDist(x, z) < 3) continue; const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
     const k = clamp(p.distanceTo(viewP) / 13, 1.4, 3.4), r = rand();
     ground.lay(p, n, rand() * TAU, rr(.5, .9) * k, rr(.2, .36) * k, r < .55 ? 9 : r < .8 ? 7 : 10, 0, 0);
   }
@@ -2151,22 +2158,30 @@ function placeWeights() {
   return w.map(v => v / sum);
 }
 const _acc = {}; const GLOBAL_COLORS = ['sunCol', 'hemiSky', 'hemiGround', 'shadowTint', 'fogCol', 'skyTop', 'skyHorizon', 'waterDeep', 'waterTint'], GLOBAL_SCALARS = ['sunEl', 'sunAz', 'sunInt', 'hemiInt', 'fogNear', 'fogFar', 'haze', 'reflectivity', 'ripple', 'bands', 'sunDisc'];
-function applyHour() {
-  // each place: its own palette from its own stops
-  for (const pl of places) if (pl.stops && pl.PU) {
-    const { A, B, b } = stopBlend(pl.stops, hourT); for (let i = 0; i < 20; i++) { pl.PU.uPalA.value[i].copy(A.pal[i]); pl.PU.uPalB.value[i].copy(B.pal[i]); } pl.PU.uBlend.value = b;
-    if (pl.painting || pl.panels) { const ga = gradeOf(pl, A), gb = gradeOf(pl, B); for (let i = 0; i < 3; i++) { pl.PU.uGradeMul.value.setComponent(i, lerp(ga.mul[i], gb.mul[i], b)); pl.PU.uGradeAdd.value.setComponent(i, lerp(ga.add[i], gb.add[i], b)); } }
-  }
-  if (BASE.PU) { const P0 = places[0].PU; for (let i = 0; i < 20; i++) { BASE.PU.uPalA.value[i].copy(P0.uPalA.value[i]); BASE.PU.uPalB.value[i].copy(P0.uPalB.value[i]); } BASE.PU.uBlend.value = P0.uBlend.value; }
-  // the light: blended by how near each place is
-  const w = placeWeights(); let dom = 0;
+let lastDom = -1;
+function ownHour(pl) { const P = pl.painting || pl.panels; return P && P.stop != null && pl.stops.length > 1 ? P.stop / (pl.stops.length - 1) : 0; }
+function applyHour(dt = 0) {
+  // the hour dial belongs to the place you are in; every other place shows its own painting's hour, so a place at another moment of
+  // its series does not sit as a foreign flat in the land around the one you are in. Crossing into a place, the dial re-bases to that
+  // place's own hour, so nothing jumps; a place you leave eases back to its picture over a couple of seconds
+  const w = placeWeights(); let dom = 0; places.forEach((pl, i) => { if (w[i] > w[dom]) dom = i; });
+  if (dom !== lastDom) { if (lastDom >= 0 && !params.has('hour') && places[dom].stops) hourT = ownHour(places[dom]); lastDom = dom; }
+  const ease = dt > 0 ? 1 - Math.pow(.25, dt) : 1;
+  if (BASE.PU) for (let i = 0; i < 20; i++) BASE.PU.uPalA.value[i].setRGB(0, 0, 0);
   for (const k of GLOBAL_COLORS) _acc[k] = _acc[k] || new THREE.Color(); for (const k of GLOBAL_COLORS) _acc[k].setRGB(0, 0, 0); for (const k of GLOBAL_SCALARS) _acc[k] = 0;
-  places.forEach((pl, i) => {
-    if (!w[i]) return; if (w[i] > w[dom]) dom = i;
-    const { A, B, b } = stopBlend(pl.stops, hourT);
-    for (const k of GLOBAL_COLORS) { const c = A[k].clone().lerp(B[k], b); _acc[k].r += c.r * w[i]; _acc[k].g += c.g * w[i]; _acc[k].b += c.b * w[i]; }
-    for (const k of GLOBAL_SCALARS) _acc[k] += lerp(A[k], B[k], b) * w[i];
+  places.forEach((pl, pi) => { if (!pl.stops) return;
+    const target = pi === dom ? hourT : ownHour(pl); pl.hourNow = pl.hourNow == null ? target : lerp(pl.hourNow, target, ease); if (Math.abs(pl.hourNow - target) < 1e-4) pl.hourNow = target;
+    const { A, B, b } = stopBlend(pl.stops, pl.hourNow);
+    if (pl.PU) {
+      for (let i = 0; i < 20; i++) { pl.PU.uPalA.value[i].copy(A.pal[i]); pl.PU.uPalB.value[i].copy(B.pal[i]); } pl.PU.uBlend.value = b;
+      if (pl.painting || pl.panels) { const ga = gradeOf(pl, A), gb = gradeOf(pl, B); for (let i = 0; i < 3; i++) { pl.PU.uGradeMul.value.setComponent(i, lerp(ga.mul[i], gb.mul[i], b)); pl.PU.uGradeAdd.value.setComponent(i, lerp(ga.add[i], gb.add[i], b)); } }
+      if (BASE.PU && w[pi]) for (let i = 0; i < 20; i++) { const c = BASE.PU.uPalA.value[i]; c.r += lerp(A.pal[i].r, B.pal[i].r, b) * w[pi]; c.g += lerp(A.pal[i].g, B.pal[i].g, b) * w[pi]; c.b += lerp(A.pal[i].b, B.pal[i].b, b) * w[pi]; }
+    }
+    if (!w[pi]) return; // the light: blended by how near each place is, each at its own hour
+    for (const k of GLOBAL_COLORS) { const c = A[k].clone().lerp(B[k], b); _acc[k].r += c.r * w[pi]; _acc[k].g += c.g * w[pi]; _acc[k].b += c.b * w[pi]; }
+    for (const k of GLOBAL_SCALARS) _acc[k] += lerp(A[k], B[k], b) * w[pi];
   });
+  if (BASE.PU) BASE.PU.uBlend.value = 0; // the land between the places: the palettes blended by how near each is
   const el = THREE.MathUtils.degToRad(_acc.sunEl), az = THREE.MathUtils.degToRad(_acc.sunAz);
   U.uSunDir.value.set(Math.cos(el) * Math.sin(az), Math.sin(el), Math.cos(el) * Math.cos(az));
   U.uSunCol.value.copy(_acc.sunCol); U.uSunInt.value = _acc.sunInt;
@@ -2176,7 +2191,7 @@ function applyHour() {
   U.uSunDisc.value = sstep(_acc.sunDisc, .5, .92); // the sun comes out of the fog in the last stretch of the quay
   U.uWaterDeep.value.copy(_acc.waterDeep); U.uWaterTint.value.copy(_acc.waterTint); U.uReflectivity.value = _acc.reflectivity; U.uRipple.value = _acc.ripple; U.uBands.value = _acc.bands;
   placeIndex = dom;
-  { const P = places[7], { A, B, b } = stopBlend(P.stops, hourT), hi = lerp(A.hemiInt, B.hemiInt, b); ORANG.veilLight.value.copy(A.hemiSky).lerp(B.hemiSky, b).multiplyScalar(hi * 1.02); ORANG.panelLight.value = hi / .95; }
+  { const P = places[7], { A, B, b } = stopBlend(P.stops, P.hourNow ?? hourT), hi = lerp(A.hemiInt, B.hemiInt, b); ORANG.veilLight.value.copy(A.hemiSky).lerp(B.hemiSky, b).multiplyScalar(hi * 1.02); ORANG.panelLight.value = hi / .95; }
   const pl = places[dom], { A, B, b } = stopBlend(pl.stops, hourT), near = b < .5 ? A : B;
   $('#hourLabel').firstChild.textContent = near.name; $('#hour').value = hourT; $('#hour').setAttribute('aria-valuetext', near.name); $('#hourSub').textContent = `${pl.name} · ${pl.year}`;
   const fixed = pl.stops.length < 2; if (fixed !== hourFixed) { hourFixed = fixed; $('#hour').disabled = fixed; $('#hourNote').textContent = fixed ? 'This one is always dawn.' : 'Each place keeps the hours Monet painted it in.'; }
@@ -2573,7 +2588,7 @@ function update(dt) {
   updateZone();
   if (locationTimer && realTime > locationTimer) { $('#location').classList.remove('show'); locationTimer = 0; }
   if (sayTimer && realTime > sayTimer) { $('#hint').classList.remove('show'); sayTimer = 0; }
-  applyHour();
+  applyHour(dt);
   U.uTime.value = simTime; updateBoats(); updateAudio(dt);
   const fs = 1 + clamp((camera.position.y - 8) / 30, 0, 1) * 3.6 + clamp((camera.position.y - 40) / 150, 0, 1) * 9; U.uFogNear.value = hourFog.near * fs; U.uFogFar.value = hourFog.far * fs;
   // the reveal: east of the square the fog stays thick until the last stretch of the quay, so the harbour and the sun resolve on arrival
@@ -2601,7 +2616,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm16-cathedral', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm16b-hours', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },

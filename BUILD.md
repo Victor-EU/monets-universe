@@ -1019,3 +1019,26 @@ Rouen +1.6 ms and Sunrise +1.4 ms (the harbour now sees the body of the church);
 Full-sun stop) where the field patches are sparse — present before M16, seen now from the air. The buttress flyers are slabs, not
 arches; the transept portals are dark recesses without their tracery; the Lady Chapel beyond the apse is not built; the church has no
 walk blocking (as before). Deployment still waits for the explicit go-ahead, with the domain.
+
+### Progress · M16b — the hour and the land (fix: "the purple ground")
+
+**What was wrong.** The violet flat north-west of Rouen was the west strip of the Haystacks ground plane, and behind it a rule: every
+place painted its land from its own series at the one global hour. Rouen's "Full sun" is hour .5; at .5 the Haystacks series is
+between "Sunset" and "Morning frost", so from Rouen the Haystacks land lay in pink and mauve beside the world's green — a foreign
+flat with a straight seam, seen from the air now that flight works. (The strip itself was painted in the haze slot as distant hills for
+the spot, with no strokes; violet on violet after the first attempt.)
+
+**What changed.** The hour dial belongs to the place you are in. The dominant place follows the dial; every other place shows its own
+painting's hour (`ownHour`), so from Rouen the Haystacks are their end-of-summer picture. Crossing into a place, the dial re-bases to
+that place's own hour, so nothing jumps; a place you leave eases back to its picture (`hourNow`, ¼ per second). The light is blended
+by nearness as before, each place at its own hour. The world plane between the places takes the palettes blended by nearness
+instead of the pond's alone (so at the Haystacks' snow the land around goes white with it). The Haystacks' hill strip gets the
+green-grey base and 1 600 strokes (ochre, green-grey, haze-blue), greener toward the plane's edge. Rouen's field strokes reach the
+plane's west edge. Build `m16b-hours`.
+
+**Verified.** `hours-m16b.jpg`: the far view before and after; from above, the Haystacks land beside Rouen and the harbour in one
+key; the Haystacks and pond spots unchanged; Argenteuil at its evening hour with the Haystacks keeping their picture. Live tab: at
+the Haystacks the dial reads End of summer, `]` gives Sunset and the field goes orange while Rouen's stays; walking to Rouen the dial
+re-bases to Full sun and the Haystacks field returns to end of summer.
+
+**Still visible.** A teleport (`monet.at`, the `?s=` param) snaps the left place back instead of easing, since it runs with dt 0.
