@@ -958,3 +958,27 @@ from the spot: the painted woman at 9.5 m already, complete at 2 m, no statue at
 cloud the painting does not have). Walking past her within a metre or two, the parasol dome is a green cap seen from below. Seen from
 her far side she is the stroke figure in the key, a figure now rather than a cone, still not her. The other near things (the sail, the
 poplars) have no quad yet; their outlines get the plate's fill only. Deployment still waits for the explicit go-ahead, with the domain.
+
+### Progress · M15 — flight (fix: "What's the first button on the left? it doesn't work")
+
+**What was wrong.** The first button is walk / fly (F). The click registered and the state flipped, and then nothing followed from it:
+forward was computed from yaw alone, so W in flight still moved along the ground; the only way up was Space, E or Q, said nowhere
+(the tooltip read "Walk / fly · F", the hint names drag, scroll and W A S D); one tick of the scroll wheel, the advertised way to move,
+called `engageDrift`, which switched flight off and put you back on the promenade; the button kept keyboard focus after the click, so
+the first Space (a button activates on Space's key-up) clicked it again and landed you; on touch there was no ascent at all.
+
+**What changed.** In flight, forward is the gaze (`_fwd` takes the pitch when `fly`), so look up and press W, or push the pad on touch,
+and you rise; Space / E climb, Q descends (`_move.y += ±1` before the normalise, the old `up` bookkeeping gone). The wheel and the
+swipe glide along the gaze while flying (`scrollDrift` adds to `glide` instead of engaging the drift; the metres owed are paid out
+eased, `1 − .02^dt` per frame, through `tryMove` so water and the Orangerie's walls still hold; only `monet.at()` and `?s=` still
+land you on the promenade). The click itself lifts you 1.6 m (`lift`, same easing) so the change is seen at once, leaves the drift,
+and says how to fly on the top line for seven seconds (`say()`, reusing `#hint` with its own timer; "Walking" for two seconds on
+landing; a touch variant of the text). Every dock button blurs after a click. Tooltip: "Walk / fly · F · Space up · Q down".
+Build `m15-flight`. Rendering untouched, no bench.
+
+**Verified.** Live tab (1280×720): click the button → fly on, focus back on the body, the line shown, eye 1.54 → 3.13 m within a
+second; Space afterwards leaves flight on; three wheel notches glide 12.6 m along the gaze; W with the view tilted up .6 rad for a
+second climbs to 8.4 m; F lands ("Walking"). `lift-sheet.jpg`: the pond at eye height and 1.6 m up after the click.
+
+**Still visible.** Landing (F) over water puts you in the pond, as any flight that ends over water always has; the walk then lets you
+wade out. On touch the rise needs the view tilted up before pushing the pad; there is no separate climb control.

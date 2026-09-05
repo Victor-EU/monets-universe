@@ -115,7 +115,7 @@ body:has(.popover.open) #touchpad,body.photo #touchpad{display:none!important}
 <div id="crosshair" aria-hidden="true"></div>
 
 <nav id="dock" aria-label="Explore the painted universe">
-<button id="fly" title="Walk / fly · F" aria-label="Toggle free flight" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 15c3-1 5-3 9-3s6 2 9 3M12 12V5M9 8l3-3 3 3"/></svg></button>
+<button id="fly" title="Walk / fly · F · Space up · Q down" aria-label="Toggle free flight" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 15c3-1 5-3 9-3s6 2 9 3M12 12V5M9 8l3-3 3 3"/></svg></button>
 <button id="views" title="Painting viewpoints · 1–9" aria-label="Painting viewpoints" aria-expanded="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6M16 8h.01"/></svg></button>
 <button id="hourBtn" title="The hour · [ ]" aria-label="Light and hour" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></button>
 <div class="divider"></div>
@@ -2135,6 +2135,7 @@ function stepStop(dir) { const n = currentStops().length; if (n < 2) return; con
 
 // ============================================================ movement
 let yaw = 0, pitch = 0, fly = false, photoMode = false, travel = null;
+let lift = 0, glide = 0; // metres still owed to the flyer: the button's rise, the wheel's glide along the gaze
 let drifting = false, driftS = 0, driftTarget = 0, recover = null;
 const velocity = V(), keys = new Set(), EYE = 1.45;
 function lookAtTarget(look) { camera.lookAt(look); yaw = camera.rotation.y; pitch = camera.rotation.x; }
@@ -2172,23 +2173,26 @@ function updateTravel(dt) {
 }
 const _fwd = V(), _right = V(), _move = V();
 function updateWalk(dt) {
-  _fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw)); _right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+  // walking, forward is level; flying, it is where you look, so tilting up and pressing W lifts you
+  const cp = fly ? Math.cos(pitch) : 1; _fwd.set(-Math.sin(yaw) * cp, fly ? Math.sin(pitch) : 0, -Math.cos(yaw) * cp); _right.set(Math.cos(yaw), 0, -Math.sin(yaw));
   _move.set(0, 0, 0);
   if (keys.has('KeyW') || keys.has('ArrowUp')) _move.add(_fwd);
   if (keys.has('KeyS') || keys.has('ArrowDown')) _move.sub(_fwd);
   if (keys.has('KeyD') || keys.has('ArrowRight')) _move.add(_right);
   if (keys.has('KeyA') || keys.has('ArrowLeft')) _move.sub(_right);
   if (touchMove.active) { _move.addScaledVector(_fwd, -touchMove.y); _move.addScaledVector(_right, touchMove.x); }
-  let up = 0; if (fly) { if (keys.has('KeyE') || keys.has('Space')) up += 1; if (keys.has('KeyQ') || keys.has('ShiftLeft') && false) up -= 1; if (keys.has('KeyQ')) up = -1; }
+  if (fly) { if (keys.has('KeyE') || keys.has('Space')) _move.y += 1; if (keys.has('KeyQ')) _move.y -= 1; }
   const speed = (fly ? 9 + Math.max(0, camera.position.y - 6) * .22 : 3.2) * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 2.2 : 1);
   if (_move.lengthSq() > 1) _move.normalize();
-  if (fly) { _move.y = up; }
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
   const wet = isWater(pos.x, pos.z);
   const tryMove = (dx, dz) => { const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; if (nx < -110 || nx > 150 || nz > 96 || nz < -540) return false; if (!fly && orangBlocks(nx, nz)) return false; pos.x = nx; pos.z = nz; return true; };
   if (!tryMove(step.x, step.z)) { if (!tryMove(step.x, 0)) tryMove(0, step.z); }
-  if (fly) { pos.y = clamp(pos.y + step.y, walkHeight(pos.x, pos.z) + .6, 300); }
+  if (fly) { // the eased lift of the button and the glide of the wheel, along the gaze
+    const k = 1 - Math.pow(.02, dt), dl = lift * k, dg = glide * k; lift -= dl; glide -= dg;
+    if (dg) { if (!tryMove(_fwd.x * dg, _fwd.z * dg)) { if (!tryMove(_fwd.x * dg, 0)) tryMove(0, _fwd.z * dg); } step.y += _fwd.y * dg; }
+    pos.y = clamp(pos.y + step.y + dl, walkHeight(pos.x, pos.z) + .6, 300); }
   else { const target = walkHeight(pos.x, pos.z) + EYE; pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
   camera.rotation.set(pitch, yaw, 0);
 }
@@ -2205,7 +2209,7 @@ function engageDrift() {
   drifting = true; velocity.set(0, 0, 0); awake();
   return true;
 }
-function scrollDrift(meters) { if (!engageDrift()) return; driftTarget = clamp(driftTarget + meters, 0, PROM_LEN); }
+function scrollDrift(meters) { if (fly) { glide += meters; return; } if (!engageDrift()) return; driftTarget = clamp(driftTarget + meters, 0, PROM_LEN); }
 function updateDrift(dt) {
   const gap = driftTarget - driftS, v = clamp(gap * 2.6, -7, 7);
   driftS += v * dt; if (Math.abs(gap) < .02) driftS = driftTarget;
@@ -2218,7 +2222,12 @@ function updateDrift(dt) {
   camera.rotation.set(pitch, yaw, 0);
 }
 function syncFly() { $('#fly').setAttribute('aria-pressed', String(fly)); $('#fly').classList.toggle('active', fly); }
-function toggleFly() { fly = !fly; syncFly(); awake(); }
+function toggleFly() {
+  fly = !fly; syncFly(); awake(); lift = glide = 0;
+  if (fly) { drifting = false; recover = null; lift = 1.6;
+    say(matchMedia('(pointer:coarse)').matches ? 'Flying · look where you want to go and push the pad · tap the button again to land' : 'Flying · look where you want to go, W or scroll glides there · Space up · Q down · F to land', 7); }
+  else say('Walking', 2);
+}
 
 // pointer look
 let dragging = false, lastX = 0, lastY = 0, moved = 0;
@@ -2296,8 +2305,9 @@ function updateAudio(dt) {
 }
 
 // ============================================================ interface
-let awoke = false, locationTimer = 0, realTime = 0;
+let awoke = false, locationTimer = 0, sayTimer = 0, realTime = 0;
 function awake() { if (!awoke) { awoke = true; document.body.classList.add('awake'); $('#hint').classList.remove('show'); } }
+function say(text, secs = 5) { const h = $('#hint'); h.textContent = text; h.classList.add('show'); sayTimer = realTime + secs; }
 const ALLEE = { name: 'The Grande Allée', place: 'Giverny, the flower garden', year: '' };
 let zoneKey = null;
 function captionZone() { if (placeIndex >= 1) return places[placeIndex]; const z = camera.position.z; return z < -31 && z > -70 ? ALLEE : places[0]; }
@@ -2316,6 +2326,7 @@ places.forEach((pl, i) => {
   $('#viewList').appendChild(b);
 });
 $('#fly').addEventListener('click', toggleFly);
+document.querySelectorAll('#dock button').forEach(b => b.addEventListener('click', () => b.blur()));
 $('#views').addEventListener('click', () => togglePanel('views'));
 $('#hourBtn').addEventListener('click', () => togglePanel('hour'));
 $('#quality').addEventListener('click', () => togglePanel('quality'));
@@ -2502,6 +2513,7 @@ function update(dt) {
   if (travel) updateTravel(dt); else if (drifting) updateDrift(dt); else updateWalk(dt);
   updateZone();
   if (locationTimer && realTime > locationTimer) { $('#location').classList.remove('show'); locationTimer = 0; }
+  if (sayTimer && realTime > sayTimer) { $('#hint').classList.remove('show'); sayTimer = 0; }
   applyHour();
   U.uTime.value = simTime; updateBoats(); updateAudio(dt);
   const fs = 1 + clamp((camera.position.y - 8) / 30, 0, 1) * 3.6 + clamp((camera.position.y - 40) / 150, 0, 1) * 9; U.uFogNear.value = hourFog.near * fs; U.uFogFar.value = hourFog.far * fs;
@@ -2530,7 +2542,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm14-figure', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm15-flight', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
