@@ -1153,6 +1153,14 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
       f.set(rand() - .5, 0, rand() - .5); ground.stand(p, f, .12 * k, rr(.25, .5) * k, pal === 10 ? 9 : pal, 2, .05 + rand() * .05, .35);
     } else ground.lay(p, n, rand() * TAU, rr(.3, .55) * k, rr(.16, .3) * k, pal, 0, 0);
   }
+  // grass over the bridge's shoulders (see bridgeAbutment): tufts on the banked earth either side of the crossing, the trodden strip left bare
+  for (let side = -1; side <= 1; side += 2) for (let i = 0; i < Math.floor(1100 * D); i++) {
+    const x = side * rr(BRIDGE_HALF - 2.6, BRIDGE_HALF + 4.2), dz = rr(-3, 3), z = BRIDGE_Z + dz, y = groundHeight(x, z);
+    if (y < WATER_Y - .04 || Math.abs(dz) < .9 || rand() > 1 - sstep(Math.abs(dz), 1.4, 3) || pondSDF(x, z) < .8) continue;
+    p.set(x, y + .02, z); groundNormal(x, z, n); const k = sizeAt(p), pal = rand() < .6 ? 9 : rand() < .5 ? 8 : 7;
+    if (rand() < .7) { f.set(rand() - .5, 0, rand() - .5); ground.stand(p, f, .12 * k, rr(.25, .5) * k, pal, 2, .05 + rand() * .05, .35); }
+    else ground.lay(p, n, rand() * TAU, rr(.3, .55) * k, rr(.16, .3) * k, pal, 0, 0);
+  }
   // reeds and iris along the shore
   const NR = Math.floor(3400 * D);
   for (let i = 0; i < NR; i++) {
@@ -2642,7 +2650,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm18b-abutments', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm18c-shoulders', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },

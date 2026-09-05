@@ -1137,3 +1137,11 @@ bare earth — two dirt mounds beside the bridge; set back, the shoulders are lo
 **Verified.** Walk height along the crossing at z .4: the deck 1.95 m at x ±4, .80 at ±7, .55 at ±7.5; the bank beyond .49–.50 at
 ±8, easing to .32–.5 by ±11 — no step. Frames from the east bank, the deck's end, the eastern approach, the spot and the air.
 The spot's stroke layout reshuffled with the terrain (the scatter is seeded, the terrain feeds it), the composition unchanged.
+
+### Progress · M18c — grass on the shoulders
+
+The bridge's shoulders lay within the promenade's path band, which the pond's ground scatter paints as trodden earth. A scatter of
+their own now covers them: 1 100 strokes a side (× density), tufts seven in ten and laid strokes the rest, in the grass slots, over
+the banked earth 1.4–3 m either side of the crossing and beyond the ends; the trodden strip of the crossing (.9 m each side of its
+line) and the shore band are left as they were. Build `m18c-shoulders`. Frames from the east bank, the eastern approach, the spot,
+the deck's end up close and the air.
