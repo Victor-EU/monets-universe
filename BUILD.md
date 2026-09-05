@@ -1152,3 +1152,9 @@ The shore's reeds and iris keep 1.6 m off the promenade and off the bridge's lin
 their own now stands there: 520 a side (× density), in the shore band from 1.1 m into the shallows to 1.3 m up the shoulder's foot,
 1.1–3.4 m either side of the crossing's line, the same stems and palette as the shore's, the water under the deck left open.
 Build `m18d-reeds`. Frames from the east bank, the deck's end up close, the spot, from under the deck's end and the air.
+
+### Progress · M18e — lily pads round the shoulders' reeds
+
+Seven small rafts a side (radius .5–1.1 m) in the shallows off each shoulder, 1.4–4 m either side of the crossing's line, water
+at least .2 m deep, the same pads, dark water and occasional flowers as the bands. Build `m18e-pads`. Frames from under the deck's
+end on both sides, the east bank, the spot and the air.
