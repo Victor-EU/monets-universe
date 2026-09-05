@@ -682,3 +682,64 @@ poplars/stubble seam in winter (design decision); the town's lawn.
 
 **Ship.** Deployment (surge or elsewhere) is the only remaining M8
 item and waits for the explicit go-ahead, with the domain to use.
+
+### Progress · M9 — the paint (after M8; feedback: "small dabs, colourful light")
+
+The user's verdict on M8 was that it did not feel like Monet: no small
+dabs, no sense of coloured light. Looking at the frames again they were
+right. The sky was a smooth gradient, the water a smooth mirror, the
+ground a flat wash with a few strokes on it, and the palettes had been
+tuned under ACES, which greys bright colour toward white. The paint was
+decoration on 3D geometry, not the substance of the image.
+
+Done in this milestone (the build tag is `m9-monet`):
+
+- **Every surface is painted in dabs, the sky and the water included.**
+  A shared GLSL chunk (`PAINT_GLSL`) carries a dab field: a jittered
+  grid of overlapping ellipses in world space; the pixel belongs to
+  whichever covering dab lies on top. The base coat of every mesh
+  draws it in a triplanar domain, with the cell size following the
+  distance to the eye in octaves (about a dozen pixels on screen), two
+  octaves blended over the middle of each octave so nothing pops while
+  walking. Between dabs the ground shows: a paler, greyer, warm version
+  of the local colour.
+- **Water**: the reflection is read once per dab, at the dab's centre,
+  so the mirror breaks into pieces of colour; dabs lie horizontal
+  (the grid is stretched 2.4× along x); ripple offsets per dab.
+- **Sky**: dabs of about half a degree, lying along the horizon, pink
+  and lavender among the blue, blended 85 % over the gradient.
+- **Broken colour** (`dabTint`): each dab is the local colour pushed
+  off in hue (±14°) and value (±17 %); one dab in six takes the other
+  temperature (warm cream or violet at the same luminance). The base
+  coat scatters a further ±11° of hue. The instanced strokes use 65 %
+  of this, so structured surfaces (the cathedral) stay legible.
+- **Light**: the lit side leans warm, the shadow side is pulled toward
+  a violet of the same luminance rather than darkened; fog is capped
+  at 90 % and its colour is broken by the same dabs, so the distance
+  is painted too.
+- **Tone**: ACES is gone. A luminance Reinhard with a white point keeps
+  hue and chroma in bright colour; a roll-off pales the brightest notes
+  toward white; saturation ×1.08. Palettes are graded on the way in
+  (saturation ×1.2, the darkest notes lifted to L ≥ .21: no black).
+- **Dabs, not strokes**: `lay()` caps the aspect at 2.3 and scales
+  surface dabs to 85 %.
+- Rouen's full-sun palette was pulled together (shadow slots 3/4 pale
+  grey-violet, lit slots cream) after the yellow/violet confetti seen
+  in the first frames.
+
+Budget (headless, 1920×862 window):
+
+| preset | pixel ratio | frame times |
+|---|---|---|
+| Balanced | 1.5× (was 2×) | 8–13 ms |
+| Rich | 2× | 13–20 ms |
+
+The dab field costs about 2× the old flat coat per pixel; Balanced now
+draws at 1.5× to keep 60 fps, Light at 1.25×. Patch counts unchanged.
+
+Known tells: up close (under ~3 m) the builders' instanced strokes,
+sized for their viewpoint, are much larger than the base coat's dabs;
+the two systems show. Rouen's stone dabs are still large blobs at the
+facade viewpoint. Photo-mode frames re-taken.
+
+Deployment still waits for the explicit go-ahead, with the domain.

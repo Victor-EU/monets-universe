@@ -192,12 +192,11 @@ try {
   $('#loading').classList.add('gone');
   throw e;
 }
-const DPR_CAP = { light: 1.5, balanced: 2, rich: 2 }, REFL_SIZE = { light: [256, 144], balanced: [512, 288], rich: [768, 432] };
+const DPR_CAP = { light: 1.25, balanced: 1.5, rich: 2 }, REFL_SIZE = { light: [256, 144], balanced: [512, 288], rich: [768, 432] };
 renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_CAP[qualityName]));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMapping = THREE.NoToneMapping; // the shaders tone their own colour: see tone() in PAINT_GLSL
 renderer.domElement.id = 'world';
 renderer.domElement.tabIndex = 0;
 renderer.domElement.setAttribute('aria-label', "Monet's universe, a walkable painting. Drag to look, W A S D or scroll to move, F to fly, keys 1 through 8 for painting viewpoints, P for photo mode.");
@@ -210,11 +209,14 @@ const canvas = renderer.domElement;
 //  6 foliage dark 7 foliage mid  8 foliage light 9 grass      10 earth      11 bridge
 // 12 bridge light 13 trunk      14 accent warm  15 accent cool
 // 16 nasturtium  17 rose         18 iris/lavender 19 bed foliage   (a place may read a slot its own way; the meaning only has to hold across that place's stops)
+// every palette colour is pushed a little further from grey, and the darkest notes are lifted: Monet's shadows are colour, not black
+const _hsl = {};
+function grade(hex, sat = 1.2, lift = .21) { const c = col(hex); c.getHSL(_hsl, THREE.SRGBColorSpace); let l = _hsl.l; if (l < lift) l = lift + (l - lift) * .35; c.setHSL(_hsl.h, Math.min(1, _hsl.s * sat + .04), l, THREE.SRGBColorSpace); return c; }
 function stop(o) {
   return {
-    name: o.name, pal: o.pal.map(col),
-    skyTop: col(o.skyTop), skyHorizon: col(o.skyHorizon), sunEl: o.sunEl, sunAz: o.sunAz, sunCol: col(o.sunCol), sunInt: o.sunInt,
-    hemiSky: col(o.hemiSky), hemiGround: col(o.hemiGround), hemiInt: o.hemiInt, shadowTint: col(o.shadowTint),
+    name: o.name, pal: o.pal.map(h => grade(h)),
+    skyTop: grade(o.skyTop, 1.06, 0), skyHorizon: grade(o.skyHorizon, 1.06, 0), sunEl: o.sunEl, sunAz: o.sunAz, sunCol: col(o.sunCol), sunInt: o.sunInt,
+    hemiSky: col(o.hemiSky), hemiGround: col(o.hemiGround), hemiInt: o.hemiInt, shadowTint: grade(o.shadowTint, 1.4, 0),
     fogNear: o.fogNear, fogFar: o.fogFar, fogCol: col(o.fogCol ?? o.skyHorizon), sunDisc: o.sunDisc ?? 0,
     waterDeep: col(o.waterDeep), waterTint: col(o.waterTint), reflectivity: o.reflectivity, ripple: o.ripple, bands: o.bands ?? .25, haze: o.haze ?? .16,
   };
@@ -314,7 +316,7 @@ const ROUEN_STOPS = [
     hemiSky: '#d0d8ea', hemiGround: '#6a708a', hemiInt: 1.0, shadowTint: '#98a0d8', fogNear: 22, fogFar: 110, fogCol: '#c8d0dc',
     waterDeep: '#3a4a6a', waterTint: '#d8dce6', reflectivity: .7, ripple: .008, bands: .3, haze: .12 }),
   stop({ name: 'Full sun',
-    pal: ['#2e5f8a', '#5f92b8', '#eef2f4', '#4444a0', '#7878c8', '#d8bc84', '#3d6a3a', '#5f9a4e', '#a7cf78', '#8aa050', '#b0a080', '#5a4838', '#c8c0a8', '#5a4a40', '#f4e0aa', '#7c8ccc', '#d0a878', '#6a7898', '#e8dcc0', '#a8b8c8'],
+    pal: ['#2e5f8a', '#5f92b8', '#eef2f4', '#7070a8', '#b4b0cc', '#dccaa0', '#3d6a3a', '#5f9a4e', '#a7cf78', '#8aa050', '#b0a080', '#5a4838', '#c8c0a8', '#5a4a40', '#f0e4c0', '#8c9ccc', '#d0a878', '#6a7898', '#e8dcc0', '#a8b8c8'],
     skyTop: '#4a80c8', skyHorizon: '#d4e2ee', sunEl: 42, sunAz: 25, sunCol: '#fff2d0', sunInt: .95,
     hemiSky: '#d0e0f4', hemiGround: '#7a6a50', hemiInt: .85, shadowTint: '#9c9ce0', fogNear: 50, fogFar: 170, fogCol: '#dde6ee',
     waterDeep: '#2e5f8a', waterTint: '#eef2f4', reflectivity: .8, ripple: .012, bands: .4, haze: .1 }),
@@ -371,6 +373,52 @@ const U = {
   uRefl: { value: null }, uReflMatrix: { value: new THREE.Matrix4() }, uWaterDeep: { value: new THREE.Color() }, uWaterTint: { value: new THREE.Color() }, uReflectivity: { value: .8 }, uRipple: { value: .012 }, uBands: { value: .25 },
 };
 
+// ============================================================ the paint: shared GLSL
+// Everything is painted in small dabs, the sky and the water included. A dab is an ellipse of one colour, pushed a little off its
+// neighbours in hue and value, some dabs warm where the rest are cool. The base coat of every mesh is a field of such dabs in
+// world space, sized to the eye (a dozen pixels or so), at two sizes blended so nothing pops as you walk.
+const PAINT_GLSL = /* glsl */`
+const vec3 LW = vec3(.2126, .7152, .0722);
+const vec3 WARM = vec3(1.28, 1.0, .62), VIOLET = vec3(1.04, .92, 1.67);
+float h1(float n){ return fract(sin(n) * 43758.5453); }
+float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
+vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
+// the dab field: a jittered grid of overlapping ellipses of cell size s, the grid stretched along x by 'stretch' (water and sky lie flat);
+// the pixel belongs to whichever covering dab lies on top. returns (coverage, dab id, dab centre in uv units)
+vec4 dabs(vec2 uv, float s, float stretch, float ang0, float angJit, float fw) {
+  vec2 sc = vec2(stretch, 1.), g = uv / (s * sc), gi = floor(g);
+  float best = -1., bd = 1.; vec2 bc = vec2(0.), bctr = vec2(0.);
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
+    vec2 c = gi + vec2(float(i), float(j));
+    float hx = h2(c), hy = h2(c + 7.3), hz = h2(c + 5.5);
+    vec2 ctr = c + .5 + (vec2(hx, hy) - .5) * .8;
+    float a = ang0 + (h2(c + 3.1) - .5) * angJit; vec2 e = vec2(cos(a), sin(a));
+    vec2 d = g - ctr; vec2 l = vec2(dot(d, e), dot(d, vec2(-e.y, e.x)));
+    float ap = 1.15 + .45 * hx, rr = .62 + .28 * hy;
+    float dd = length(l / vec2(ap, 1.)) / rr;
+    dd /= 1. + .09 * sin(dot(l, vec2(5.1, 3.7)) * 2.4 + hx * 40.) + .05 * sin(dot(l, vec2(-2.9, 6.3)) * 2.4 + hy * 30.);
+    if (dd < 1. && hz > best) { best = hz; bd = dd; bc = c; bctr = ctr; }
+  }
+  return vec4(best < 0. ? 0. : 1. - smoothstep(1. - fw, 1., bd), h2(bc + 2.2), bctr * s * sc);
+}
+// broken colour: a dab's colour is the local colour pushed off in hue and value; one dab in six takes the other temperature
+vec3 dabTint(vec3 c, float id, float amt) {
+  float ja = h1(id * 13.7 + 1.) - .5, jb = h1(id * 7.3 + 2.) - .5, jc = h1(id * 5.9 + 3.);
+  c = hueShift(c, ja * .5 * amt) * (1. + jb * .34 * amt);
+  float l = dot(c, LW);
+  c = mix(c, l * (jc < .5 ? WARM : VIOLET), (step(jc, .15) + step(.83, jc)) * .38 * amt);
+  return c;
+}
+// tone: luminance Reinhard with a white point, so a bright colour keeps its hue and chroma instead of greying toward white
+vec3 tone(vec3 c) {
+  c *= 1.22;
+  float l = dot(c, LW), lt = l * (1. + l / 5.3) / (1. + l); c *= lt / max(l, 1e-4);
+  c = mix(c, vec3(lt), smoothstep(.55, 2.2, l) * .7); // the brightest notes pale toward white, keeping a tint
+  c = mix(vec3(dot(c, LW)), c, 1.08);
+  return clamp(c, 0., 1.);
+}`;
+
 // ============================================================ the patch shader
 const PATCH_VERT = /* glsl */`
 uniform float uTime; uniform vec3 uWind;
@@ -415,69 +463,99 @@ uniform vec3 uPalA[20]; uniform vec3 uPalB[20]; uniform float uBlend;
 uniform vec3 uSunDir, uSunCol, uHemiSky, uHemiGround, uShadowTint, uFogCol;
 uniform float uSunInt, uHemiInt, uFogNear, uFogFar, uTime;
 #ifdef WATER
-uniform sampler2D uRefl; uniform vec3 uWaterDeep, uWaterTint; uniform float uReflectivity, uRipple, uBands;
+uniform sampler2D uRefl; uniform vec3 uWaterDeep, uWaterTint; uniform float uReflectivity, uRipple, uBands; uniform mat4 uReflMatrix;
 varying vec4 vRefl;
 #endif
 varying vec2 vUv; varying vec3 vN; varying vec3 vWorld; varying float vPal; varying float vSeed; varying float vDist; varying float vKind;
+${PAINT_GLSL}
 vec3 pal(float i){ int k = int(i + .5); return mix(uPalA[k], uPalB[k], uBlend); }
-vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
-float h1(float n){ return fract(sin(n) * 43758.5453); }
-float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
+#ifdef WATER
+vec3 reflAt(vec4 rp, vec2 off) { rp.xy += off * rp.w; return texture2DProj(uRefl, rp).rgb; }
+#endif
 void main(){
+  vec3 c; float dabId, a;
 #ifdef INSTANCED
+  // one painted dab per instance: an ellipse with a wobbling rim, crisp-edged
   float ang = atan(vUv.y, vUv.x);
   float r = 1. + .16 * sin(ang * 3. + vSeed * 17.) + .10 * sin(ang * 5. - vSeed * 29.) + .06 * sin(ang * 8. + vSeed * 7.);
   float d = length(vUv) / r;
-  float a = 1. - smoothstep(.5, 1., d);
-  if (a < .05) discard;
-#else
-  float a = 1.;
-#endif
-  float j1 = h1(vSeed * 13.7) - .5, j2 = h1(vSeed * 7.3) - .5;
-  vec3 base = hueShift(pal(vPal), j2 * .22) * (1. + j1 * .26);
-#ifdef INSTANCED
-  base *= 1. + .10 * vUv.x * (h1(vSeed * 3.1) - .5) * 2.;
-#else
-  vec2 mc = vWorld.xz + vWorld.y * vec2(.9, .6);
-  float m = vn(mc * 1.3) * .5 + vn(mc * 3.4 + 9.) * .3 + vn(mc * 8.1 + 4.) * .2;
-  base = hueShift(base, (m - .5) * .5) * (.82 + m * .38);
-#endif
-  vec3 c;
-#ifdef WATER
-  #ifdef INSTANCED
+  a = 1. - smoothstep(.78, .98, d);
+  if (a < .2) discard;
+  dabId = vSeed;
+  vec3 base = dabTint(pal(vPal), vSeed, .65) * (1. + .10 * vUv.x * (h1(vSeed * 3.1) - .5) * 2.);
+  #ifdef WATER
   vec2 off = vec2(sin(uTime * .35 + vSeed * 31.), cos(uTime * .29 + vSeed * 17.)) * uRipple * vec2(1., 1.6);
-  #else
-  float band = vn(vec2(vWorld.x * .35 + uTime * .05, vWorld.z * 2.2)) - .5, band2 = vn(vec2(vWorld.x * 1.3 - uTime * .04, vWorld.z * 6.)) - .5;
-  vec2 off = vec2((band * 1.4 + band2 * .6) * uBands * 2., sin(uTime * .27 + vWorld.z * .9) * .5 + band * .8 * uBands) * uRipple * 2.;
-  #endif
-  vec4 rp = vRefl; rp.xy += off * rp.w;
-  #ifdef INSTANCED
-  vec3 refl = texture2DProj(uRefl, rp).rgb;
-  #else
-  vec4 sm = vec4(0., uRipple * 1.2 * rp.w, 0., 0.);
-  vec3 refl = (texture2DProj(uRefl, rp).rgb + texture2DProj(uRefl, rp + sm).rgb + texture2DProj(uRefl, rp - sm).rgb + texture2DProj(uRefl, rp + 2. * sm).rgb + texture2DProj(uRefl, rp - 2. * sm).rgb) / 5.;
-  #endif
+  vec3 refl = reflAt(vRefl, off);
   vec3 vd = normalize(cameraPosition - vWorld);
   float fres = uReflectivity * (.55 + .45 * pow(1. - max(vd.y, 0.), 2.));
-  c = mix(uWaterDeep, refl * uWaterTint, fres) * (1. + j1 * .18);
-  #ifdef INSTANCED
-  c = mix(c, base * (uHemiSky * uHemiInt + uSunCol * uSunInt * .6), .32);
+  c = mix(uWaterDeep, refl * uWaterTint, fres);
+  c = mix(c, base * (uHemiSky * uHemiInt + uSunCol * uSunInt * .6), .38);
   #endif
 #else
+  a = 1.; dabId = 0.;
+  // the base coat is a field of dabs in world space; its cell size follows the distance to the eye in octaves, two octaves blended
+  vec3 an = abs(vN);
+  #ifdef WATER
+  vec2 uv = vWorld.xz; float asp = 2.4, ang0 = 0., angJit = .3;
+  #else
+  vec2 uv = an.y > .6 ? vWorld.xz : an.x > an.z ? vWorld.zy : vWorld.xy; float asp = 1., ang0 = 0., angJit = an.y > .6 ? 6.28 : 1.4;
+  #endif
+  float lv = log2(max(vDist, .6)), lo = floor(lv), lf = smoothstep(.36, .64, fract(lv));
+  vec2 mc = vWorld.xz + vWorld.y * vec2(.9, .6);
+  float m = vn(mc * 1.3) * .5 + vn(mc * 3.4 + 9.) * .3 + vn(mc * 8.1 + 4.) * .2;
+  vec3 local = hueShift(pal(vPal), (m - .5) * .3) * (.88 + m * .24);
+  #ifdef WATER
+  vec3 vd = normalize(cameraPosition - vWorld);
+  float fres = uReflectivity * (.55 + .45 * pow(1. - max(vd.y, 0.), 2.));
+  float band = vn(vec2(vWorld.x * .35 + uTime * .05, vWorld.z * 2.2)) - .5, band2 = vn(vec2(vWorld.x * 1.3 - uTime * .04, vWorld.z * 6.)) - .5;
+  vec2 offp = vec2((band * 1.4 + band2 * .6) * uBands * 2., sin(uTime * .27 + vWorld.z * .9) * .5 + band * .8 * uBands) * uRipple * 2.;
+  vec3 gapc = mix(uWaterDeep, reflAt(vRefl, offp) * uWaterTint, fres * .8) * .92;
+  #else
+  float l0 = dot(local, LW);
+  vec3 gapc = mix(local, l0 * vec3(1.06, 1.0, .9), .4) * .94; // the ground showing between the dabs: paler, greyer, warm
+  #endif
+  vec3 acc = vec3(0.); float idAcc = 0.;
+  for (int k = 0; k < 2; k++) {
+    float w = k == 0 ? 1. - lf : lf; if (w < .001) continue;
+    float sz = .0115 * exp2(lo + float(k));
+    float fw = clamp(length(fwidth(uv)) / sz * 1.3, .04, .6);
+    vec4 D = dabs(uv + float(k) * 17.3, sz, asp, ang0, angJit, fw);
+    #ifdef WATER
+    // the reflection is read once per dab, at its centre: the mirror breaks into pieces of colour
+    vec4 rp = uReflMatrix * vec4(D.z, vWorld.y, D.w, 1.);
+    vec2 offd = vec2(sin(uTime * .35 + D.y * 31.) * 1.2, cos(uTime * .29 + D.y * 17.) * 1.4) * uRipple + offp * .6;
+    vec3 dc = mix(uWaterDeep, reflAt(rp, offd) * uWaterTint, fres);
+    dc = dabTint(dc, D.y, .8);
+    #else
+    vec3 dc = dabTint(hueShift(local, (h1(D.y * 3.3) - .5) * .4), D.y, 1.);
+    #endif
+    acc += mix(gapc, dc, D.x) * w; idAcc += D.y * w;
+  }
+  dabId = idAcc;
+  #ifdef WATER
+  c = acc;
+  #else
+  vec3 base = acc;
+  #endif
+#endif
+#ifndef WATER
+  // light: the lit side leans warm, the shadow side leans violet; both keep their chroma
   vec3 n = vN;
   float wrap = max(0., dot(n, uSunDir) * .5 + .5);
   vec3 hemi = mix(uHemiGround, uHemiSky, n.y * .5 + .5) * uHemiInt;
   c = base * (hemi + uSunCol * uSunInt * wrap);
-  c = mix(c * uShadowTint, c, smoothstep(.1, .8, wrap));
+  float lit = smoothstep(.1, .8, wrap), l = dot(c, LW);
+  vec3 sh = c * uShadowTint; sh = mix(sh, dot(sh, LW) * VIOLET, .22);
+  vec3 lc = mix(c, l * WARM, .18 * uSunInt);
+  c = mix(sh, lc, lit);
 #endif
-  float fog = smoothstep(uFogNear, uFogFar, vDist);
+  // the distance is painted too: the fog colour is broken by the same dabs, and never quite covers them
+  float fog = smoothstep(uFogNear, uFogFar, vDist) * .9;
 #ifdef INSTANCED
   if (vKind > 3.5) fog *= .3;
 #endif
-  c = mix(c, uFogCol, fog);
-  gl_FragColor = vec4(c, a);
-  #include <tonemapping_fragment>
+  c = mix(c, dabTint(uFogCol, dabId + 3.7, .45), fog);
+  gl_FragColor = vec4(tone(c), a);
   #include <colorspace_fragment>
 }`;
 
@@ -487,21 +565,24 @@ void main(){ vDir = position; vec4 p = projectionMatrix * modelViewMatrix * vec4
 const SKY_FRAG = /* glsl */`
 uniform vec3 uSkyTop, uSkyHorizon, uSunDir, uSunCol; uniform float uHaze, uTime, uSunDisc;
 varying vec3 vDir;
-float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
+${PAINT_GLSL}
 void main(){
   vec3 d = normalize(vDir);
   float y = clamp(d.y, -1., 1.);
   float t = pow(smoothstep(-.04, .55, y), .75);
   vec3 c = mix(uSkyHorizon, uSkyTop, t);
-  float az = atan(d.z, d.x);
+  float az = atan(d.z, d.x), el = asin(y);
   float n = vn(vec2(az * 5. + uTime * .01, y * 34.)) * .6 + vn(vec2(az * 13. + 3., y * 80. + uTime * .02)) * .4;
-  c *= 1. + (n - .5) * uHaze;
+  c *= 1. + (n - .5) * uHaze * 1.6;
+  // the sky is painted in dabs of about a degree, lying along the horizon: pink and lavender among the blue
+  vec2 uv = vec2(az * max(cos(el), .15), el);
+  float fw = clamp(length(fwidth(uv)) / .007 * 1.3, .3, .7);
+  vec4 D = dabs(uv, .007, 2.2, 0., .4, fw);
+  c = mix(c * .97, dabTint(c, D.y, .6), D.x * .85);
   float s = max(dot(d, uSunDir), 0.);
   c += uSunCol * (pow(s, 700.) * 1.3 + pow(s, 14.) * .22 + pow(s, 3.) * .07);
   c = mix(c, vec3(.88, .24, .05), uSunDisc * smoothstep(.99972, .99984, s)); c += uSunCol * uSunDisc * (pow(s, 120.) * .3 + pow(s, 8.) * .1);
-  gl_FragColor = vec4(c, 1.);
-  #include <tonemapping_fragment>
+  gl_FragColor = vec4(tone(c), 1.);
   #include <colorspace_fragment>
 }`;
 
@@ -538,7 +619,7 @@ class Patches {
   }
   // convenience: a patch lying on a surface with normal n, rotated by yaw
   // the patch sits a hair above its surface, so it never z-fights the base coat it lies on
-  lay(p, n, yaw, w, h, pal, kind = 0, amp = 0) { frameFromNormal(n, yaw, _u, _v); _o.copy(p).addScaledVector(n, .03); this.add(_o, _u, _v, w, h, n, pal, kind, amp); }
+  lay(p, n, yaw, w, h, pal, kind = 0, amp = 0) { frameFromNormal(n, yaw, _u, _v); _o.copy(p).addScaledVector(n, .03); this.add(_o, _u, _v, Math.min(w, h * 2.3) * .85, h * .85, n, pal, kind, amp); }
   // convenience: an upright patch (long axis up, facing direction f)
   stand(p, f, w, h, pal, kind = 0, amp = 0, tilt = 0, lean = null, nrm = null) {
     _n.copy(f).normalize(); _u.set(0, 1, 0); if (tilt) { _u.x += tilt * (rand() - .5) * 2; _u.z += tilt * (rand() - .5) * 2; } if (lean) _u.add(lean); _u.normalize();
@@ -1778,7 +1859,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm8-polish', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm9-monet', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
