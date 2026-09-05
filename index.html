@@ -192,7 +192,7 @@ try {
   $('#loading').classList.add('gone');
   throw e;
 }
-const DPR_CAP = { light: 1.25, balanced: 1.5, rich: 2 }, REFL_SIZE = { light: [256, 144], balanced: [512, 288], rich: [768, 432] };
+const DPR_CAP = { light: 1.25, balanced: 2, rich: 2 }, REFL_SIZE = { light: [256, 144], balanced: [512, 288], rich: [768, 432] };
 renderer.setPixelRatio(Math.min(devicePixelRatio, DPR_CAP[qualityName]));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -371,7 +371,89 @@ const U = {
   uFogCol: { value: new THREE.Color() }, uFogNear: { value: 15 }, uFogFar: { value: 60 },
   uSkyTop: { value: new THREE.Color() }, uSkyHorizon: { value: new THREE.Color() }, uHaze: { value: .16 }, uSunDisc: { value: 0 },
   uRefl: { value: null }, uReflMatrix: { value: new THREE.Matrix4() }, uWaterDeep: { value: new THREE.Color() }, uWaterTint: { value: new THREE.Color() }, uReflectivity: { value: .8 }, uRipple: { value: .012 }, uBands: { value: .25 },
+  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 },
 };
+
+// ============================================================ the brushes
+// The strokes are painted once, on a canvas, and kept as textures: a tileable field of small overlapping strokes for the base coat of
+// everything (the sky and the water included), and an atlas of sixteen single strokes for the builders' patches. The GPU filters the
+// textures (mipmaps, anisotropy), so the paint holds still when you move: nothing is computed per pixel that could shimmer.
+// The field tile holds no colour, only what a stroke does to the local colour: R hue, G value, B temperature (warm below .5, violet above), A relief.
+const TILE_N = 46; // strokes across one tile: a tile's world period is TILE_N stroke widths
+function makeBrushes() {
+  let st = 7; const rn = () => { st = (Math.imul(1664525, st) + 1013904223) | 0; return (st >>> 0) / 4294967296; };
+  const gs = () => (rn() + rn() + rn() - 1.5) * 1.6;
+  const cv = W => { const c = document.createElement('canvas'); c.width = c.height = W; const x = c.getContext('2d'); x.fillStyle = 'rgb(128,128,128)'; x.fillRect(0, 0, W, W); return x; };
+  const rgb = (r, g, b) => `rgb(${clamp(128 + r * 127, 0, 255) | 0},${clamp(128 + g * 127, 0, 255) | 0},${clamp(128 + b * 127, 0, 255) | 0})`;
+  // an elongated stroke: a superellipse with ragged ends; the path is left for the caller to fill
+  const shape = (ctx, x, y, ang, L, w, rag, seed, taper = 0) => {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.beginPath();
+    for (let i = 0; i < 24; i++) {
+      const t = i / 24 * TAU, ct = Math.cos(t), sn = Math.sin(t);
+      const r = Math.pow(Math.pow(Math.abs(ct), 3) + Math.pow(Math.abs(sn), 3), -1 / 3) * (1 + rag * (Math.sin(t * 3 + seed) * .5 + Math.sin(t * 5 + seed * 2.3) * .3 + Math.sin(t * 9 + seed * 4.1) * .2) * Math.abs(ct));
+      const px = ct * r * L / 2, py = sn * r * w / 2 * (1 - taper * (ct * .5 + .5)); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.closePath(); ctx.restore();
+  };
+  const fill = (ctx, style, alpha = 1) => { ctx.fillStyle = style; ctx.globalAlpha = alpha; ctx.fill(); ctx.globalAlpha = 1; };
+  const line = (ctx, x, y, ang, b, style, alpha) => { ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.beginPath(); ctx.moveTo(b.x0, b.y0); ctx.lineTo(b.x1, b.y1); ctx.lineWidth = b.lw; ctx.strokeStyle = style; ctx.globalAlpha = alpha; ctx.stroke(); ctx.restore(); ctx.globalAlpha = 1; };
+  const bristles = (L, w) => { const n = 3 + (rn() * 3 | 0), out = []; for (let k = 0; k < n; k++) { const ly = (rn() - .5) * w * .7; out.push({ x0: -L * .42 + rn() * L * .1, y0: ly, x1: L * .42 - rn() * L * .1, y1: ly + (rn() - .5) * w * .1, lw: 1 + rn() * 1.3, dv: (rn() - .5) * .34 }); } return out; };
+  const texture = (data, W, wrap) => {
+    const t = new THREE.DataTexture(new Uint8Array(data.buffer), W, W, THREE.RGBAFormat);
+    t.wrapS = t.wrapT = wrap; t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); t.needsUpdate = true; return t;
+  };
+  // the field: o = { count, wpx (stroke width in texels), aspect [min, max], dir, coh (how much neighbours share a direction), jit }
+  function field(W, o) {
+    const a = cv(W), b = cv(W);
+    const flow = (x, y) => o.dir + o.coh * (Math.sin(x / W * TAU * 2 + 1.7) * Math.cos(y / W * TAU * 3 + .4) + .5 * Math.sin((x * 5 + y * 2) / W * TAU + 2.1));
+    for (let i = 0; i < o.count; i++) {
+      const x = rn() * W, y = rn() * W, ang = flow(x, y) + gs() * o.jit, seed = rn() * 9;
+      const w = o.wpx * (.55 + rn() * 1.1), L = w * (o.aspect[0] + rn() * (o.aspect[1] - o.aspect[0]));
+      const hue = clamp(gs() * .3, -.5, .5), val = clamp(gs() * .3, -.5, .5), tr = rn(), temp = tr < .16 ? -.42 : tr > .84 ? .42 : gs() * .04;
+      const col = rgb(hue, val, temp), br = bristles(L, w), M = L;
+      for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+        const px = x + ox * W, py = y + oy * W; if (px < -M || px > W + M || py < -M || py > W + M) continue;
+        shape(a, px, py, ang, L, w, .12, seed); fill(a, col); a.lineWidth = 2; a.strokeStyle = col; a.globalAlpha = .5; a.stroke(); a.globalAlpha = 1;
+        // relief: a lit ridge up-left of the stroke, a shadow down-right, the body between
+        shape(b, px - w * .07, py - w * .07, ang, L, w, .12, seed); fill(b, 'rgb(170,170,170)');
+        shape(b, px + w * .07, py + w * .07, ang, L, w, .12, seed); fill(b, 'rgb(82,82,82)');
+        shape(b, px, py, ang, L, w, .12, seed); fill(b, 'rgb(128,128,128)');
+        for (const q of br) { line(a, px, py, ang, q, rgb(hue, val + q.dv, temp), .45); line(b, px, py, ang, q, q.dv > 0 ? 'rgb(158,158,158)' : 'rgb(98,98,98)', .4); }
+      }
+    }
+    const da = a.getImageData(0, 0, W, W).data, db = b.getImageData(0, 0, W, W).data;
+    for (let i = 0; i < da.length; i += 4) da[i + 3] = db[i];
+    return texture(da, W, THREE.RepeatWrapping);
+  }
+  // the atlas: sixteen strokes, one per cell, each filling its cell; R coverage, G relief, B bristle value
+  function atlas() {
+    const W = 512, C = 128, a = cv(W), b = cv(W), c = cv(W); a.fillStyle = '#000'; a.fillRect(0, 0, W, W);
+    for (let j = 0; j < 4; j++) for (let i = 0; i < 4; i++) {
+      const x = (i + .5) * C, y = (j + .5) * C, L = C * .9, w = C * (.6 + rn() * .2), seed = rn() * 9, tp = rn() < .5 ? 0 : .25 + rn() * .35, rg = .12 + rn() * .16, br = bristles(L, w);
+      shape(a, x, y, 0, L, w, rg, seed, tp); fill(a, '#fff', .3); shape(a, x, y, 0, L * .95, w * .9, rg, seed, tp); fill(a, '#fff', .55); shape(a, x, y, 0, L * .88, w * .78, rg, seed, tp); fill(a, '#fff');
+      shape(b, x - w * .05, y - w * .05, 0, L, w, rg, seed, tp); fill(b, 'rgb(170,170,170)');
+      shape(b, x + w * .05, y + w * .05, 0, L, w, rg, seed, tp); fill(b, 'rgb(82,82,82)');
+      shape(b, x, y, 0, L, w, rg, seed, tp); fill(b, 'rgb(128,128,128)');
+      for (const q of br) { line(c, x, y, 0, q, rgb(0, q.dv * 1.6, 0), .6); line(b, x, y, 0, q, q.dv > 0 ? 'rgb(158,158,158)' : 'rgb(98,98,98)', .4); }
+      // dry brush: a few gaps run in from one end, where the bristles parted
+      for (let k = 0, n = 1 + (rn() * 3 | 0); k < n; k++) { const e = rn() < .5 ? -1 : 1, ly = (rn() - .5) * w * .6; line(a, x, y, 0, { x0: e * L * .5, y0: ly, x1: e * (L * .5 - L * (.15 + rn() * .3)), y1: ly + (rn() - .5) * w * .06, lw: 1.5 + rn() * 2 }, '#000', .85); }
+    }
+    const da = a.getImageData(0, 0, W, W).data, db = b.getImageData(0, 0, W, W).data, dc = c.getImageData(0, 0, W, W).data;
+    for (let i = 0; i < da.length; i += 4) { da[i + 1] = db[i]; da[i + 2] = dc[i + 1]; da[i + 3] = 255; }
+    return texture(da, W, THREE.ClampToEdgeWrapping);
+  }
+  const t0 = performance.now();
+  const out = {
+    field: field(1024, { count: 2700, wpx: 22, aspect: [2, 3.6], dir: 0, coh: .9, jit: .35 }),
+    water: field(1024, { count: 2200, wpx: 22, aspect: [3, 5], dir: 0, coh: .12, jit: .12 }),
+    atlas: atlas(),
+  };
+  out.ms = performance.now() - t0;
+  return out;
+}
+const brushes = makeBrushes();
+U.uPaint.value = brushes.field; U.uPaintW.value = brushes.water; U.uAtlas.value = brushes.atlas;
 
 // ============================================================ the paint: shared GLSL
 // Everything is painted in small dabs, the sky and the water included. A dab is an ellipse of one colour, pushed a little off its
@@ -384,23 +466,25 @@ float h1(float n){ return fract(sin(n) * 43758.5453); }
 float h2(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); return mix(mix(h2(i), h2(i + vec2(1, 0)), f.x), mix(h2(i + vec2(0, 1)), h2(i + vec2(1, 1)), f.x), f.y); }
 vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
-// the dab field: a jittered grid of overlapping ellipses of cell size s, the grid stretched along x by 'stretch' (water and sky lie flat);
-// the pixel belongs to whichever covering dab lies on top. returns (coverage, dab id, dab centre in uv units)
-vec4 dabs(vec2 uv, float s, float stretch, float ang0, float angJit, float fw) {
-  vec2 sc = vec2(stretch, 1.), g = uv / (s * sc), gi = floor(g);
-  float best = -1., bd = 1.; vec2 bc = vec2(0.), bctr = vec2(0.);
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-    vec2 c = gi + vec2(float(i), float(j));
-    float hx = h2(c), hy = h2(c + 7.3), hz = h2(c + 5.5);
-    vec2 ctr = c + .5 + (vec2(hx, hy) - .5) * .8;
-    float a = ang0 + (h2(c + 3.1) - .5) * angJit; vec2 e = vec2(cos(a), sin(a));
-    vec2 d = g - ctr; vec2 l = vec2(dot(d, e), dot(d, vec2(-e.y, e.x)));
-    float ap = 1.15 + .45 * hx, rr = .62 + .28 * hy;
-    float dd = length(l / vec2(ap, 1.)) / rr;
-    dd /= 1. + .09 * sin(dot(l, vec2(5.1, 3.7)) * 2.4 + hx * 40.) + .05 * sin(dot(l, vec2(-2.9, 6.3)) * 2.4 + hy * 30.);
-    if (dd < 1. && hz > best) { best = hz; bd = dd; bc = c; bctr = ctr; }
-  }
-  return vec4(best < 0. ? 0. : 1. - smoothstep(1. - fw, 1., bd), h2(bc + 2.2), bctr * s * sc);
+uniform sampler2D uPaint, uPaintW; uniform float uPxRad;
+const float STROKE = .012; // the width of a stroke, in radians of view: about a hundredth of the picture
+// the paint field read at one tile scale, on the three world planes weighted by the normal: offsets (hue, value, temperature, relief) about zero
+vec4 paintTri(sampler2D t, vec3 p, vec3 bw, float P) {
+  return bw.x * texture2D(t, p.zy / P + .31) + bw.y * texture2D(t, p.xz / P) + bw.z * texture2D(t, p.xy / P + .67) - .5;
+}
+// two tile scales an octave apart, blended by the distance to the eye, so the strokes stay a few pixels wide wherever you look;
+// 'ang' is the stroke width wanted, in radians of view
+vec4 paintAt(sampler2D t, vec3 p, vec3 bw, float dist, float ang) {
+  float lv = log2(max(dist, .5) * ang * ${TILE_N}.), lo = floor(lv), w = fract(lv);
+  vec4 o = mix(paintTri(t, p, bw, exp2(lo)), paintTri(t, p + 3.1, bw, exp2(lo + 1.)), w);
+  return o * inversesqrt(w * w + (1. - w) * (1. - w));
+}
+// what a stroke does to the colour under it: a push in hue and value, now and then a change of temperature, and the relief of the paint
+vec3 applyPaint(vec3 c, vec4 o, float amt) {
+  c = hueShift(c, o.r * .9 * amt) * (1. + o.g * .7 * amt);
+  float l = dot(c, LW);
+  c = mix(c, l * (o.b < 0. ? WARM : VIOLET), min(abs(o.b) * 4.5, 1.) * .4 * amt);
+  return c * (1. + o.a * .5 * amt);
 }
 // broken colour: a dab's colour is the local colour pushed off in hue and value; one dab in six takes the other temperature
 vec3 dabTint(vec3 c, float id, float amt) {
@@ -421,7 +505,7 @@ vec3 tone(vec3 c) {
 
 // ============================================================ the patch shader
 const PATCH_VERT = /* glsl */`
-uniform float uTime; uniform vec3 uWind;
+uniform float uTime; uniform vec3 uWind; uniform float uPxRad;
 #ifdef INSTANCED
 attribute vec3 iPos; attribute vec3 iU; attribute vec3 iV; attribute vec3 iN; attribute vec4 iMisc;
 #else
@@ -430,9 +514,9 @@ attribute float aPal;
 #ifdef WATER
 uniform mat4 uReflMatrix; varying vec4 vRefl;
 #endif
-varying vec2 vUv; varying vec3 vN; varying vec3 vWorld; varying float vPal; varying float vSeed; varying float vDist; varying float vKind;
+varying vec2 vUv; varying vec3 vN; varying vec3 vWorld; varying float vPal; varying float vSeed; varying float vDist; varying float vKind; varying float vFade;
 void main(){
-  vKind = 0.;
+  vKind = 0.; vFade = 1.;
 #ifdef INSTANCED
   vec2 q = position.xy; vKind = iMisc.y;
   float kind = iMisc.y, seed = iMisc.z, amp = iMisc.w;
@@ -444,7 +528,13 @@ void main(){
     vec3 dir = kind < 2.5 ? uWind : vec3(cos(ph), 0., sin(ph));
     c += dir * s * amp;
   }
-  vec3 wp = (modelMatrix * vec4(c + iU * q.x + iV * q.y, 1.)).xyz;
+  // no stroke is painted longer than a few percent of the view, and none smaller than a few pixels: it fades rather than sparkles
+  float dd = max(distance(cameraPosition, (modelMatrix * vec4(c, 1.)).xyz), .05), lu = max(length(iU), 1e-4);
+  float px = 2. * lu * uPxRad / dd, f = min(1., .016 * (.7 + .7 * fract(seed * 7.31)) * dd / lu);
+  vFade = smoothstep(1.5, 4.5, px);
+  vec3 anchor = c - iU * step(.7, iU.y / lu); // an upright stroke shrinks toward its foot
+  c = anchor + (c - anchor) * f;
+  vec3 wp = (modelMatrix * vec4(c + iU * q.x * f + iV * q.y * f, 1.)).xyz;
   vUv = q; vN = normalize(mat3(modelMatrix) * iN); vPal = iMisc.x; vSeed = seed;
 #else
   vec3 wp = (modelMatrix * vec4(position, 1.)).xyz;
@@ -466,23 +556,23 @@ uniform float uSunInt, uHemiInt, uFogNear, uFogFar, uTime;
 uniform sampler2D uRefl; uniform vec3 uWaterDeep, uWaterTint; uniform float uReflectivity, uRipple, uBands; uniform mat4 uReflMatrix;
 varying vec4 vRefl;
 #endif
-varying vec2 vUv; varying vec3 vN; varying vec3 vWorld; varying float vPal; varying float vSeed; varying float vDist; varying float vKind;
+varying vec2 vUv; varying vec3 vN; varying vec3 vWorld; varying float vPal; varying float vSeed; varying float vDist; varying float vKind; varying float vFade;
+uniform sampler2D uAtlas;
 ${PAINT_GLSL}
 vec3 pal(float i){ int k = int(i + .5); return mix(uPalA[k], uPalB[k], uBlend); }
 #ifdef WATER
 vec3 reflAt(vec4 rp, vec2 off) { rp.xy += off * rp.w; return texture2DProj(uRefl, rp).rgb; }
 #endif
 void main(){
-  vec3 c; float dabId, a;
+  vec3 c; float a; vec4 O;
 #ifdef INSTANCED
-  // one painted dab per instance: an ellipse with a wobbling rim, crisp-edged
-  float ang = atan(vUv.y, vUv.x);
-  float r = 1. + .16 * sin(ang * 3. + vSeed * 17.) + .10 * sin(ang * 5. - vSeed * 29.) + .06 * sin(ang * 8. + vSeed * 7.);
-  float d = length(vUv) / r;
-  a = 1. - smoothstep(.78, .98, d);
-  if (a < .2) discard;
-  dabId = vSeed;
-  vec3 base = dabTint(pal(vPal), vSeed, .65) * (1. + .10 * vUv.x * (h1(vSeed * 3.1) - .5) * 2.);
+  // one brush stroke per instance, from the atlas
+  float cs = floor(vSeed * 16.); vec2 cell = vec2(mod(cs, 4.), floor(cs / 4.));
+  vec3 S = texture2D(uAtlas, (vUv * .5 + .5 + cell) * .25).rgb;
+  a = S.r * vFade;
+  if (a < .15) discard;
+  O = vec4(h1(vSeed * 13.7 + 1.) - .5, h1(vSeed * 7.3 + 2.) - .5, 0., 0.);
+  vec3 base = dabTint(pal(vPal), vSeed, .6) * (1. + (S.b - .5) * .6) * (1. + (S.g - .5) * .5);
   #ifdef WATER
   vec2 off = vec2(sin(uTime * .35 + vSeed * 31.), cos(uTime * .29 + vSeed * 17.)) * uRipple * vec2(1., 1.6);
   vec3 refl = reflAt(vRefl, off);
@@ -492,50 +582,24 @@ void main(){
   c = mix(c, base * (uHemiSky * uHemiInt + uSunCol * uSunInt * .6), .38);
   #endif
 #else
-  a = 1.; dabId = 0.;
-  // the base coat is a field of dabs in world space; its cell size follows the distance to the eye in octaves, two octaves blended
-  vec3 an = abs(vN);
-  #ifdef WATER
-  vec2 uv = vWorld.xz; float asp = 2.4, ang0 = 0., angJit = .3;
-  #else
-  vec2 uv = an.y > .6 ? vWorld.xz : an.x > an.z ? vWorld.zy : vWorld.xy; float asp = 1., ang0 = 0., angJit = an.y > .6 ? 6.28 : 1.4;
-  #endif
-  float lv = log2(max(vDist, .6)), lo = floor(lv), lf = smoothstep(.36, .64, fract(lv));
+  a = 1.;
+  // the base coat is the paint field, in world space, sized to the eye
+  vec3 an = abs(vN); vec3 bw = an * an * an * an; bw /= dot(bw, vec3(1.));
   vec2 mc = vWorld.xz + vWorld.y * vec2(.9, .6);
   float m = vn(mc * 1.3) * .5 + vn(mc * 3.4 + 9.) * .3 + vn(mc * 8.1 + 4.) * .2;
   vec3 local = hueShift(pal(vPal), (m - .5) * .3) * (.88 + m * .24);
   #ifdef WATER
+  O = paintAt(uPaintW, vec3(vWorld.x, 0., vWorld.z), vec3(0., 1., 0.), vDist, STROKE * 1.3);
   vec3 vd = normalize(cameraPosition - vWorld);
   float fres = uReflectivity * (.55 + .45 * pow(1. - max(vd.y, 0.), 2.));
   float band = vn(vec2(vWorld.x * .35 + uTime * .05, vWorld.z * 2.2)) - .5, band2 = vn(vec2(vWorld.x * 1.3 - uTime * .04, vWorld.z * 6.)) - .5;
   vec2 offp = vec2((band * 1.4 + band2 * .6) * uBands * 2., sin(uTime * .27 + vWorld.z * .9) * .5 + band * .8 * uBands) * uRipple * 2.;
-  vec3 gapc = mix(uWaterDeep, reflAt(vRefl, offp) * uWaterTint, fres * .8) * .92;
+  // each stroke shifts the reflection a little: the mirror breaks into pieces of colour
+  vec3 refl = reflAt(vRefl, offp + O.rg * uRipple * 6.) * uWaterTint;
+  c = applyPaint(mix(uWaterDeep, refl, fres), O, .9);
   #else
-  float l0 = dot(local, LW);
-  vec3 gapc = mix(local, l0 * vec3(1.06, 1.0, .9), .4) * .94; // the ground showing between the dabs: paler, greyer, warm
-  #endif
-  vec3 acc = vec3(0.); float idAcc = 0.;
-  for (int k = 0; k < 2; k++) {
-    float w = k == 0 ? 1. - lf : lf; if (w < .001) continue;
-    float sz = .0115 * exp2(lo + float(k));
-    float fw = clamp(length(fwidth(uv)) / sz * 1.3, .04, .6);
-    vec4 D = dabs(uv + float(k) * 17.3, sz, asp, ang0, angJit, fw);
-    #ifdef WATER
-    // the reflection is read once per dab, at its centre: the mirror breaks into pieces of colour
-    vec4 rp = uReflMatrix * vec4(D.z, vWorld.y, D.w, 1.);
-    vec2 offd = vec2(sin(uTime * .35 + D.y * 31.) * 1.2, cos(uTime * .29 + D.y * 17.) * 1.4) * uRipple + offp * .6;
-    vec3 dc = mix(uWaterDeep, reflAt(rp, offd) * uWaterTint, fres);
-    dc = dabTint(dc, D.y, .8);
-    #else
-    vec3 dc = dabTint(hueShift(local, (h1(D.y * 3.3) - .5) * .4), D.y, 1.);
-    #endif
-    acc += mix(gapc, dc, D.x) * w; idAcc += D.y * w;
-  }
-  dabId = idAcc;
-  #ifdef WATER
-  c = acc;
-  #else
-  vec3 base = acc;
+  O = paintAt(uPaint, vWorld, bw, vDist, STROKE);
+  vec3 base = applyPaint(applyPaint(local, paintAt(uPaint, vWorld + 11.7, bw, vDist, STROKE * 3.2), .45), O, 1.); // broad strokes beneath, small strokes over
   #endif
 #endif
 #ifndef WATER
@@ -549,12 +613,12 @@ void main(){
   vec3 lc = mix(c, l * WARM, .18 * uSunInt);
   c = mix(sh, lc, lit);
 #endif
-  // the distance is painted too: the fog colour is broken by the same dabs, and never quite covers them
+  // the distance is painted too: the fog colour is broken by the same strokes, and never quite covers them
   float fog = smoothstep(uFogNear, uFogFar, vDist) * .9;
 #ifdef INSTANCED
   if (vKind > 3.5) fog *= .3;
 #endif
-  c = mix(c, dabTint(uFogCol, dabId + 3.7, .45), fog);
+  c = mix(c, applyPaint(uFogCol, O, .5), fog);
   gl_FragColor = vec4(tone(c), a);
   #include <colorspace_fragment>
 }`;
@@ -574,11 +638,9 @@ void main(){
   float az = atan(d.z, d.x), el = asin(y);
   float n = vn(vec2(az * 5. + uTime * .01, y * 34.)) * .6 + vn(vec2(az * 13. + 3., y * 80. + uTime * .02)) * .4;
   c *= 1. + (n - .5) * uHaze * 1.6;
-  // the sky is painted in dabs of about a degree, lying along the horizon: pink and lavender among the blue
-  vec2 uv = vec2(az * max(cos(el), .15), el);
-  float fw = clamp(length(fwidth(uv)) / .007 * 1.3, .3, .7);
-  vec4 D = dabs(uv, .007, 2.2, 0., .4, fw);
-  c = mix(c * .97, dabTint(c, D.y, .6), D.x * .85);
+  // the sky is painted in the same small strokes: pink and lavender among the blue
+  vec3 bw = d * d * d * d; bw /= dot(bw, vec3(1.));
+  c = applyPaint(c, paintAt(uPaint, d, bw, 1., STROKE), .55);
   float s = max(dot(d, uSunDir), 0.);
   c += uSunCol * (pow(s, 700.) * 1.3 + pow(s, 14.) * .22 + pow(s, 3.) * .07);
   c = mix(c, vec3(.88, .24, .05), uSunDisc * smoothstep(.99972, .99984, s)); c += uSunCol * uSunDisc * (pow(s, 120.) * .3 + pow(s, 8.) * .1);
@@ -1846,7 +1908,7 @@ function update(dt) {
   const limit = hourFog.far * fs * .95;
   for (const g of [placeGroup, waterGroup]) for (const m of g.children) { if (m.userData.place === undefined || m.userData.always) continue; const pl = places[m.userData.place]; m.visible = Math.hypot(camera.position.x - pl.center.x, camera.position.z - pl.center.z) - pl.radius < limit; }
 }
-function render() { camera.updateMatrixWorld(); sky.position.copy(camera.position); sky.updateMatrixWorld(); renderReflection(); renderer.render(scene, camera); }
+function render() { U.uPxRad.value = renderer.domElement.height / (2 * Math.tan(camera.fov * Math.PI / 360)); camera.updateMatrixWorld(); sky.position.copy(camera.position); sky.updateMatrixWorld(); renderReflection(); renderer.render(scene, camera); }
 function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min((now - last) / 1000, .1); if (dt < 0) dt = 0; last = now;
@@ -1859,7 +1921,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm9-monet', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm10-brush', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },

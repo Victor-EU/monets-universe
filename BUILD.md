@@ -743,3 +743,23 @@ the two systems show. Rouen's stone dabs are still large blobs at the
 facade viewpoint. Photo-mode frames re-taken.
 
 Deployment still waits for the explicit go-ahead, with the domain.
+
+### Progress · M10 — the brush
+
+**What was wrong (user feedback on M9).** The strokes were too big and did not read as impressionism, and they glittered under the cursor and while walking. Measured before the fix, with headless frames: a rotation of six tenths of a pixel changed 0.14 % of the pixels strongly (more than 80 levels) and a one-centimetre step changed 0.21 %. The causes: every dab was computed per pixel with a hard edge and a sub-pixel rim wobble, so edges crawled on every move; the base dabs re-rolled with distance as you walked (two octaves crossfading over a narrow band); and the builders' patches were world-sized flat shapes that ballooned up close.
+
+**What was done.** The dab field is gone. The strokes are now painted once, at start-up, on a 2D canvas, and kept as textures the GPU filters (mipmaps, anisotropy), so nothing per pixel can shimmer:
+- A tileable **paint field** (1024², about 2700 overlapping strokes in clusters of shared direction, widths varying 3×) holds not colour but what a stroke does to the colour under it: hue, value, temperature (warm or violet accents on one stroke in six), and the relief of the paint. It is read triplanar in world space at two scales an octave apart, blended by distance, so strokes stay about a hundredth of the view wide wherever you look (`STROKE = .012` rad). A broader underpainting layer (3.2× the size, at half strength) lies beneath the small strokes. The sky and the water use the same field (the water its own tile of long horizontal strokes, which also shift the reflection per stroke so the mirror breaks into pieces).
+- A **stroke atlas** (16 tapered, ragged strokes with bristle streaks, dry-brush gaps and relief) replaces the per-pixel ellipse of the builders' patches. In the vertex shader each patch is capped to a screen size that varies per stroke (1.1–2.2 % of the view) and fades out under four pixels instead of sparkling; upright strokes shrink toward their foot.
+- Colour, light, fog and tone are unchanged from M9.
+
+**Verified.** Same motion test after: rotation 0.01 % (from 0.14 %), step 0.08 % (from 0.21 %); what remains is true parallax at silhouettes. All eight views captured; brushes generate in well under a second.
+
+| Quality | Pixel ratio | Frame, 1920×862 CSS at 2× |
+|---|---|---|
+| Balanced | 2× (back from 1.5×) | 7–14 ms |
+| Rich | 2× | 7–14 ms |
+
+The texture field costs about half of the per-pixel dab field, so Balanced returns to full pixel ratio (Balanced and Rich now differ only in reflection size and patch density).
+
+**Known tells.** Rouen's facade is a dense confetti of cream and violet strokes at the cap size; the builders' wall patches at Argenteuil are the largest strokes in the picture. Up close the base field is even and fine, more woven than dabbed. Deployment still waits for the explicit go-ahead, with the domain.
