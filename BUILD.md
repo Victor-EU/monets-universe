@@ -813,3 +813,42 @@ haystacks 11.0, rouen 9.2, sunrise 5.0, aerial 4.9 ms; reflection 1.4 ms.
 **Still visible.** Away from the viewpoint the canvas stretches and its visibility edges are hard (`key-3off.jpg`). Le Havre's chimneys
 still show dark from the poplars (solid kinds take only 30 % fog, a M10 rule). Outside the frame the grass is smoother and lighter than
 Monet's; Rouen's flanking houses stay plain slabs. A faint pale mass of the cathedral remains above the haystacks at the far right.
+
+### Progress · M12 — the Orangerie (request: "add the Water Lilies of the Musée de l'Orangerie")
+
+**What it is.** An eighth place, key 8: Monet's *Nymphéas* as he installed them, two oval rooms end to end beyond the water garden,
+south of the pond. The layout is the museum's own plan (dossier pédagogique, p. 19): a small rotunda, then the first room with
+*Soleil couchant* (6 m) at the west end, *Les Nuages* (12.75 m) north, *Reflets verts* (8.5 m) east, *Matin* (12.75 m) south; then
+the second with *Reflets d'arbres* (8.5 m) west, *Le Matin aux saules* (12.75 m) north, *Les Deux Saules* (17 m) round the east end,
+*Le Matin clair aux saules* (12.75 m) south. Every composition is 2 m high and centred on its wall; the doorways are placed
+automatically in the gaps between compositions (two at each end, none round *Les Deux Saules*), so the plan follows from the lengths.
+The panels are the canvases themselves (Google Art Project scans, public domain), on curved walls at true size, `u` running from the
+viewer's left; a thin gilt edge, a white ledge beneath, a stone arch round each door, a cove and a veiled oval skylight above, the oval
+bench, the carpet. The building outside is a long pale box with arched windows on the garden front and its door at the west end,
+chestnuts on the lawn, and a gravel walk from the door round to the pond.
+
+**How it is built** (`index.html`, build `m12-orangerie`).
+- `Oval`: an ellipse parametrised by arc length (`sOf`, `theta`, `atS`, `inside`); `PANELS` gives each composition its room, wall
+  angle and length; `ORANG.doors` is derived. `Quads` accumulates quads/triangles with normals and uv into one geometry per palette
+  index, drawn with the place's base material; the panels use `PANEL_FRAG` (texture × the hour's grade, strokes returning as the canvas is
+  magnified, lit from above), the skylight `VEIL_FRAG`.
+- The hour is the daylight in the room: four stops (Morning, Full day, Grey day, Evening) grade the panels and colour the veil
+  (`ORANG.veilLight`, `ORANG.panelLight`, set in `applyHour`). `gradeOf`/`applyHour`/`paintingHour` accept `panels` as well as `painting`.
+- `uPaintAmt` (per place, in `paletteUniforms`) scales the base coat's strokes and mottle; the Orangerie uses .38 so the rooms read white.
+- The terrain is flattened under the building (`orangFlat` in `terrainHeight`); the height grid now reaches z = +80 and walking z = +96.
+- Walls block: `orangWalkable` / `orangBlocks` (rooms, the lens between them, the vestibule, the rotunda, the passage; walls only pass at
+  their doors); `tryMove` refuses a blocked step unless flying. Tested in node (`scratchpad/walk_test.mjs`): 15 points, the whole prefix path.
+- The promenade now begins inside the second room: `ORANG_PATH` (through both rooms' north doors, the rotunda, out the west door, round
+  to the pond viewpoint) is prefixed to `PROMENADE_PTS`; scrolling back from the pond leads into the museum. `?s=` values shifted by
+  the prefix length.
+- Keys 1–9; the aerial is 9 and pulled back (`p (0, 250, 200)`) so the building is in frame. Textures: `paintings/orangerie/*.jpg`,
+  2.8 MB in all, loaded with the paintings; a grey placeholder until then.
+
+**Verified.** Headless 1600×900 frames (`scratchpad/orangerie-*.jpg`, sheet `orangerie-sheet.jpg`): the viewpoint, both rooms, a
+door, the evening hour, the building from the pond, the aerial; no console errors, live tab clean. Bench Balanced 2× (3840×1550):
+pond 12.0, parasol 8.9, argenteuil 10.1, poplars 10.3, haystacks 12.9, rouen 9.4, sunrise 5.2, orangerie 9.0, aerial 5.2 ms; reflection 1.5 ms.
+
+**Still visible / open.** *Le Matin aux saules* has no public scan: it is the 1309-px catalogue reproduction (Wildenstein 1996, via
+Commons) and is soft up close; the museum offers larger files behind its terms of use, which the user can accept and drop in. The rooms
+are simpler than the real ones (no cornice mouldings, no rail, no lamps in the cove); the ceiling is a flat veil, not a glazed vault. The
+lawn outside is plain. The Sailko in-situ photographs on Commons remain the reference for the real rooms.

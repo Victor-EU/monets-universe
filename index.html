@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#1b2a3a">
-<meta name="description" content="A walkable painting: seven Monet canvases laid out as one landscape, from the water-lily pond at Giverny to the sunrise at Le Havre. Scroll to drift along the promenade.">
+<meta name="description" content="A walkable painting: eight Monet works laid out as one landscape, from the Orangerie's Nymphéas and the water-lily pond at Giverny to the sunrise at Le Havre. Scroll to drift along the promenade.">
 <meta property="og:title" content="Monet's Universe">
 <meta property="og:description" content="Seven paintings, one geography. Scroll from the pond to the sunrise.">
 <title>Monet's Universe</title>
@@ -110,13 +110,13 @@ body:has(.popover.open) #touchpad,body.photo #touchpad{display:none!important}
 <body>
 <div id="loading" aria-hidden="true"><i class="wash w1"></i><i class="wash w2"></i><i class="wash w3"></i><i class="wash w4"></i><div><h1>Monet's Universe</h1><p>Mixing the colour</p></div></div>
 <div id="veil" aria-hidden="true"></div>
-<div id="hint" aria-hidden="true">Drag to look · scroll or W A S D to move · 1–8 for paintings</div>
+<div id="hint" aria-hidden="true">Drag to look · scroll or W A S D to move · 1–9 for paintings</div>
 <div id="location" aria-live="polite"></div>
 <div id="crosshair" aria-hidden="true"></div>
 
 <nav id="dock" aria-label="Explore the painted universe">
 <button id="fly" title="Walk / fly · F" aria-label="Toggle free flight" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M3 15c3-1 5-3 9-3s6 2 9 3M12 12V5M9 8l3-3 3 3"/></svg></button>
-<button id="views" title="Painting viewpoints · 1–8" aria-label="Painting viewpoints" aria-expanded="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6M16 8h.01"/></svg></button>
+<button id="views" title="Painting viewpoints · 1–9" aria-label="Painting viewpoints" aria-expanded="false"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6M16 8h.01"/></svg></button>
 <button id="hourBtn" title="The hour · [ ]" aria-label="Light and hour" aria-expanded="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></button>
 <div class="divider"></div>
 <button id="photo" title="Photo mode · P" aria-label="Photo mode" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 6h4l2-3h4l2 3h4a1 1 0 0 1 1 1v12H3V7a1 1 0 0 1 1-1Z"/><circle cx="12" cy="12" r="4"/></svg></button>
@@ -199,7 +199,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NoToneMapping; // the shaders tone their own colour: see tone() in PAINT_GLSL
 renderer.domElement.id = 'world';
 renderer.domElement.tabIndex = 0;
-renderer.domElement.setAttribute('aria-label', "Monet's universe, a walkable painting. Drag to look, W A S D or scroll to move, F to fly, keys 1 through 8 for painting viewpoints, P for photo mode.");
+renderer.domElement.setAttribute('aria-label', "Monet's universe, a walkable painting. Drag to look, W A S D or scroll to move, F to fly, keys 1 through 9 for painting viewpoints, P for photo mode.");
 document.body.prepend(renderer.domElement);
 const canvas = renderer.domElement;
 
@@ -336,6 +336,27 @@ const SUNRISE_STOPS = [
     waterDeep: '#5a6480', waterTint: '#b8b8c4', reflectivity: .85, ripple: .016, bands: .9, haze: .18 }),
 ];
 
+const ORANG_PAL = ['#d9d4c8', '#f1ece2', '#f4f0e8', '#ece8e0', '#cfc4ad', '#b9964e', '#3d6a3a', '#5f8f48', '#8fb862', '#6f9a4c', '#c9bfa6', '#9cbf6a', '#3a4756', '#5a4a3a', '#8e949c', '#b0a48f', '#a19d95', '#8f8b84', '#5e5a55', '#d46a7a'];
+// the Orangerie: the hour is the daylight through the veiled skylight; the panels take its grade
+const ORANG_STOPS = [
+  stop({ name: 'Morning', grade: { mul: [.95, .97, 1.03], add: [0, 0, .01] }, pal: ORANG_PAL,
+    skyTop: '#b9cbe0', skyHorizon: '#edefe8', sunEl: 84, sunAz: 120, sunCol: '#f6f3ea', sunInt: .45,
+    hemiSky: '#f0f1f2', hemiGround: '#d3cfc6', hemiInt: .92, shadowTint: '#d3d7e4', fogNear: 40, fogFar: 150, fogCol: '#e6e8e2',
+    waterDeep: '#3f6b7c', waterTint: '#e6eeea', reflectivity: .8, ripple: .012 }),
+  stop({ name: 'Full day', grade: { mul: [1, 1, 1], add: [0, 0, 0] }, pal: ORANG_PAL,
+    skyTop: '#a9c6de', skyHorizon: '#f0ecd6', sunEl: 84, sunAz: 190, sunCol: '#fff8ea', sunInt: .6,
+    hemiSky: '#f4f2ec', hemiGround: '#d8d2c6', hemiInt: 1, shadowTint: '#d8d9e2', fogNear: 40, fogFar: 150, fogCol: '#e9e8dc',
+    waterDeep: '#3f6b7c', waterTint: '#e6eeea', reflectivity: .86, ripple: .014 }),
+  stop({ name: 'Grey day', grade: { mul: [.87, .89, .93], add: [.01, .01, .02] }, pal: ORANG_PAL,
+    skyTop: '#b6bcc2', skyHorizon: '#dedfdc', sunEl: 84, sunAz: 190, sunCol: '#e8e9ea', sunInt: .25,
+    hemiSky: '#e4e5e6', hemiGround: '#c8c6c0', hemiInt: .82, shadowTint: '#cfd2da', fogNear: 30, fogFar: 120, fogCol: '#d9dad6',
+    waterDeep: '#4a5c66', waterTint: '#d6dcdc', reflectivity: .8, ripple: .01 }),
+  stop({ name: 'Evening', grade: { mul: [1.04, .95, .84], add: [.02, 0, -.01] }, pal: ORANG_PAL,
+    skyTop: '#8d9fc8', skyHorizon: '#f0c8a4', sunEl: 84, sunAz: 260, sunCol: '#ffd9b0', sunInt: .45,
+    hemiSky: '#ecdfd2', hemiGround: '#c8b8ac', hemiInt: .78, shadowTint: '#c9c0dc', fogNear: 36, fogFar: 140, fogCol: '#e3c9b8',
+    waterDeep: '#3a3f6e', waterTint: '#ecd0cc', reflectivity: .9, ripple: .01 }),
+];
+
 // ============================================================ places (data first; adding a painting is adding an entry)
 const places = [
   { name: 'The Water-Lily Pond', place: 'Giverny, the water garden', year: '1899', swatch: '#6a9a4a', file: 'pond',
@@ -359,8 +380,11 @@ const places = [
   { name: 'Impression, Sunrise', place: 'Le Havre, the outer harbour', year: '1872', swatch: '#e07a3a', file: 'sunrise',
     center: V(34, 0, -445), radius: 60,
     view: { p: V(14, 4.6, -440), look: V(73.9, 7.7, -443.2), fov: 30 }, painting: { src: 'paintings/sunrise.jpg', hz: .5, aspect: 1.2892, stop: 0 }, stops: SUNRISE_STOPS, build: buildHavre },
-  { name: 'The whole universe', place: 'One geography, seven paintings', year: '', swatch: '#8a8f7c', aerial: true,
-    view: { p: V(0, 215, 85), look: V(0, 0, -225), fov: 60 } },
+  { name: 'Les Nymphéas', place: "the Orangerie, two oval rooms", year: '1914–1926', swatch: '#7b86a8', file: 'orangerie',
+    center: V(-2, 0, 58), radius: 22,
+    view: { p: V(-5.5, 2.45, 60), look: V(-17, 2.5, 55.5), fov: 60 }, panels: { stop: 1 }, stops: ORANG_STOPS, build: buildOrangerie },
+  { name: 'The whole universe', place: 'One geography, eight paintings', year: '', swatch: '#8a8f7c', aerial: true,
+    view: { p: V(0, 250, 200), look: V(0, 0, -200), fov: 60 } },
 ];
 
 // ============================================================ shared uniforms
@@ -584,7 +608,7 @@ void main(){
 }`;
 
 const PATCH_FRAG = /* glsl */`
-uniform vec3 uPalA[20]; uniform vec3 uPalB[20]; uniform float uBlend;
+uniform vec3 uPalA[20]; uniform vec3 uPalB[20]; uniform float uBlend, uPaintAmt;
 uniform vec3 uSunDir, uSunCol, uHemiSky, uHemiGround, uShadowTint, uFogCol;
 uniform float uSunInt, uHemiInt, uFogNear, uFogFar, uTime;
 #ifdef WATER
@@ -622,7 +646,7 @@ void main(){
   vec3 an = abs(vN); vec3 bw = an * an * an * an; bw /= dot(bw, vec3(1.));
   vec2 mc = vWorld.xz + vWorld.y * vec2(.9, .6);
   float m = vn(mc * 1.3) * .5 + vn(mc * 3.4 + 9.) * .3 + vn(mc * 8.1 + 4.) * .2;
-  vec3 local = hueShift(pal(vPal), (m - .5) * .3) * (.88 + m * .24);
+  vec3 local = hueShift(pal(vPal), (m - .5) * .3 * uPaintAmt) * (1. + (m - .5) * .24 * uPaintAmt);
   #ifdef WATER
   O = paintAt(uPaintW, vec3(vWorld.x, 0., vWorld.z), vec3(0., 1., 0.), vDist, STROKE * 1.3);
   vec3 vd = normalize(cameraPosition - vWorld);
@@ -634,7 +658,7 @@ void main(){
   c = applyPaint(mix(uWaterDeep, refl, fres), O, .9);
   #else
   O = paintAt(uPaint, vWorld, bw, vDist, STROKE);
-  vec3 base = applyPaint(applyPaint(local, paintAt(uPaint, vWorld + 11.7, bw, vDist, STROKE * 3.2), .45), O, 1.); // broad strokes beneath, small strokes over
+  vec3 base = applyPaint(applyPaint(local, paintAt(uPaint, vWorld + 11.7, bw, vDist, STROKE * 3.2), .45 * uPaintAmt), O, uPaintAmt); // broad strokes beneath, small strokes over
   #endif
 #endif
 #ifndef WATER
@@ -734,7 +758,7 @@ void main(){
 
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
-function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 } }, projectorUniforms()); }
+function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
   if (o.instanced !== false) defines.INSTANCED = 1;
@@ -865,10 +889,11 @@ function terrainHeight(x, z) {
   const e = epteSDFRaw(x, z); if (e <= 3) { const t = sstep(e, -3, 3); h = lerp(-1.6, h, t * t * (3 - 2 * t)); }
   h = lerp(h, TOWN.y, townFlat(x, z));
   const hb = harbourSDFRaw(x, z); if (hb <= 3) { const t = sstep(hb, -3, 3); h = lerp(-2.5, h, t * t * (3 - 2 * t)); }
+  h = lerp(h, ORANG.y, orangFlat(x, z));
   return lerp(h, .12, promontory(x, z));
 }
 // the terrain is sampled once into a grid; everything else (patches, walking, normals) reads the grid
-const HG = { x0: -120, z0: -560, step: .8, nx: 301, nz: 726, h: null, s: null, r: null };
+const HG = { x0: -120, z0: -560, step: .8, nx: 301, nz: 801, h: null, s: null, r: null };
 function buildHeightGrid() {
   const N = HG.nx * HG.nz; HG.h = new Float32Array(N); HG.s = new Float32Array(N); HG.r = new Float32Array(N);
   for (let j = 0; j < HG.nz; j++) for (let i = 0; i < HG.nx; i++) { const x = HG.x0 + i * HG.step, z = HG.z0 + j * HG.step, k = j * HG.nx + i; HG.h[k] = terrainHeight(x, z); HG.s[k] = pondSDFRaw(x, z); HG.r[k] = riverSDFRaw(x, z); }
@@ -888,9 +913,83 @@ function walkHeight(x, z) { const g = groundHeight(x, z); return onBridge(x, z) 
 function isWater(x, z) { return groundHeight(x, z) < WATER_Y - .04 && !onBridge(x, z) && !onABridge(x, z); }
 function groundNormal(x, z, out) { const e = .35; out.set(groundHeight(x - e, z) - groundHeight(x + e, z), 2 * e, groundHeight(x, z - e) - groundHeight(x, z + e)).normalize(); return out; }
 
+// ============================================================ the Orangerie: the plan
+// Two oval rooms end to end, as Monet laid them out in 1927: a small rotunda, then the first room (Soleil couchant at the west end,
+// Les Nuages north, Reflets verts east, Matin south), then the second (Reflets d'arbres west, Le Matin aux saules north, Les Deux
+// Saules round the east end, Le Matin clair aux saules south). Each composition is centred on its wall; the doorways fall in the gaps
+// between them, two at each end. Lengths are the true ones: 2 m high, 91 m of canvas in all.
+const ORANG = { x: -2, z: 58, y: .9, hx: 34, hz: 13.5, wallH: 3.4, coveH: 4.7, doorW: 1.7, doorH: 2.4, thick: .55, panel0: .5, panel1: 2.5, ledge: .45, ledgeD: .3 };
+const ROOMS = [{ cx: -10, cz: 58, a: 10, b: 5.8 }, { cx: 15, cz: 58, a: 12, b: 6.6 }];
+const ROTUNDA = { cx: -25.5, cz: 58, r: 4 };
+const LENS = { x0: -4.5, x1: 9, hz: 6.9 };    // the space between the two rooms, entered by the doors at their ends
+const VEST = { x0: -22.2, x1: -16.5, hz: 5.5 }; // between the rotunda and the first room
+const PASS = { x0: -37, hz: 1.5 };            // the passage from the west door to the rotunda
+const PANELS = [ // room, the wall's angle (0 east, 90 north, 180 west, 270 south), length in metres, texture, title
+  { room: 0, at: 180, L: 6, file: 'soleil-couchant', name: 'Soleil couchant' },
+  { room: 0, at: 90, L: 12.75, file: 'nuages', name: 'Les Nuages' },
+  { room: 0, at: 0, L: 8.5, file: 'reflets-verts', name: 'Reflets verts' },
+  { room: 0, at: 270, L: 12.75, file: 'matin', name: 'Matin' },
+  { room: 1, at: 180, L: 8.5, file: 'reflets-arbres', name: "Reflets d'arbres" },
+  { room: 1, at: 90, L: 12.75, file: 'matin-saules', name: 'Le Matin aux saules' },
+  { room: 1, at: 0, L: 17, file: 'deux-saules', name: 'Les Deux Saules' },
+  { room: 1, at: 270, L: 12.75, file: 'matin-clair', name: 'Le Matin clair aux saules' },
+];
+// an ellipse in the ground plane, parametrised by arc length; theta 0 is east, and grows toward north (-z)
+class Oval {
+  constructor(cx, cz, a, b) {
+    this.cx = cx; this.cz = cz; this.a = a; this.b = b; const N = 2400; this.th = new Float32Array(N + 1); this.s = new Float32Array(N + 1);
+    let L = 0, px = cx + a, pz = cz;
+    for (let i = 0; i <= N; i++) { const t = i / N * TAU, x = cx + a * Math.cos(t), z = cz - b * Math.sin(t); if (i) L += Math.hypot(x - px, z - pz); this.th[i] = t; this.s[i] = L; px = x; pz = z; }
+    this.len = L;
+  }
+  wrap(s) { return ((s % this.len) + this.len) % this.len; }
+  theta(s) { s = this.wrap(s); const S = this.s; let lo = 0, hi = S.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (S[m] <= s) lo = m; else hi = m; } return this.th[lo] + (this.th[hi] - this.th[lo]) * (s - S[lo]) / Math.max(S[hi] - S[lo], 1e-9); }
+  sOf(deg) { const N = this.s.length - 1, f = ((deg % 360) + 360) % 360 / 360 * N, i = Math.min(Math.floor(f), N - 1); return this.s[i] + (this.s[i + 1] - this.s[i]) * (f - i); }
+  sAt(x, z) { return this.sOf(Math.atan2(-(z - this.cz) / this.b, (x - this.cx) / this.a) * 180 / Math.PI); }
+  arcDist(s0, s1) { const d = Math.abs(this.wrap(s0) - this.wrap(s1)); return Math.min(d, this.len - d); }
+  normal(theta, out) { return out.set(-Math.cos(theta) / this.a, 0, Math.sin(theta) / this.b).normalize(); } // inward
+  at(theta, inset, y, out) { const c = Math.cos(theta), s = Math.sin(theta); let nx = -c / this.a, nz = s / this.b; const l = Math.hypot(nx, nz); nx /= l; nz /= l; return out.set(this.cx + this.a * c + nx * inset, y, this.cz - this.b * s + nz * inset); }
+  atS(s, inset, y, out) { return this.at(this.theta(s), inset, y, out); }
+  scaled(theta, k, y, out) { return out.set(this.cx + this.a * k * Math.cos(theta), y, this.cz - this.b * k * Math.sin(theta)); }
+  inside(x, z, m = 0) { const dx = (x - this.cx) / (this.a - m), dz = (z - this.cz) / (this.b - m); return dx * dx + dz * dz < 1; }
+}
+ORANG.panelLight = { value: 1 }; ORANG.veilLight = { value: new THREE.Color(1, 1, 1) };
+ORANG.ovals = ROOMS.map(R => new Oval(R.cx, R.cz, R.a, R.b));
+ORANG.doors = [[], []]; // arc-length centres, per room, counter-clockwise from the east
+ORANG.ovals.forEach((O, ri) => {
+  const list = PANELS.filter(P => P.room === ri).map(P => ({ P, sc: O.sOf(P.at) })).sort((u, v) => u.sc - v.sc);
+  for (const { P, sc } of list) { P.sc = sc; P.O = O; }
+  for (let i = 0; i < list.length; i++) { const A = list[i], B = list[(i + 1) % list.length]; const e0 = A.sc + A.P.L / 2; let e1 = B.sc - B.P.L / 2; if (e1 < e0) e1 += O.len; if (e1 - e0 > 1.9) ORANG.doors[ri].push(O.wrap((e0 + e1) / 2)); }
+});
+function orangFlat(x, z) { const dx = Math.max(Math.abs(x - ORANG.x) - ORANG.hx - 2, 0), dz = Math.max(Math.abs(z - ORANG.z) - ORANG.hz - 2, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 12); }
+// where one can stand inside the building: the rooms, the spaces between them, the rotunda and the passage; the walls only at their doors
+function orangWalkable(x, z) {
+  let inRoom = false;
+  for (let i = 0; i < 2; i++) { const O = ORANG.ovals[i];
+    if (O.inside(x, z, -.3) && !O.inside(x, z, .35)) { const s = O.sAt(x, z); return ORANG.doors[i].some(d => O.arcDist(s, d) < ORANG.doorW / 2 + .15); } // in the wall
+    if (O.inside(x, z, .35)) inRoom = true; }
+  if (inRoom) return true;
+  if (x > LENS.x0 + .3 && x < LENS.x1 - .3 && Math.abs(z - ORANG.z) < LENS.hz - .3) return true;
+  if (x > VEST.x0 - .5 && x < VEST.x1 + .5 && Math.abs(z - ORANG.z) < VEST.hz - .3) return true;
+  const rd = Math.hypot(x - ROTUNDA.cx, z - ROTUNDA.cz), ph = Math.atan2(-(z - ROTUNDA.cz), x - ROTUNDA.cx) * 180 / Math.PI;
+  if (rd > ROTUNDA.r - .35 && rd < ROTUNDA.r + .3) return Math.abs(ph) < 36 || Math.abs(Math.abs(ph) - 180) < 16; // the rotunda's wall, its two openings
+  if (rd < ROTUNDA.r - .35) return true;
+  if (x > PASS.x0 && x < ROTUNDA.cx && Math.abs(z - ORANG.z) < PASS.hz - .3) return true;
+  return false;
+}
+function orangBlocks(x, z) { return Math.abs(x - ORANG.x) < ORANG.hx + .5 && Math.abs(z - ORANG.z) < ORANG.hz + .5 && !orangWalkable(x, z); }
+// the way through, for the promenade: in at the west door, through the rotunda and both rooms, out again
+const ORANG_PATH = (() => {
+  const O0 = ORANG.ovals[0], O1 = ORANG.ovals[1], d0 = ORANG.doors[0], d1 = ORANG.doors[1], q = V();
+  const dp = (O, s, inset) => { O.atS(s, inset, 0, q); return [+q.x.toFixed(2), +q.z.toFixed(2)]; };
+  return [[ROOMS[1].cx + 8, 58], [ROOMS[1].cx + 1, 57.6], dp(O1, d1[0], 2.2), dp(O1, d1[0], 0), dp(O1, d1[0], -1.6), [(O1.cx - O1.a + O0.cx + O0.a) / 2, 52.9],
+    dp(O0, d0[0], -1.6), dp(O0, d0[0], 0), dp(O0, d0[0], 2.2), [ROOMS[0].cx + 1.5, 58.2], [ROOMS[0].cx - 4, 58], dp(O0, d0[1], 2.2), dp(O0, d0[1], 0), dp(O0, d0[1], -1.6),
+    [-20.5, 56.6], [ROTUNDA.cx, 58], [ROTUNDA.cx - 2.8, 58], [-33, 58], [-38.5, 57.5], [-41, 51], [-38.5, 43], [-31, 34], [-22, 27], [-13, 21], [-5.5, 14.5]];
+})();
+
 // ============================================================ the promenade: one path through every place
 // Ground-plane spline; height always comes from walkHeight, so the bridge arch and banks are handled like walking.
-const PROMENADE_PTS = [[.4, 8.4], [4.6, 9.9], [9.4, 5.2], [9.9, -1], [8.3, -4], [4, -4], [0, -4], [-4, -4], [-8.3, -4], [-11.6, -6.8], [-14.8, -13], [-12, -19.5], [-7.2, -26], [-3.2, -30.6], [0, -36], [.6, -46], [0, -56], [.6, -64], [2.4, -74], [5, -83], [6.2, -88], [6.6, -95], [8, -104], [8, -113], [6.5, -124], [3.5, -135], [0, -142.5], [-2, -145.5], [3, -146.8], [8, -146.5], [13, -141], [19, -134], [24, -131], [24, -140], [24, -149], [24, -160], [24, -172], [24, -184], [24, -196], [24, -206], [24, -212], [28, -216], [32, -222], [32, -232], [33, -242], [36, -252], [36, -262], [38, -272], [40, -282], [38, -292], [30, -298], [20, -299], [8, -293], [-4, -280], [-18, -262], [-26, -256], [-34, -260], [-42, -266], [-50, -276], [-56, -290], [-57, -305], [-55, -322], [-53, -340], [-52, -357], [-50, -372], [-48, -387], [-46.5, -402], [-46, -417], [-36, -420], [-24, -420], [-14, -419], [-4, -422], [4, -428], [10, -434], [14, -440]];
+const PROMENADE_PTS = [...ORANG_PATH, [.4, 8.4], [4.6, 9.9], [9.4, 5.2], [9.9, -1], [8.3, -4], [4, -4], [0, -4], [-4, -4], [-8.3, -4], [-11.6, -6.8], [-14.8, -13], [-12, -19.5], [-7.2, -26], [-3.2, -30.6], [0, -36], [.6, -46], [0, -56], [.6, -64], [2.4, -74], [5, -83], [6.2, -88], [6.6, -95], [8, -104], [8, -113], [6.5, -124], [3.5, -135], [0, -142.5], [-2, -145.5], [3, -146.8], [8, -146.5], [13, -141], [19, -134], [24, -131], [24, -140], [24, -149], [24, -160], [24, -172], [24, -184], [24, -196], [24, -206], [24, -212], [28, -216], [32, -222], [32, -232], [33, -242], [36, -252], [36, -262], [38, -272], [40, -282], [38, -292], [30, -298], [20, -299], [8, -293], [-4, -280], [-18, -262], [-26, -256], [-34, -260], [-42, -266], [-50, -276], [-56, -290], [-57, -305], [-55, -322], [-53, -340], [-52, -357], [-50, -372], [-48, -387], [-46.5, -402], [-46, -417], [-36, -420], [-24, -420], [-14, -419], [-4, -422], [4, -428], [10, -434], [14, -440]];
 const promenade = new THREE.CatmullRomCurve3(PROMENADE_PTS.map(([x, z]) => V(x, 0, z)), false, 'centripetal', .5);
 promenade.arcLengthDivisions = 1500;
 const PROM_LEN = promenade.getLength();
@@ -1702,6 +1801,173 @@ function buildHavre(D) {
   timings.havre = 1;
 }
 
+// ============================================================ the Orangerie: build
+// The panels are the eight canvases themselves, on the curved walls at their true size; the rooms are white, lit from a veiled
+// skylight, and painted like everything else (the base coat carries the strokes). The hour is the daylight in the room.
+const PANEL_VERT = /* glsl */`
+varying vec2 vUv; varying vec3 vWorld; varying vec3 vN; varying float vDist;
+void main(){ vec3 wp = (modelMatrix * vec4(position, 1.)).xyz; vUv = uv; vWorld = wp; vN = normalize(mat3(modelMatrix) * normal); vec4 mv = viewMatrix * vec4(wp, 1.); vDist = -mv.z; gl_Position = projectionMatrix * mv; }`;
+const PANEL_FRAG = /* glsl */`
+uniform sampler2D uTex; uniform vec2 uTexSize; uniform float uPanelLight;
+varying vec2 vUv; varying vec3 vWorld; varying vec3 vN; varying float vDist;
+${PAINT_GLSL}
+void main(){
+  vec3 c = texture2D(uTex, vUv).rgb * uGradeMul + uGradeAdd;
+  vec3 an = abs(vN); vec3 bw = an * an * an * an; bw /= dot(bw, vec3(1.));
+  vec4 O = paintAt(uPaint, vWorld, bw, vDist, STROKE);
+  vec2 tp = fwidth(vUv) * uTexSize; float mag = 1. / max(max(tp.x, tp.y), 1e-4); // strokes return as the canvas is magnified
+  c = applyPaint(c, O, .08 + smoothstep(1.5, 8., mag) * .5);
+  c *= uPanelLight * (.94 + .1 * vUv.y); // lit from the veil above
+  gl_FragColor = vec4(c, 1.);
+  #include <colorspace_fragment>
+}`;
+const VEIL_FRAG = /* glsl */`
+uniform vec3 uLight; varying vec2 vUv; varying vec3 vWorld; varying vec3 vN; varying float vDist;
+${PAINT_GLSL}
+void main(){
+  vec4 O = paintAt(uPaint, vWorld, vec3(0., 1., 0.), vDist, STROKE * 1.6);
+  vec2 e = (vUv - .5) * 2.; float r = dot(e, e);
+  vec3 c = applyPaint(uLight * (.97 - .14 * r), O, .18);
+  gl_FragColor = vec4(clamp(c, 0., 1.), 1.);
+  #include <colorspace_fragment>
+}`;
+const _qn = V(), _qt = V();
+class Quads {
+  constructor() { this.p = []; this.n = []; this.uv = []; }
+  // a b c d in order round the quad; the normal is (b - a) x (d - a); uv = [u0, v0, u1, v1] over a->b and a->d
+  add(a, b, c, d, uv) {
+    _qn.subVectors(b, a).cross(_qt.subVectors(d, a)).normalize();
+    for (const v of [a, b, c, a, c, d]) { this.p.push(v.x, v.y, v.z); this.n.push(_qn.x, _qn.y, _qn.z); }
+    const [u0, v0, u1, v1] = uv || [0, 0, 1, 1]; this.uv.push(u0, v0, u1, v0, u1, v1, u0, v0, u1, v1, u0, v1);
+  }
+  tri(a, b, c, uva = [0, 0], uvb = [1, 0], uvc = [1, 1]) {
+    _qn.subVectors(b, a).cross(_qt.subVectors(c, a)).normalize();
+    for (const v of [a, b, c]) { this.p.push(v.x, v.y, v.z); this.n.push(_qn.x, _qn.y, _qn.z); }
+    this.uv.push(uva[0], uva[1], uvb[0], uvb[1], uvc[0], uvc[1]);
+  }
+  geometry() { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2)); return g; }
+}
+const panelPlaceholder = (() => { const t = new THREE.DataTexture(new Uint8Array([120, 128, 150, 255]), 1, 1); t.needsUpdate = true; return t; })();
+function buildOrangerie(D) {
+  reseed(19271927); const pl = places[7], MAT = materialsFor(pl); pl.PU.uPaintAmt.value = .38;
+  const G = ORANG, y0 = G.y, ovals = G.ovals, parts = {}, part = k => parts[k] || (parts[k] = new Quads());
+  const a = V(), b = V(), c = V(), d = V(), e = V(), n = V(), p = V();
+  const doorAt = (O, ri, s, y, extra = 0) => { for (const ds of G.doors[ri]) { const dd = O.arcDist(s, ds), w = G.doorW / 2 + extra; if (dd < w && y < G.doorH + extra + Math.sqrt(Math.max(0, w * w - dd * dd))) return true; } return false; };
+  ovals.forEach((O, ri) => {
+    const R = ROOMS[ri];
+    // --- the wall, in rows, with the doorways cut out
+    const W = part(1), ds = .2, dy = .2;
+    for (let s = 0; s < O.len; s += ds) { const s1 = Math.min(s + ds, O.len);
+      for (let y = 0; y < G.wallH - 1e-3; y += dy) { const y1 = Math.min(y + dy, G.wallH);
+        if (doorAt(O, ri, (s + s1) / 2, (y + y1) / 2)) continue;
+        W.add(O.atS(s1, 0, y0 + y, a), O.atS(s, 0, y0 + y, b), O.atS(s, 0, y0 + y1, c), O.atS(s1, 0, y0 + y1, d)); } }
+    // --- the ledge under the panels, and the doorways' stone: jambs through the wall, a surround on its face
+    const Lg = part(2);
+    for (let s = 0; s < O.len; s += ds) { const s1 = Math.min(s + ds, O.len), sm = (s + s1) / 2;
+      if (G.doors[ri].some(dd => O.arcDist(sm, dd) < G.doorW / 2 + .35)) continue;
+      Lg.add(O.atS(s1, G.ledgeD, y0, a), O.atS(s, G.ledgeD, y0, b), O.atS(s, G.ledgeD, y0 + G.ledge, c), O.atS(s1, G.ledgeD, y0 + G.ledge, d));
+      Lg.add(O.atS(s1, G.ledgeD, y0 + G.ledge, a), O.atS(s, G.ledgeD, y0 + G.ledge, b), O.atS(s, 0, y0 + G.ledge, c), O.atS(s1, 0, y0 + G.ledge, d)); }
+    const St = part(4);
+    for (const sd of G.doors[ri]) {
+      const outline = (w, h) => { const o = [[-w, 0], [-w, h]]; for (let k = 1; k < 10; k++) { const t = Math.PI - k / 10 * Math.PI; o.push([Math.cos(t) * w, h + Math.sin(t) * w]); } o.push([w, h], [w, 0]); return o; };
+      const inner = outline(G.doorW / 2, G.doorH), outer = outline(G.doorW / 2 + .28, G.doorH);
+      for (let i = 0; i + 1 < inner.length; i++) {
+        const [u0, v0] = inner[i], [u1, v1] = inner[i + 1];
+        St.add(O.atS(sd + u0, 0, y0 + v0, a), O.atS(sd + u1, 0, y0 + v1, b), O.atS(sd + u1, -G.thick, y0 + v1, c), O.atS(sd + u0, -G.thick, y0 + v0, d));
+        const [w0, x0] = outer[i], [w1, x1] = outer[i + 1];
+        St.add(O.atS(sd + u1, .02, y0 + v1, a), O.atS(sd + u0, .02, y0 + v0, b), O.atS(sd + w0, .02, y0 + x0, c), O.atS(sd + w1, .02, y0 + x1, d)); }
+    }
+    // --- the cove and the ceiling ring, then the veil of the skylight
+    const Cv = part(2), Cr = part(3), N = 160, dth = TAU / N, ks = (R.b - 2.3) / R.b;
+    const prof = k => [G.wallH + (G.coveH - G.wallH) * Math.sin(k * Math.PI / 2), 1.7 * (1 - Math.cos(k * Math.PI / 2))];
+    for (let i = 0; i < N; i++) { const t0 = i * dth, t1 = t0 + dth;
+      for (let j = 0; j < 5; j++) { const [ya, ia] = prof(j / 5), [yb, ib] = prof((j + 1) / 5); Cv.add(O.at(t0, ia, y0 + ya, a), O.at(t1, ia, y0 + ya, b), O.at(t1, ib, y0 + yb, c), O.at(t0, ib, y0 + yb, d)); }
+      Cr.add(O.at(t0, 1.7, y0 + G.coveH, a), O.at(t1, 1.7, y0 + G.coveH, b), O.scaled(t1, ks, y0 + G.coveH, c), O.scaled(t0, ks, y0 + G.coveH, d));
+      part('veil').tri(p.set(O.cx, y0 + G.coveH + .03, O.cz), O.scaled(t1, ks, y0 + G.coveH + .03, a), O.scaled(t0, ks, y0 + G.coveH + .03, b), [.5, .5], [Math.cos(t1) * .5 + .5, Math.sin(t1) * .5 + .5], [Math.cos(t0) * .5 + .5, Math.sin(t0) * .5 + .5]);
+      // the floor, the carpet, and the bench
+      part(0).tri(p.set(O.cx, y0 + .012, O.cz), O.at(t0, -.45, y0 + .012, a), O.at(t1, -.45, y0 + .012, b));
+      part(16).tri(p.set(O.cx, y0 + .022, O.cz), O.scaled(t0, .6, y0 + .022, a), O.scaled(t1, .6, y0 + .022, b));
+    }
+    const ell = (t, ax, bz, y, out) => out.set(O.cx + ax * Math.cos(t), y, O.cz - bz * Math.sin(t));
+    const bx = R.a * .5, bz = .95, bw = .42, by = y0 + .46;
+    for (let i = 0; i < N; i++) { const t0 = i * dth, t1 = t0 + dth;
+      part(17).add(ell(t0, bx, bz, by, a), ell(t1, bx, bz, by, b), ell(t1, bx - bw, bz - bw * .9, by, c), ell(t0, bx - bw, bz - bw * .9, by, d));
+      part(17).add(ell(t0, bx, bz, by, a), ell(t1, bx, bz, by, b), ell(t1, bx, bz, by - .06, c), ell(t0, bx, bz, by - .06, d));
+      part(17).add(ell(t1, bx - bw, bz - bw * .9, by, a), ell(t0, bx - bw, bz - bw * .9, by, b), ell(t0, bx - bw, bz - bw * .9, by - .06, c), ell(t1, bx - bw, bz - bw * .9, by - .06, d)); }
+    const legs = [];
+    for (let i = 0; i < 14; i++) { const t = i / 14 * TAU; ell(t, bx - bw / 2, bz - bw * .45, 0, p); const leg = new THREE.CylinderGeometry(.02, .02, .45, 5); leg.translate(p.x, y0 + .225, p.z); legs.push(leg); }
+    placeGroup.add(baseMesh(mergeParts(legs), 18, MAT.base));
+    // --- the panels: each on its wall, u running from the viewer's left; a thin gilt edge round each
+    for (const P of PANELS.filter(P => P.room === ri)) {
+      const Q = new Quads(), s0 = P.sc - P.L / 2, s1 = P.sc + P.L / 2, step = .1;
+      for (let s = s0; s < s1 - 1e-6; s += step) { const sb = Math.min(s + step, s1), u0 = (s1 - sb) / P.L, u1 = (s1 - s) / P.L;
+        Q.add(O.atS(sb, .03, y0 + G.panel0, a), O.atS(s, .03, y0 + G.panel0, b), O.atS(s, .03, y0 + G.panel1, c), O.atS(sb, .03, y0 + G.panel1, d), [u0, 0, u1, 1]); }
+      const tex = P.tex || panelPlaceholder;
+      P.mat = new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, pl.PU, { uTex: { value: tex }, uTexSize: { value: new THREE.Vector2(tex.image ? tex.image.width : 1, tex.image ? tex.image.height : 1) }, uPanelLight: G.panelLight }), vertexShader: PANEL_VERT, fragmentShader: PANEL_FRAG, side: THREE.DoubleSide });
+      const m = new THREE.Mesh(Q.geometry(), P.mat); m.userData.panel = P.file; placeGroup.add(m);
+      const F = part(5), f = .04;
+      for (const [ya, yb] of [[G.panel0 - f, G.panel0], [G.panel1, G.panel1 + f]]) for (let s = s0 - f; s < s1 + f - 1e-6; s += .2) { const sb = Math.min(s + .2, s1 + f); F.add(O.atS(sb, .035, y0 + ya, a), O.atS(s, .035, y0 + ya, b), O.atS(s, .035, y0 + yb, c), O.atS(sb, .035, y0 + yb, d)); }
+      for (const [sa, sb] of [[s0 - f, s0], [s1, s1 + f]]) F.add(O.atS(sb, .035, y0 + G.panel0, a), O.atS(sa, .035, y0 + G.panel0, b), O.atS(sa, .035, y0 + G.panel1, c), O.atS(sb, .035, y0 + G.panel1, d));
+    }
+  });
+  // --- the spaces between: the lens between the rooms, the vestibule, the rotunda, the passage; a rectangle of wall is two quads
+  const wallRect = (Qd, x0, z0, x1, z1, yb, yt) => { Qd.add(a.set(x0, yb, z0), b.set(x1, yb, z1), c.set(x1, yt, z1), d.set(x0, yt, z0)); };
+  const ceil = (Qd, x0, x1, z0, z1, y, skip, step = .4) => { for (let x = x0; x < x1 - 1e-6; x += step) for (let z = z0; z < z1 - 1e-6; z += step) { const x1_ = Math.min(x + step, x1), z1_ = Math.min(z + step, z1); if (skip && skip((x + x1_) / 2, (z + z1_) / 2)) continue; Qd.add(a.set(x, y, z1_), b.set(x1_, y, z1_), c.set(x1_, y, z), d.set(x, y, z)); } };
+  const floor = (Qd, x0, x1, z0, z1, y) => Qd.add(a.set(x0, y, z1), b.set(x1, y, z1), c.set(x1, y, z0), d.set(x0, y, z0));
+  const inRoom = (x, z) => ovals.some(O => O.inside(x, z, .25));
+  const Z = G.z, W1 = part(1), C3 = part(3), F0 = part(0);
+  wallRect(W1, LENS.x0, Z - LENS.hz, LENS.x1, Z - LENS.hz, y0, y0 + G.wallH); wallRect(W1, LENS.x1, Z + LENS.hz, LENS.x0, Z + LENS.hz, y0, y0 + G.wallH);
+  ceil(C3, LENS.x0, LENS.x1, Z - LENS.hz, Z + LENS.hz, y0 + G.wallH, inRoom); floor(F0, LENS.x0, LENS.x1, Z - LENS.hz, Z + LENS.hz, y0 + .005);
+  wallRect(W1, VEST.x0, Z - VEST.hz, VEST.x1, Z - VEST.hz, y0, y0 + G.wallH); wallRect(W1, VEST.x1, Z + VEST.hz, VEST.x0, Z + VEST.hz, y0, y0 + G.wallH);
+  const zAt = (O, x) => O.b * Math.sqrt(Math.max(0, 1 - ((x - O.cx) / O.a) ** 2)), zRot = x => Math.sqrt(Math.max(0, ROTUNDA.r * ROTUNDA.r - (x - ROTUNDA.cx) ** 2));
+  for (const sgn of [-1, 1]) { // the ends of the lens and the vestibule, from the curved wall to the straight one
+    wallRect(W1, LENS.x0, Z + sgn * zAt(ovals[0], LENS.x0), LENS.x0, Z + sgn * LENS.hz, y0, y0 + G.wallH); wallRect(W1, LENS.x1, Z + sgn * zAt(ovals[1], LENS.x1), LENS.x1, Z + sgn * LENS.hz, y0, y0 + G.wallH);
+    wallRect(W1, VEST.x0, Z + sgn * (zRot(VEST.x0) - .3), VEST.x0, Z + sgn * VEST.hz, y0, y0 + G.wallH); }
+  const inRot = (x, z) => Math.hypot(x - ROTUNDA.cx, z - ROTUNDA.cz) < ROTUNDA.r - .2;
+  ceil(C3, VEST.x0, VEST.x1, Z - VEST.hz, Z + VEST.hz, y0 + G.wallH, (x, z) => inRoom(x, z) || inRot(x, z)); floor(F0, VEST.x0, VEST.x1, Z - VEST.hz, Z + VEST.hz, y0 + .005);
+  { const O = ROTUNDA, N = 96, rc = 4.6, rk = 1.9, tr = (t, r, y, out) => out.set(O.cx + r * Math.cos(t), y, O.cz - r * Math.sin(t));
+    for (let i = 0; i < N; i++) { const t0 = i / N * TAU, t1 = (i + 1) / N * TAU, tm = (t0 + t1) / 2, deg = tm * 180 / Math.PI;
+      const open = Math.abs(deg > 180 ? deg - 360 : deg) < 36 || Math.abs(deg - 180) < 16;
+      for (let y = 0; y < rc - 1e-3; y += .2) { const y1 = Math.min(y + .2, rc); if (open && y < G.doorH + .3) continue; W1.add(tr(t1, O.r, y0 + y, a), tr(t0, O.r, y0 + y, b), tr(t0, O.r, y0 + y1, c), tr(t1, O.r, y0 + y1, d)); }
+      C3.add(tr(t0, O.r, y0 + rc, a), tr(t1, O.r, y0 + rc, b), tr(t1, rk, y0 + rc, c), tr(t0, rk, y0 + rc, d));
+      part('veil').tri(p.set(O.cx, y0 + rc + .03, O.cz), tr(t1, rk, y0 + rc + .03, a), tr(t0, rk, y0 + rc + .03, b), [.5, .5], [Math.cos(t1) * .5 + .5, Math.sin(t1) * .5 + .5], [Math.cos(t0) * .5 + .5, Math.sin(t0) * .5 + .5]);
+      F0.tri(p.set(O.cx, y0 + .01, O.cz), tr(t0, O.r + .4, y0 + .01, a), tr(t1, O.r + .4, y0 + .01, b)); } }
+  const px1 = ROTUNDA.cx - Math.sqrt(ROTUNDA.r * ROTUNDA.r - PASS.hz * PASS.hz);
+  wallRect(W1, PASS.x0, Z - PASS.hz, px1, Z - PASS.hz, y0, y0 + G.wallH); wallRect(W1, px1, Z + PASS.hz, PASS.x0, Z + PASS.hz, y0, y0 + G.wallH);
+  ceil(C3, PASS.x0, px1, Z - PASS.hz, Z + PASS.hz, y0 + G.wallH, inRot); floor(F0, PASS.x0, ROTUNDA.cx, Z - PASS.hz, Z + PASS.hz, y0 + .003);
+  // --- the building itself: a long pale box with a low roof, arched windows along the garden front, the door at the west end
+  const X0 = G.x - G.hx, X1 = G.x + G.hx, Z0 = Z - G.hz, Z1 = Z + G.hz, HT = y0 + 7.6, Ex = part(4), pils = [];
+  wallRect(Ex, X1, Z0, X0, Z0, y0 - .5, HT); wallRect(Ex, X0, Z1, X1, Z1, y0 - .5, HT); wallRect(Ex, X1, Z1, X1, Z0, y0 - .5, HT);
+  wallRect(Ex, X0, Z0, X0, Z - 1.6, y0 - .5, HT); wallRect(Ex, X0, Z + 1.6, X0, Z1, y0 - .5, HT); wallRect(Ex, X0, Z - 1.6, X0, Z + 1.6, y0 + G.wallH + .1, HT);
+  Ex.add(a.set(X0, y0 + G.wallH + .1, Z + 1.6), b.set(X0 - .01, y0 + G.wallH + .1, Z + 1.6), c.set(X0 - .01, y0 + G.wallH + .1, Z - 1.6), d.set(X0, y0 + G.wallH + .1, Z - 1.6)); // the lintel's underside
+  for (let x = X0 + 3; x < X1 - 2; x += 6.4) { const w = 1.3, h = 4.2, zb = Z0 - .03, Wn = part(12); // windows: a rectangle and a half-round
+    Wn.add(a.set(x - w, y0 + 1, zb), b.set(x + w, y0 + 1, zb), c.set(x + w, y0 + h, zb), d.set(x - w, y0 + h, zb));
+    for (let k = 0; k < 8; k++) { const t0 = k / 8 * Math.PI, t1 = (k + 1) / 8 * Math.PI; Wn.tri(p.set(x, y0 + h, zb), a.set(x + Math.cos(t0) * w, y0 + h + Math.sin(t0) * w, zb), b.set(x + Math.cos(t1) * w, y0 + h + Math.sin(t1) * w, zb)); }
+    const pil = new THREE.BoxGeometry(.7, HT - y0 + .5, .5); pil.translate(x + 3.2, (HT + y0) / 2 - .25, Z0 - .25); pils.push(pil); }
+  placeGroup.add(baseMesh(mergeParts(pils), 4, MAT.base));
+  const roof = prism(2 * G.hx + 1.2, 2 * G.hz + 1.2, 2.6); roof.translate(G.x, HT - .05, Z); placeGroup.add(baseMesh(roof, 14, MAT.base));
+  const cornice = new THREE.BoxGeometry(2 * G.hx + 1.2, .5, 2 * G.hz + 1.2); cornice.translate(G.x, HT - .2, Z); placeGroup.add(baseMesh(cornice, 4, MAT.base));
+  // the doorway's threshold and the porch step
+  const step = new THREE.BoxGeometry(3.2, .3, 1.6); step.translate(X0 - .8, y0 - .15, Z); placeGroup.add(baseMesh(step, 4, MAT.base));
+  for (const k in parts) { if (k === 'veil') continue; const m = baseMesh(parts[k].geometry(), +k, MAT.base); placeGroup.add(m); }
+  { const veil = new THREE.Mesh(parts.veil.geometry(), new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, { uLight: G.veilLight }), vertexShader: PANEL_VERT, fragmentShader: VEIL_FRAG, side: THREE.DoubleSide })); placeGroup.add(veil); }
+  // --- outside: the lawn, the gravel walk to the door and on to the pond, chestnuts along the front
+  const ground = new Patches(), viewP = pl.view.p, sizeAt = q => clamp(q.distanceTo(viewP) / 16, 1, 3);
+  for (let i = 0; i < Math.floor(5200 * D); i++) {
+    const x = rr(-60, 40), z = rr(24, 96); if (Math.abs(x - G.x) < G.hx + .3 && Math.abs(z - Z) < G.hz + .3) continue; if (z < 49 && Math.hypot(x, z + 8) < 56) continue;
+    const y = groundHeight(x, z); if (y < WATER_Y) continue; p.set(x, y + .02, z); groundNormal(x, z, n); const k = sizeAt(p), path = pathDist(x, z) < 1.7;
+    if (path) ground.lay(p, n, rand() * TAU, rr(.3, .55) * k, rr(.16, .3) * k, rand() < .8 ? 10 : 4, 0, 0);
+    else if (rand() < .5) { e.set(rand() - .5, 0, rand() - .5); ground.stand(p, e, .12 * k, rr(.22, .45) * k, rand() < .7 ? 9 : 11, 2, .05 + rand() * .05, .35); }
+    else ground.lay(p, n, rand() * TAU, rr(.3, .55) * k, rr(.16, .3) * k, rand() < .6 ? 9 : rand() < .5 ? 11 : 7, 0, 0);
+  }
+  placeGroup.add(ground.mesh(MAT.patch));
+  const fol = new Patches(), { tree, trunks } = foliageTools(fol, D, sizeAt);
+  for (const [x, z, h, w] of [[-42, 40, 11, 5], [-52, 52, 12, 5.5], [-50, 66, 10, 4.5], [-40, 78, 12, 5.5], [-18, 82, 11, 5], [4, 84, 12, 5.5], [24, 82, 10, 4.5], [42, 72, 12, 5.5], [44, 50, 11, 5], [36, 32, 10, 4.5], [14, 36, 9, 4], [-14, 38, 9, 4]]) tree(x, z, h, w, .1);
+  if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
+  placeGroup.add(fol.mesh(MAT.patch));
+  timings.orangerie = 1;
+}
+
 // ============================================================ sky
 const SKYP = projectorUniforms();
 const sky = new THREE.Mesh(new THREE.SphereGeometry(700, 40, 20), new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, SKYP), vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false }));
@@ -1754,7 +2020,7 @@ function applyHour() {
   // each place: its own palette from its own stops
   for (const pl of places) if (pl.stops && pl.PU) {
     const { A, B, b } = stopBlend(pl.stops, hourT); for (let i = 0; i < 20; i++) { pl.PU.uPalA.value[i].copy(A.pal[i]); pl.PU.uPalB.value[i].copy(B.pal[i]); } pl.PU.uBlend.value = b;
-    if (pl.painting) { const ga = gradeOf(pl, A), gb = gradeOf(pl, B); for (let i = 0; i < 3; i++) { pl.PU.uGradeMul.value.setComponent(i, lerp(ga.mul[i], gb.mul[i], b)); pl.PU.uGradeAdd.value.setComponent(i, lerp(ga.add[i], gb.add[i], b)); } }
+    if (pl.painting || pl.panels) { const ga = gradeOf(pl, A), gb = gradeOf(pl, B); for (let i = 0; i < 3; i++) { pl.PU.uGradeMul.value.setComponent(i, lerp(ga.mul[i], gb.mul[i], b)); pl.PU.uGradeAdd.value.setComponent(i, lerp(ga.add[i], gb.add[i], b)); } }
   }
   if (BASE.PU) { const P0 = places[0].PU; for (let i = 0; i < 20; i++) { BASE.PU.uPalA.value[i].copy(P0.uPalA.value[i]); BASE.PU.uPalB.value[i].copy(P0.uPalB.value[i]); } BASE.PU.uBlend.value = P0.uBlend.value; }
   // the light: blended by how near each place is
@@ -1775,6 +2041,7 @@ function applyHour() {
   U.uSunDisc.value = sstep(_acc.sunDisc, .5, .92); // the sun comes out of the fog in the last stretch of the quay
   U.uWaterDeep.value.copy(_acc.waterDeep); U.uWaterTint.value.copy(_acc.waterTint); U.uReflectivity.value = _acc.reflectivity; U.uRipple.value = _acc.ripple; U.uBands.value = _acc.bands;
   placeIndex = dom;
+  { const P = places[7], { A, B, b } = stopBlend(P.stops, hourT), hi = lerp(A.hemiInt, B.hemiInt, b); ORANG.veilLight.value.copy(A.hemiSky).lerp(B.hemiSky, b).multiplyScalar(hi * 1.02); ORANG.panelLight.value = hi / .95; }
   const pl = places[dom], { A, B, b } = stopBlend(pl.stops, hourT), near = b < .5 ? A : B;
   $('#hourLabel').firstChild.textContent = near.name; $('#hour').value = hourT; $('#hour').setAttribute('aria-valuetext', near.name); $('#hourSub').textContent = `${pl.name} · ${pl.year}`;
   const fixed = pl.stops.length < 2; if (fixed !== hourFixed) { hourFixed = fixed; $('#hour').disabled = fixed; $('#hourNote').textContent = fixed ? 'This one is always dawn.' : 'Each place keeps the hours Monet painted it in.'; }
@@ -1782,7 +2049,7 @@ function applyHour() {
 // how a stop re-colours the painting: from Monet's own series picture of that hour where we have one, else from the stop's light relative to the painting's hour
 function gradeOf(pl, st) {
   if (st.grade) return st.grade;
-  const ref = pl.stops[pl.painting.stop], L = s => [s.hemiSky.r * s.hemiInt + s.sunCol.r * s.sunInt * .6, s.hemiSky.g * s.hemiInt + s.sunCol.g * s.sunInt * .6, s.hemiSky.b * s.hemiInt + s.sunCol.b * s.sunInt * .6];
+  const ref = pl.stops[(pl.painting || pl.panels).stop], L = s => [s.hemiSky.r * s.hemiInt + s.sunCol.r * s.sunInt * .6, s.hemiSky.g * s.hemiInt + s.sunCol.g * s.sunInt * .6, s.hemiSky.b * s.hemiInt + s.sunCol.b * s.sunInt * .6];
   const a = L(st), r = L(ref);
   return st.grade = { mul: a.map((v, i) => clamp(v / r[i], .45, 1.8)), add: [0, 0, 0] };
 }
@@ -1796,7 +2063,7 @@ let drifting = false, driftS = 0, driftTarget = 0, recover = null;
 const velocity = V(), keys = new Set(), EYE = 1.45;
 function lookAtTarget(look) { camera.lookAt(look); yaw = camera.rotation.y; pitch = camera.rotation.x; }
 function fitFov(pl) { const f = pl.view.fov || 58; if (!pl.painting) return f; const sa = innerWidth / innerHeight; return sa >= pl.painting.aspect ? f : 2 * Math.atan(Math.tan(f * Math.PI / 360) * pl.painting.aspect / sa) * 180 / Math.PI; }
-function paintingHour(pl) { if (!pl.painting || !pl.stops || params.has('hour')) return; hourT = pl.stops.length < 2 ? 0 : pl.painting.stop / (pl.stops.length - 1); }
+function paintingHour(pl) { const P = pl.painting || pl.panels; if (!P || !pl.stops || params.has('hour')) return; hourT = pl.stops.length < 2 ? 0 : P.stop / (pl.stops.length - 1); }
 function applyViewNow(i) {
   const v = places[i].view; camera.position.copy(v.p); camera.fov = fitFov(places[i]); camera.updateProjectionMatrix(); lookAtTarget(v.look); paintingHour(places[i]);
   fly = !!places[i].aerial; syncFly(); travel = null; drifting = false; velocity.set(0, 0, 0);
@@ -1836,7 +2103,7 @@ function updateWalk(dt) {
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
   const wet = isWater(pos.x, pos.z);
-  const tryMove = (dx, dz) => { const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; if (nx < -110 || nx > 150 || nz > 16 || nz < -540) return false; pos.x = nx; pos.z = nz; return true; };
+  const tryMove = (dx, dz) => { const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; if (nx < -110 || nx > 150 || nz > 96 || nz < -540) return false; if (!fly && orangBlocks(nx, nz)) return false; pos.x = nx; pos.z = nz; return true; };
   if (!tryMove(step.x, step.z)) { if (!tryMove(step.x, 0)) tryMove(0, step.z); }
   if (fly) { pos.y = clamp(pos.y + step.y, walkHeight(pos.x, pos.z) + .6, 300); }
   else { const target = walkHeight(pos.x, pos.z) + EYE; pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
@@ -1914,7 +2181,7 @@ addEventListener('keydown', e => {
   else if (k === '[') stepStop(-1);
   else if (k === ']') stepStop(1);
   else if (k === 'escape') closePanels();
-  else if (/^[1-8]$/.test(k)) goView(+k - 1);
+  else if (/^[1-9]$/.test(k)) goView(+k - 1);
 });
 addEventListener('keyup', e => keys.delete(e.code));
 addEventListener('blur', () => keys.clear());
@@ -2000,6 +2267,11 @@ function loadPaintings() {
       P.tex = tex; if (pl.PU) { pl.PU.uPainting.value = tex; pl.PU.uPaintSize.value.set(tex.image.width, tex.image.height); if (P.ready && !params.has('noproj')) pl.PU.uProjOn.value = 1; }
     });
   }
+  for (const P of PANELS) texLoader.load(`paintings/orangerie/${P.file}.jpg`, tex => {
+    tex.colorSpace = THREE.SRGBColorSpace; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = true;
+    tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+    P.tex = tex; if (P.mat) { P.mat.uniforms.uTex.value = tex; P.mat.uniforms.uTexSize.value.set(tex.image.width, tex.image.height); }
+  });
 }
 function buildProjectors() {
   const savedPx = U.uPxRad.value; sky.visible = false;
@@ -2106,7 +2378,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm11b-key', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, renderer, placeGroup, waterGroup, flags: { noRefl: false }, build: 'm12-orangerie', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
@@ -2135,7 +2407,7 @@ function start() {
   if (params.has('bench')) { // GPU-synced frame times at each viewpoint, drawn into the debug overlay for headless capture
     const gl = renderer.getContext(), px = new Uint8Array(4), res = [];
     const measure = () => { monet.tick(0); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const t0 = performance.now(); for (let k = 0; k < 20; k++) { monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / 20; };
-    for (const i of [0, 1, 2, 3, 4, 5, 6, 7]) { if (!places[i].view) continue; applyViewNow(i); res.push(`${places[i].file || 'aerial'} ${measure().toFixed(1)}ms`); }
+    for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) { if (!places[i].view) continue; applyViewNow(i); res.push(`${places[i].file || 'aerial'} ${measure().toFixed(1)}ms`); }
     applyViewNow(2); const withR = measure(); monet.flags.noRefl = true; const without = measure(); monet.flags.noRefl = false; res.push(`refl ${(withR - without).toFixed(1)}ms`);
     applyViewNow(0); monet.tick(0);
     const d = $('#debug'); d.style.display = 'block'; d.textContent = `bench ${canvas.width}x${canvas.height} dpr ${renderer.getPixelRatio()}  ${res.join('  ')}\npatches ${patchTotal}  gen ${genMs.toFixed(0)} ms`; console.log(d.textContent);
