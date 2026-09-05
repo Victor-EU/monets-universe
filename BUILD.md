@@ -1158,3 +1158,9 @@ Build `m18d-reeds`. Frames from the east bank, the deck's end up close, the spot
 Seven small rafts a side (radius .5–1.1 m) in the shallows off each shoulder, 1.4–4 m either side of the crossing's line, water
 at least .2 m deep, the same pads, dark water and occasional flowers as the bands. Build `m18e-pads`. Frames from under the deck's
 end on both sides, the east bank, the spot and the air.
+
+### Progress · M18f — blooms on the shoulders' rafts
+
+Nearly half the shoulders' pads now carry a flower where the bands' carry one in five: two crossed petal strokes (.16–.22 m) in the
+light or the warm accent slot, half of them with a small warm heart. Build `m18f-blooms`. Frames from under the deck's end on both
+sides, up close, from the water's level and the spot.
