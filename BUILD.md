@@ -1093,3 +1093,32 @@ reflected eye is 2.3 m from the spot).
 
 **Still visible.** The filled sky is a shade paler or greyer than the painted sky beside it, a soft patch where the figure or the
 bridge's top stood; it has the world's strokes, not the picture's.
+
+### Progress · M18 — the bridge (fix: "the pond bridge geometry to match the painting")
+
+**What was wrong.** From the spot the world's bridge did not lie under the painted one: projected into the painter's frame its deck
+sat at v .47 where the canvas has it at .57–.61, its rails at .51 and .54 where the canvas has three at .65, .70 and .75, and only
+its trellis (2.3–2.8 m over the deck) reached the painted middle rail. So the picture's bridge landed on the far willows and the sky,
+and parted from the world's bridge as soon as the eye moved.
+
+**What was measured.** On the canvas at the centre column: the deck's beam from v .574 to .606, rails at .649, .697, .746, posts a
+quarter of the width apart (u .27, .535, .77); at the frame's edges (u .135, .866) the beam .554–.589, the rails .629, .677, .714.
+Read at the world's distance of 12.4 m that is a railing 2 m tall over a deck 3.4 m above the water; read at 7 m it is a real
+bridge — a beam .27 m deep with its top 2.5 m above the water, rails .37, .79 and 1.22 m over it, posts every 1.7 m, an arch of
+about 2 m over the span. The painted bridge is a real bridge 7 m from where he stood.
+
+**What changed.** The bridge moved from z −4 to z .4, its near beam 7 m from the spot and 8 m to its centre line (the bank ends at
+z 6.5, so the spot could not come to it). Its deck: `deckY = .5 + 2.0 (1 − (x/7.6)²)`, the beam .27 m deep; three rails at .37, .79
+and 1.22 m on posts 1.25 m tall every 1.7 m from x = .63; the trellis and its wisteria are gone — the 1899 canvas has none (the
+wisteria came in 1901). The pond's narrowing, the reeds, the bank bushes and the walk height follow the constant; the promenade's
+crossing moved with it ([9.9, 3.4] → [8.3, .4] … [−8.3, .4] → [−11.6, −2.4]); the lily rafts' bands moved so two lie between the
+promontory and the bridge (z 4.6 and 2.3) and the rest beyond it. The spot's frame (position, look, fov) is unchanged. Build `m18-bridge`.
+
+**Verified.** `bridge-m18.jpg`: the spot before and after; the canvas laid at half strength over the unprojected world, the rails and
+the beam coinciding; the geometry mask at the spot with the world's top rail on the painted one; lifted 1.6 m and 4 m the bridge moves
+as one, nothing left behind on the sky; from the east bank, from the deck's end, from its crest and from the air. Bench at DPR 2:
+pond 12.4, parasol 10.9, argenteuil 9.7, poplars 10.1, haystacks 12.0, rouen 10.4, sunrise 6.2, orangerie 10.4, aerial 11.3 ms;
+patches 258 379 → 260 229 (the extra lily band).
+
+**Still visible.** The arch is steep — a 2 m rise over 15 m, ending in a .3 m step at each bank. Positions along the promenade (`?s=`)
+beyond the pond have shifted by about 4 m with the new crossing.

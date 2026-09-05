@@ -913,7 +913,7 @@ function baseMesh(geom, pal, material) {
 }
 
 // ============================================================ the pond: terrain
-const WATER_Y = 0, BRIDGE_Z = -4, BRIDGE_HALF = 7.6;
+const WATER_Y = 0, BRIDGE_Z = .4, BRIDGE_HALF = 7.6; // the bridge 8 m from where he stood: from there its painted rails and deck are a real bridge's (M18)
 function pondHalfWidth(z) {
   const zMin = -26, zMax = 8; if (z < zMin || z > zMax) return 0;
   const u = (z - zMin) / (zMax - zMin);
@@ -980,7 +980,7 @@ function sampleGrid(g, x, z) {
 function groundHeight(x, z) { return sampleGrid(HG.h, x, z); }
 function pondSDF(x, z) { return sampleGrid(HG.s, x, z); }
 function riverSDF(x, z) { return sampleGrid(HG.r, x, z); }
-function deckY(x) { return .5 + 1.0 * (1 - (x / BRIDGE_HALF) ** 2); }
+function deckY(x) { return .5 + 2.0 * (1 - (x / BRIDGE_HALF) ** 2); }
 function onBridge(x, z) { return Math.abs(z - BRIDGE_Z) < 1.0 && Math.abs(x) < BRIDGE_HALF; }
 function onABridge(x, z) { return Math.abs(x - ABRIDGE.x) < ABRIDGE.half && z > ABRIDGE.z0 && z < ABRIDGE.z1; }
 function walkHeight(x, z) { const g = groundHeight(x, z); return onBridge(x, z) ? Math.max(g, deckY(x)) : onABridge(x, z) ? Math.max(g, ABRIDGE.y) : g; }
@@ -1063,7 +1063,7 @@ const ORANG_PATH = (() => {
 
 // ============================================================ the promenade: one path through every place
 // Ground-plane spline; height always comes from walkHeight, so the bridge arch and banks are handled like walking.
-const PROMENADE_PTS = [...ORANG_PATH, [.4, 8.4], [4.6, 9.9], [9.4, 5.2], [9.9, -1], [8.3, -4], [4, -4], [0, -4], [-4, -4], [-8.3, -4], [-11.6, -6.8], [-14.8, -13], [-12, -19.5], [-7.2, -26], [-3.2, -30.6], [0, -36], [.6, -46], [0, -56], [.6, -64], [2.4, -74], [5.8, -83.9], [7.43, -89.62], [6.6, -95], [8, -104], [8, -113], [6.5, -124], [3.5, -135], [0, -142.5], [-2, -145.5], [3, -146.8], [8, -146.5], [13, -141], [19, -134], [24, -131], [24, -140], [24, -149], [24, -160], [24, -172], [24, -184], [24, -196], [24, -206], [24, -212], [28, -216], [32, -222], [32, -232], [33, -242], [36, -252], [36, -262], [38, -272], [40, -282], [38, -292], [30, -298], [20, -299], [8, -293], [-4, -280], [-18, -262], [-26, -256], [-34, -260], [-42, -266], [-50, -276], [-56, -290], [-57, -305], [-55, -322], [-53, -340], [-52, -357], [-50, -372], [-48, -387], [-46.5, -402], [-46, -417], [-36, -420], [-24, -420], [-14, -419], [-4, -422], [4, -428], [10, -434], [14, -440]];
+const PROMENADE_PTS = [...ORANG_PATH, [.4, 8.4], [4.6, 9.9], [9.4, 5.2], [9.9, 3.4], [8.3, .4], [4, .4], [0, .4], [-4, .4], [-8.3, .4], [-11.6, -2.4], [-14.8, -13], [-12, -19.5], [-7.2, -26], [-3.2, -30.6], [0, -36], [.6, -46], [0, -56], [.6, -64], [2.4, -74], [5.8, -83.9], [7.43, -89.62], [6.6, -95], [8, -104], [8, -113], [6.5, -124], [3.5, -135], [0, -142.5], [-2, -145.5], [3, -146.8], [8, -146.5], [13, -141], [19, -134], [24, -131], [24, -140], [24, -149], [24, -160], [24, -172], [24, -184], [24, -196], [24, -206], [24, -212], [28, -216], [32, -222], [32, -232], [33, -242], [36, -252], [36, -262], [38, -272], [40, -282], [38, -292], [30, -298], [20, -299], [8, -293], [-4, -280], [-18, -262], [-26, -256], [-34, -260], [-42, -266], [-50, -276], [-56, -290], [-57, -305], [-55, -322], [-53, -340], [-52, -357], [-50, -372], [-48, -387], [-46.5, -402], [-46, -417], [-36, -420], [-24, -420], [-14, -419], [-4, -422], [4, -428], [10, -434], [14, -440]];
 const promenade = new THREE.CatmullRomCurve3(PROMENADE_PTS.map(([x, z]) => V(x, 0, z)), false, 'centripetal', .5);
 promenade.arcLengthDivisions = 1500;
 const PROM_LEN = promenade.getLength();
@@ -1205,11 +1205,12 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
   if (trunks.length) placeGroup.add(baseMesh(mergeGeometries(trunks.map(t => t.toNonIndexed())), 13, MAT.base));
   placeGroup.add(fol.mesh(MAT.patch)); mark('foliage');
 
-  // --- the bridge
+  // --- the bridge, as he painted it in 1899: the deck's beam, three rails on posts every 1.7 m, no trellis yet (the wisteria came in 1901);
+  // its lines fitted to the canvas from the spot (see BUILD.md, M18)
   const br = new Patches();
   const SEG = 30, halfW = 1.0;
   const deck = new THREE.BufferGeometry(); const dv = [], di = [];
-  for (let i = 0; i <= SEG; i++) { const x = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / SEG, y = deckY(x); dv.push(x, y, BRIDGE_Z - halfW, x, y, BRIDGE_Z + halfW, x, y - .16, BRIDGE_Z - halfW, x, y - .16, BRIDGE_Z + halfW); }
+  for (let i = 0; i <= SEG; i++) { const x = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / SEG, y = deckY(x); dv.push(x, y, BRIDGE_Z - halfW, x, y, BRIDGE_Z + halfW, x, y - .27, BRIDGE_Z - halfW, x, y - .27, BRIDGE_Z + halfW); }
   for (let i = 0; i < SEG; i++) { const b = i * 4; di.push(b, b + 1, b + 5, b, b + 5, b + 4, b + 2, b + 7, b + 3, b + 2, b + 6, b + 7, b, b + 4, b + 6, b, b + 6, b + 2, b + 1, b + 3, b + 7, b + 1, b + 7, b + 5); }
   deck.setAttribute('position', new THREE.Float32BufferAttribute(dv, 3)); deck.setIndex(di); deck.computeVertexNormals();
   placeGroup.add(baseMesh(deck, 11, MAT.base));
@@ -1217,18 +1218,13 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
   const rails = [];
   for (const side of [-1, 1]) {
     const zc = BRIDGE_Z + side * halfW;
-    for (let i = 0; i <= 14; i++) { const x = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / 14, y = deckY(x); const post = new THREE.BoxGeometry(.09, 1.05, .09); post.translate(x, y + .5, zc); rails.push(post); }
-    for (const hy of [.55, 1.0]) for (let i = 0; i < SEG; i++) { const x0 = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / SEG, x1 = x0 + 2 * BRIDGE_HALF / SEG; const y0 = deckY(x0) + hy, y1 = deckY(x1) + hy; const len = Math.hypot(x1 - x0, y1 - y0); const rail = new THREE.BoxGeometry(len, .07, .07); rail.rotateZ(Math.atan2(y1 - y0, x1 - x0)); rail.translate((x0 + x1) / 2, (y0 + y1) / 2, zc); rails.push(rail); }
-    // the arched top rail of the Giverny bridge
-    for (let i = 0; i < SEG; i++) { const x0 = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / SEG, x1 = x0 + 2 * BRIDGE_HALF / SEG; const y0 = deckY(x0) + 2.3 + .5 * (1 - (x0 / BRIDGE_HALF) ** 2), y1 = deckY(x1) + 2.3 + .5 * (1 - (x1 / BRIDGE_HALF) ** 2); const len = Math.hypot(x1 - x0, y1 - y0); const rail = new THREE.BoxGeometry(len, .06, .06); rail.rotateZ(Math.atan2(y1 - y0, x1 - x0)); rail.translate((x0 + x1) / 2, (y0 + y1) / 2, zc); rails.push(rail); }
+    for (let x = .63 - 1.7 * 4; x < BRIDGE_HALF; x += 1.7) { const y = deckY(x); const post = new THREE.BoxGeometry(.09, 1.25, .09); post.translate(x, y + .625, zc); rails.push(post); }
+    for (const hy of [.37, .79, 1.22]) for (let i = 0; i < SEG; i++) { const x0 = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / SEG, x1 = x0 + 2 * BRIDGE_HALF / SEG; const y0 = deckY(x0) + hy, y1 = deckY(x1) + hy; const len = Math.hypot(x1 - x0, y1 - y0); const rail = new THREE.BoxGeometry(len, .07, .07); rail.rotateZ(Math.atan2(y1 - y0, x1 - x0)); rail.translate((x0 + x1) / 2, (y0 + y1) / 2, zc); rails.push(rail); }
   }
-  for (let i = 0; i <= 6; i++) { const x = -BRIDGE_HALF + (2 * BRIDGE_HALF) * i / 6, y = deckY(x); const ph = 2.3 + .5 * (1 - (x / BRIDGE_HALF) ** 2) - 1.0; const post = new THREE.BoxGeometry(.08, ph + .1, .08); post.translate(x, y + 1.05 + ph / 2, BRIDGE_Z - halfW); rails.push(post.clone()); post.translate(0, 0, 2 * halfW); rails.push(post); }
   const railGeom = mergeGeometries(rails.map(r => r.toNonIndexed()));
   { const a = railGeom.getAttribute('position'); for (let i = 0; i < a.count; i++) a.setXYZ(i, a.getX(i) + gauss() * .012, a.getY(i) + gauss() * .012, a.getZ(i) + gauss() * .012); railGeom.computeVertexNormals(); }
   placeGroup.add(baseMesh(railGeom, 11, MAT.base));
   scatterOn(railGeom, Math.floor(rails.length * 18 * D), (q, m) => br.lay(q, m, gauss() * .3, rr(.14, .22), rr(.06, .09), rand() < .35 ? 12 : 11));
-  // wisteria hint over the arch
-  for (let i = 0; i < Math.floor(420 * D); i++) { const x = rr(-BRIDGE_HALF * .9, BRIDGE_HALF * .9); const yTop = deckY(x) + 2.35 + .5 * (1 - (x / BRIDGE_HALF) ** 2); p.set(x, yTop + rr(-.55, .15), BRIDGE_Z + rr(-halfW - .2, halfW + .2)); f.set(0, 0, 1); br.stand(p, f, rr(.1, .16), rr(.18, .3), rand() < .5 ? 15 : rand() < .5 ? 5 : 7, 1, .04, .3); }
   placeGroup.add(br.mesh(MAT.patch)); mark('bridge');
 
   // --- water: base plane + painted patches
@@ -1277,7 +1273,7 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
 
   // --- lilies: rafts in horizontal bands, as Monet arranged them
   const lil = new Patches();
-  const bands = [[1.8, 5.5, 1.6], [-1.3, 5.2, 1.3], [-8, 7, 2.0], [-12.5, 8.5, 1.8], [-16.5, 7.5, 2.0], [-21, 5, 1.6]];
+  const bands = [[4.6, 5.5, 1.3], [2.3, 5.2, 1.4], [-3, 7, 2.0], [-8, 8.5, 1.8], [-12.5, 7.5, 2.0], [-16.5, 7, 2.0], [-21, 5, 1.6]];
   for (const [zc, xr, zr] of bands) {
     const rafts = Math.floor(xr * 1.6);
     for (let r = 0; r < rafts; r++) {
@@ -2637,7 +2633,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm17-off-the-spot', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, flags: { noRefl: false, noProjPass: false }, build: 'm18-bridge', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
