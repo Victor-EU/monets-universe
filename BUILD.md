@@ -982,3 +982,40 @@ second climbs to 8.4 m; F lands ("Walking"). `lift-sheet.jpg`: the pond at eye h
 
 **Still visible.** Landing (F) over water puts you in the pond, as any flight that ends over water always has; the walk then lets you
 wade out. On touch the rise needs the view tilted up before pushing the pad; there is no separate climb control.
+
+### Progress · M16 — the cathedral (fix: "Rouen Cathedral doesn't look like the cathedral")
+
+**What was wrong.** At the painter's spot the façade is the painting itself, projected; everywhere else the building was a stage set:
+a 12 m front slab with two free-standing 10 m box towers, a 12 × 38 m warehouse behind under a shallow roof, a stubby four-sided
+cone on the left tower, a truncated cylinder with eight pegs on the right, bare box flanks, and no iron spire — the one thing Rouen
+is known for from any distance. Flight (M15) made all of this visible.
+
+**What changed.** The painted front, its arches, rose, buttresses and the towers' inner faces stay where the projector expects them.
+Around and behind them the church is built to Rouen's plan at the world's scale (≈ .84): the nave 26 m wide with walls to 33 m and
+a slate roof to 46 m, aisles of 7 m under lean-to roofs, a stepped pier with pinnacle and a flyer up to the clerestory at every
+6.25 m bay; the transept 50 m across with a gable, rose and portal at either end and turrets at the corners; the lantern tower over
+the crossing with corner pinnacles and the iron spire on it, a lathe to 129 m with four small spires about its foot; the choir, the
+ambulatory and the round east end with radiating buttresses. The Saint-Romain tower keeps its 10 m and 60 m stone and gets string
+courses at its stages, a steep slate pyramid of 18 m with a finial; the Tour de Beurre is 12 m wide and 56 m tall with corner
+pinnacles and the open octagonal crown (a ring of tall openings under a ring of small spires). Windows: the towers' lancets on all
+four faces, one clerestory and one aisle lancet per bay along the body and round the apse, the crown's openings; roofs in slate
+(17 with 4/15 shadow and 14 where lit), iron in the deep shadow (3) with cool accents, stroke sizes on the spire capped by its radius.
+The flattened land moves south to cover the church (TOWN z −452, hz 75; the north edge unchanged), the ground plane with it.
+Build `m16-cathedral`.
+
+**Verified.** `cathedral-m16.jpg`: before and after from the air, from the fields to the north-west (the whole silhouette: the two
+towers, pyramid and crown, the spire behind), the north flank, the east end, the painter's spot unchanged. Haystacks and Sunrise
+spots unchanged. Patches 240 456 → 256 125 (+15.7 k, the body of the church). Bench Balanced 2× (3840×1550), the M15 build
+re-benched as the control:
+
+| | pond | parasol | argenteuil | poplars | haystacks | rouen | sunrise | orangerie | aerial | refl |
+|---|---|---|---|---|---|---|---|---|---|---|
+| M15 (control, now) | 13.1 | 12.1 | 12.7 | 9.8 | 10.4 | 9.2 | 5.0 | 9.5 | 6.8 | 2.4 |
+| M16 | 13.2 | 9.4 | 10.4 | 11.3 | 11.2 | 10.8 | 6.4 | 9.1 | 7.1 | 4.0 |
+
+Rouen +1.6 ms and Sunrise +1.4 ms (the harbour now sees the body of the church); the rest is run-to-run noise.
+
+**Still visible.** From the fields north-west of the town the ground plane of Rouen shows its bare base colour (a violet flat in the
+Full-sun stop) where the field patches are sparse — present before M16, seen now from the air. The buttress flyers are slabs, not
+arches; the transept portals are dark recesses without their tracery; the Lady Chapel beyond the apse is not built; the church has no
+walk blocking (as before). Deployment still waits for the explicit go-ahead, with the domain.
