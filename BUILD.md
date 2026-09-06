@@ -1453,3 +1453,46 @@ slabs by their top line, not arches one can pass under; the bridge's piers are n
 them; the pond's Japanese bridge is no solid at all. The cove's inset is read radially, not along the wall's normal, so at a room's ends
 its height is off by a few centimetres. The climb is judged per step, so a sprinting flyer may be refused on Saint-Romain's steep pyramid
 where a slow one climbs it.
+
+### Progress · M26 — standing: a flyer lands and stands on a roof, and falls off its edge; the spire's octagon; arches open; both bridges whole; the cove along the normal (what M25 left visible)
+
+**What was wrong.** A flyer came to rest .2 m over the slates, the eye at the roof, and off a roof's edge hovered rather than fell. The
+spire's octagon was read as a circle, met up to 8 % early on its flats, with a .3 m margin on every cathedral solid. The flying
+buttresses were slabs with no arch under them; the road bridge's piers were no solids, so a flyer beneath the deck passed through them;
+the pond's Japanese bridge was no solid at all. The cove's inset was read radially, off by centimetres at a room's ends.
+
+**What changed.**
+- *Standing.* A flyer coming down on a surface (a house, the cathedral, the Orangerie, a bridge's deck) lands: the eye its own height
+  (`EYE`, 1.45) over the slates, as a walker's over the ground. Standing, one follows the slopes up and down; a step up onto a surface
+  within a shoulder of the eye lands there too. Off the surface's edge one falls, under gravity (9.8), to the ground or the next
+  surface, and stands again; lifting (E, Space, the wheel) ends a fall and standing both. The `.6` hover over the ground stays.
+- *The spire's octagon, the turrets' hexagons, the pinnacles' facets.* `sides(n)` gives a point the radius it has in the profile of an
+  n-sided lathe or cone (three's vertices at k·360°/n from +z toward +x), so the flats are met where they are: at 100 m and 4 m out
+  the spire reads 74.5 toward a vertex and 71.2 toward a flat's middle. The cathedral's margin is .15 m (the camera's near plane .05).
+- *Arches.* A solid's `under` may be a surface too, `under(lx, lz)`, −∞ where it stands on the ground. Each flying buttress has its
+  underside (4.2 below its top), so the arch between pier and clerestory, above the aisle roof, is open. The road bridge's one solid
+  has each arch's soffit beneath it (the ellipse the wall is cut by, 3.3 at the crown), and −∞ at the piers and abutments, so those
+  stand in the water. The pond's Japanese bridge is a solid: its deck's arch (`deckY`), the rails 1.25 over it along its two edges, the
+  air under the deck (.27 below it).
+- *The cove.* The inset is the distance to the oval's nearest point (a ternary search on the parameter), whose normal runs through the
+  point, as the cove is built along the normals; 1 m in reads the same at a room's tip and along its side (5.485).
+- Build `m26-standing`.
+
+**Verified.** Headless, keys held. Q over the aisle lands at 20.02 (the slates 18.57 + 1.45); W into the nave's wall is refused at
+the aisle's ridge (22.32); W west off the aisle's eave falls, 17.4 → 13.9 → 8.6 → 4.95 → 1.15 (the ground + .6) in about two seconds,
+and goes on. From the nave's west slope W stands up it (41.6), over the ridge (45.2), down the east slope (37.0), onto the aisle (19.1),
+and off its eave falls to 1.15. At 23 m between the piers and the aisle roof a flyer passes north under three flying buttresses. The
+spire from the east meets at −41.7 (a vertex direction). The pond's bridge reads 2.5 at its crown, 3.75 at a rail, .55 at its end;
+from the south water at 1.8 a flyer passes under its middle; at 2.5 one is set on the deck and walks over it (the deck's own height
+is a landing); at its low end one steps up onto it; Q over the deck stands at 3.81; A off its side falls to the water; a walker crosses
+it (3.94 at the middle). The road bridge: at 2.5 a flyer passes under a span (x 21.6 → 8.1) and is stopped by a pier (27.1); E from
+the water under a span stops at 3.1 under the soffit. Q over the Orangerie stands at 12.5. Frames in `m26-sheet.jpg`.
+Bench, DPR 2, two runs: pond 13.3 / 12.9 · argenteuil 13.9 / 10.0 · rouen 8.8 / 9.4 · sunrise 5.6 / 7.0 · orangerie 9.0 / 14.5 · aerial
+6.4 / 9.5 ms. Noisier than usual, and the spikes fall on different views in the two runs, so the machine's; nothing here draws, and the
+solids' loops (98 of them, per step and per frame) are microseconds.
+
+**Still visible.** Landing is by height alone: a surface at or below the eye within its footprint sets one standing on it, so a roof
+cannot be skimmed lower than 1.45 over it, and a flyer arriving at a deck's own height walks over it, its rails (lower than the eye)
+stepped over as a walker's are. The fall ends at .6 over the ground, still in flight, not on foot. The Butter Tower's ring of small
+spires is a ring, not eight; the road bridge's pilasters are within the deck's margin, not their own faces. A flyer standing still at a
+roof's edge cannot slip; only a step takes one over.
