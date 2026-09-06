@@ -1214,3 +1214,39 @@ haystacks 10.7 / 12.7 against 12.0.
 **Still visible.** The spot hangs over the street's mouth with no house behind it; the draper's window Monet sat in has no
 building. The square's rows are the same half-timber blocks as the street's, seen end-on across 60 m of cobbles. DESIGN.md still
 says "one street of half-timber houses fading to haze"; it is now a short street and a ringed square.
+
+### Progress · M20 — Argenteuil: the bridge as Monet has it, and the key beyond the frame
+
+**What was wrong.** The user's frames of the river place: the world's bridge did not agree with the canvas in shape or colour, and the
+whole place off the canvas was a grey-green wash. Two causes. The bridge was a masonry viaduct, a 5.5 m wall pierced by five arches
+with a solid parapet box on top, in one warm grey; Monet's (the National Gallery's *The Bridge at Argenteuil*, 1874, checked against
+the museum's own 7999-pixel file, see `ref/ARGENTEUIL-SOURCES.md`) is stone piers with pilasters rising to a cornice, low arches
+between them, a thin deck and an open iron railing with people at it, the face toward him in shadow, denim over the arches, the
+pilasters cream and ochre in the light, and the toll house, three storeys of coral, at its far end. The grey wash was the picture's
+key (M11): beyond about a tenth past the frame's edge `extCol` read the canvas at mip level 10, the whole picture's mean colour, and
+`inKey` replaced the world's colour with it entirely, keeping only the value; the Argenteuil picture's mean is a grey-green mud of
+sky, trees and water (RGB 124 142 135), so from the far bank, the water, the towpath and the sky behind him were all that one colour.
+
+**What changed.**
+- **The key.** `extCol` now goes no softer than level 9 (four columns by three rows of the mirrored picture), so the sky's
+  directions keep the sky's colour and the ground's the water's; `inKey` keeps two fifths of the world's own colour under the key,
+  so a tree stays green and a sail white where the key is blue, and the key is a tint, not a wash. This is global: checked at the
+  haystacks, the hill, the pond and Rouen off their spots; the keys there are the pictures' own colours and hold.
+- **The bridge.** Five arches as before (pier 1.9 m, springing at .6 m, crown at 3.3), the wall stopping at a cornice at 3.85 m,
+  pilasters on both faces at every pier, an iron railing of posts every 2.4 m with two rails (7 cm; a thin dark line from the spot,
+  as in the canvas), five figures at the rail on his side, one with a parasol. Base coats and strokes by part: the wall's face toward
+  him denim and grey-blue, its far face cream, the soffits dark, the pilasters and cornice cream and ochre, the iron dark with a
+  denim light now and then. Palette slots 11, 12, 15 re-read for the river (stone in shadow, stone lit, denim); slot 14 the
+  toll house's muted coral (the boats' waterline note takes the same).
+- **The toll house** at the bridge's far end on his side of the road, 3.8 × 3.8 m, 8.4 m of coral wall with cream corners under a
+  low pyramid roof of slate, a window a storey on the two faces he sees, the deck meeting it at its middle storey; the white
+  two-storey house a little to its left along the bank. The place carries the painting's title now, *The Bridge at Argenteuil*.
+
+**Verified.** Headless frames before and after at the spot (projected), from the near bank side-on, from the water, from the far
+bank looking back (the wash gone: sky, grass and water in their own colours under a light blue key), 10 m off the spot with the
+projector on, at the toll house, at the calm-evening stop, and off the spot at the four other places. Patches 261 982 → 263 905;
+bench at DPR 2, three runs, argenteuil 9.8 / 9.3 / 12.7 ms, pond 11.4 / 11.5 / 12.6, rouen 12.3 / 9.3 / 8.9: the usual noise.
+
+**Still visible.** The arches are rounder than Monet's flat segmental ones. The figures at the rail are two strokes each. The
+toll house reads as a brick-red tower up close; at the spot's distance it is the canvas's coral note. DESIGN.md still lists the
+place as "Regatta / Sailboats at Argenteuil".

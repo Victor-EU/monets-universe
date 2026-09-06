@@ -252,15 +252,15 @@ const HILL_STOPS = [
     waterDeep: '#4a6a8a', waterTint: '#e6eef2', reflectivity: .8, ripple: .012, haze: .08 }),
 ];
 
-// the river reads the slots its own way: 3 hull dark · 4 hull light · 5 sail shadow · 16 house wall warm · 17 roof slate · 18 house wall pale · 19 far foliage
+// the river reads the slots its own way: 3 hull dark · 4 hull light · 5 sail shadow · 11 stone in shadow · 12 stone lit · 14 the toll house's coral · 15 denim (the arches' shadow) · 16 house wall warm, ochre lights · 17 roof slate · 18 house wall pale · 19 far foliage
 const RIVER_STOPS = [
   stop({ name: 'Midday',
-    pal: ['#2e5f8a', '#5f92b8', '#f7f4ec', '#2a3038', '#5c6670', '#c9c2d8', '#2d5a3a', '#5a9250', '#a9cf7c', '#8bb457', '#c8b48a', '#a79c92', '#d6cbbd', '#4c3d30', '#d7563e', '#7d8fc0', '#d9b585', '#6a7a94', '#e6d9c2', '#6f9a86'],
+    pal: ['#2e5f8a', '#5f92b8', '#f7f4ec', '#2a3038', '#5c6670', '#c9c2d8', '#2d5a3a', '#5a9250', '#a9cf7c', '#8bb457', '#c8b48a', '#98a0b2', '#d9cba8', '#4c3d30', '#c46b5e', '#5572a8', '#d9b585', '#6a7a94', '#e6d9c2', '#6f9a86'],
     skyTop: '#4f86c8', skyHorizon: '#e8eef2', sunEl: 60, sunAz: 200, sunCol: '#fff8e8', sunInt: 1.15,
     hemiSky: '#d8e6f4', hemiGround: '#5e7a4a', hemiInt: .9, shadowTint: '#a9b3e0', fogNear: 60, fogFar: 200, fogCol: '#e2eaf0',
     waterDeep: '#2f5f8a', waterTint: '#eaf0f2', reflectivity: .68, ripple: .02, bands: 1, haze: .1 }),
   stop({ name: 'Calm evening',
-    pal: ['#3a3f6c', '#7b7aa6', '#f6dcc8', '#2a2a3a', '#585466', '#c8a6c0', '#2c3f42', '#4e6a5a', '#9aa47a', '#7a8c58', '#b89a80', '#a08e88', '#dcc4b0', '#3e3034', '#d0663c', '#8878b8', '#d6ac8a', '#5e5e84', '#e8cdb8', '#5e7280'],
+    pal: ['#3a3f6c', '#7b7aa6', '#f6dcc8', '#2a2a3a', '#585466', '#c8a6c0', '#2c3f42', '#4e6a5a', '#9aa47a', '#7a8c58', '#b89a80', '#8e88a2', '#dcc4b0', '#3e3034', '#bd6e5c', '#7a70b0', '#d6ac8a', '#5e5e84', '#e8cdb8', '#5e7280'],
     skyTop: '#8c8fc4', skyHorizon: '#f4c49a', sunEl: 7, sunAz: 280, sunCol: '#ffc080', sunInt: .9,
     hemiSky: '#d0b8c8', hemiGround: '#4a4a56', hemiInt: .8, shadowTint: '#9e94dc', fogNear: 40, fogFar: 140, fogCol: '#e6c2b0',
     waterDeep: '#3c4478', waterTint: '#f0d0bc', reflectivity: .88, ripple: .009, bands: .5, haze: .14 }),
@@ -365,7 +365,7 @@ const places = [
   { name: 'Woman with a Parasol', place: 'a hilltop meadow, wind', year: '1875', swatch: '#8fb6d8', file: 'parasol',
     center: V(8, 0, -100), radius: 30,
     view: { p: V(7.43, 4.6, -89.62), look: V(8.9, 8.2, -94.8), fov: 48 }, painting: { src: 'paintings/parasol.jpg', hz: .74, aspect: .805, stop: 0 }, stops: HILL_STOPS, build: buildHill },
-  { name: 'Sailboats at Argenteuil', place: 'the Seine, the road bridge', year: '1874', swatch: '#5f8fb8', file: 'argenteuil',
+  { name: 'The Bridge at Argenteuil', place: 'the Seine, the road bridge', year: '1874', swatch: '#5f8fb8', file: 'argenteuil',
     center: V(12, 0, -170), radius: 46,
     view: { p: V(-2, 2, -147), look: V(10, 1.4, -177.5), fov: 40 }, painting: { src: 'paintings/argenteuil.jpg', hz: .46, aspect: 1.3336, stop: 0 }, stops: RIVER_STOPS, build: buildRiver },
   { name: 'Poplars on the Epte', place: 'the riverbank, a curve of trees', year: '1891', swatch: '#c9a35a', file: 'poplars',
@@ -502,15 +502,17 @@ vec2 dirUv(vec3 d) {
 }
 // the picture's colour carried on beyond its frame: a read of the canvas so soft that nothing of the picture is left in it, only its
 // colour in that direction; the world outside the frame takes this colour and keeps its own light and structure
-// farther round from the frame it is read softer still, down to the edge's one colour: behind him the columns of the edge would otherwise
-// fan out over the ground in bands from where he stood
-vec3 extCol(vec3 d) { vec2 uv = dirUv(d); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.; return textureLod(uPainting, mirr(uv), 7. + 3. * smoothstep(1.1, 2.4, em)).rgb * uGradeMul + uGradeAdd; }
+// farther round from the frame it is read softer still, but never down to the picture's one mean colour (at Argenteuil that is a grey-green
+// mud of sky, trees and water together): a few rows and columns remain, so the sky's directions keep the sky's colour and the ground's
+// the water's, and behind him the columns of the edge no longer fan out over the ground in bands from where he stood
+vec3 extCol(vec3 d) { vec2 uv = dirUv(d); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.; return textureLod(uPainting, mirr(uv), 7. + 2. * smoothstep(1.1, 2.4, em)).rgb * uGradeMul + uGradeAdd; }
 // the world outside the frame, painted in the picture's key: the picture's colour for this direction, carrying the world's own light
-// (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves
+// (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves. The world keeps
+// two fifths of its own colour under the key: a tree stays green and a sail white where the key is blue, and the key is a tint, not a wash
 vec3 inKey(vec3 world, vec3 key, float ex, float lo, float hi) {
-  float lk = max(dot(key, LW), .015), r = pow(max(dot(world, LW), .015) / lk, ex);
+  float lw = max(dot(world, LW), .015), lk = max(dot(key, LW), .015), r = pow(lw / lk, ex);
   key = mix(vec3(lk), key, 1.4); // the soft read greys the picture's colour a little; give it back
-  return max(key, 0.) * clamp(r, lo, hi);
+  return lk * mix(max(key, 0.) / lk, world / lw, .4) * clamp(r, lo, hi);
 }
 // the canvas's edge: not a straight line but a feathered, wandering one, so that no rectangle is left on the view
 float frameEdge(vec2 puv) {
@@ -1450,7 +1452,7 @@ function buildHill(D) {
   timings.hill = 1;
 }
 
-// ============================================================ the river: Sailboats at Argenteuil
+// ============================================================ the river: The Bridge at Argenteuil
 const boats = [], dragonflies = [];
 const mergeParts = list => mergeGeometries(list.map(g => { const q = g.toNonIndexed(); q.deleteAttribute('uv'); return q; }));
 // a hull: stations along x (bow at +x), half-ellipse ribs from gunwale to keel, a flat deck; triangles wound outward
@@ -1541,25 +1543,52 @@ function buildRiver(D) {
     scatterOn(walls, Math.floor(w * h * 2.6 * D), (q, m) => { const dark = m.x * shade < -.3; town.lay(q, m, gauss() * .2, rr(.5, .9) * k, rr(.22, .4) * k, dark ? 15 : warm ? 16 : 18, 0, 0); });
     scatterOn(roof, Math.floor(w * d * 1.5 * D), (q, m) => { const r = rand(); town.lay(q, m, gauss() * .25, rr(.5, .9) * k, rr(.2, .36) * k, r < .78 ? 17 : r < .95 ? 12 : 14, 0, 0); });
   }
-  const H = [[-58, -212, 7, 5, 3.2, .1, 0], [-46, -213, 8, 6, 3.8, -.08, 1], [-37, -211, 6, 5, 2.8, .05, 0], [-27, -214, 8, 5, 3.6, 0, 0], [-14, -212, 9, 6, 4, .06, 1], [-5, -211, 6, 5, 3, -.1, 0], [4, -213, 8, 5, 3.4, .04, 0], [12, -212, 7, 5, 3.2, -.05, 1], [33, -212, 8, 5, 3.8, .05, 0], [62, -213, 6, 5, 3, -.06, 1], [86, -212, 9, 6, 4, .03, 0], [63, -213, 7, 5, 3.4, .08, 0], [76, -212, 8, 5, 3.6, -.04, 1]];
+  const H = [[-58, -212, 7, 5, 3.2, .1, 0], [-46, -213, 8, 6, 3.8, -.08, 1], [-37, -211, 6, 5, 2.8, .05, 0], [-27, -214, 8, 5, 3.6, 0, 0], [-14, -212, 9, 6, 4, .06, 1], [-5, -211, 6, 5, 3, -.1, 0], [4, -213, 8, 5, 3.4, .04, 0], [12, -212, 7, 5, 3.2, -.05, 1], [11, -204, 6, 5, 5.2, .05, 0], [33, -212, 8, 5, 3.8, .05, 0], [62, -213, 6, 5, 3, -.06, 1], [86, -212, 9, 6, 4, .03, 0], [63, -213, 7, 5, 3.4, .08, 0], [76, -212, 8, 5, 3.6, -.04, 1]];
   for (const [x, z, w, d, h, yaw, warm] of H) house(x, z, w, d, h, yaw, warm);
   placeGroup.add(baseMesh(mergeParts(hp), q => 18, MAT.base));
   placeGroup.add(town.mesh(MAT.patch));
 
-  // --- the road bridge: a masonry wall with five low elliptical arches, extruded to the road's width; parapets on top
-  const AB = ABRIDGE, wall = new THREE.Shape();
-  wall.moveTo(AB.z0 - 3, -1.2); wall.lineTo(AB.z1 + 3, -1.2); wall.lineTo(AB.z1 + 3, AB.y); wall.lineTo(AB.z0 - 3, AB.y); wall.closePath();
-  const spans = 5, pier = 2.2, span = (AB.z1 - AB.z0 - pier * (spans - 1)) / spans;
-  for (let i = 0; i < spans; i++) { const zc = AB.z0 + i * (span + pier) + span / 2, hole = new THREE.Path(); hole.moveTo(zc + span / 2, -1.2); hole.lineTo(zc + span / 2, 1.0); hole.absellipse(zc, .9, span / 2, 2.7, 0, Math.PI, false); hole.lineTo(zc - span / 2, -1.2); hole.closePath(); wall.holes.push(hole); }
+  // --- the road bridge as Monet has it: stone piers with pilasters rising to a cornice, low arches between them, a thin deck, and an
+  // open iron railing with people at it; not a viaduct with a wall on top. The face toward him is in shadow, denim over the arches, the
+  // pilasters catch the light in cream and ochre, the soffits are dark
+  const AB = ABRIDGE, spans = 5, pier = 1.9, span = (AB.z1 - AB.z0 - pier * (spans - 1)) / spans, cornY = AB.y - .45, wall = new THREE.Shape();
+  wall.moveTo(AB.z0 - 3, -1.2); wall.lineTo(AB.z1 + 3, -1.2); wall.lineTo(AB.z1 + 3, cornY); wall.lineTo(AB.z0 - 3, cornY); wall.closePath();
+  const pierZ = [];
+  for (let i = 0; i < spans; i++) { const zc = AB.z0 + i * (span + pier) + span / 2, hole = new THREE.Path(); hole.moveTo(zc + span / 2, -1.2); hole.lineTo(zc + span / 2, .6); hole.absellipse(zc, .6, span / 2, cornY - 1.15, 0, Math.PI, false); hole.lineTo(zc - span / 2, -1.2); hole.closePath(); wall.holes.push(hole); if (i) pierZ.push(zc - span / 2 - pier / 2); }
   const bg = new THREE.ExtrudeGeometry(wall, { depth: AB.half * 2, bevelEnabled: false, curveSegments: 16 });
   bg.rotateY(-Math.PI / 2); bg.translate(AB.x + AB.half, 0, 0);
-  const bparts = [bg];
-  for (const sx of [-1, 1]) { const par = new THREE.BoxGeometry(.3, .95, AB.z1 - AB.z0 + 6); par.translate(AB.x + sx * (AB.half - .15), AB.y + .45, (AB.z0 + AB.z1) / 2); bparts.push(par); }
-  const bridgeGeom = mergeParts(bparts);
-  placeGroup.add(baseMesh(bridgeGeom, 11, MAT.base));
+  const stone = [], iron = [];
+  for (const z of pierZ) for (const sx of [-1, 1]) { const pil = new THREE.BoxGeometry(.45, cornY + 1.2, pier + .4); pil.translate(AB.x + sx * (AB.half + .2), (cornY - 1.2) / 2, z); stone.push(pil); }
+  const corn = new THREE.BoxGeometry(AB.half * 2 + .9, AB.y - cornY, AB.z1 - AB.z0 + 6); corn.translate(AB.x, (AB.y + cornY) / 2, (AB.z0 + AB.z1) / 2); stone.push(corn);
+  for (const sx of [-1, 1]) { const x = AB.x + sx * (AB.half - .12);
+    for (let z = AB.z0 - 2.4; z <= AB.z1 + 2.4; z += 2.4) { const post = new THREE.BoxGeometry(.1, 1.15, .1); post.translate(x, AB.y + .575, z); iron.push(post); }
+    for (const y of [AB.y + 1.12, AB.y + .62]) { const rail = new THREE.BoxGeometry(.07, .07, AB.z1 - AB.z0 + 5); rail.translate(x, y, (AB.z0 + AB.z1) / 2); iron.push(rail); } }
+  const stoneGeom = mergeParts(stone), ironGeom = mergeParts(iron);
+  placeGroup.add(baseMesh(bg, 11, MAT.base)); placeGroup.add(baseMesh(stoneGeom, 12, MAT.base)); placeGroup.add(baseMesh(ironGeom, 3, MAT.base));
   const br = new Patches();
-  scatterOn(bridgeGeom, Math.floor(4200 * D), (q, m) => { if (q.y < -.2) return; const k = Math.min(sizeAt(q), 1.1), under = m.y < -.35, r = rand(); br.lay(q, m, gauss() * .2, rr(.4, .8) * k, rr(.16, .3) * k, under ? 15 : r < .3 ? 12 : 11, 0, 0); });
+  scatterOn(bg, Math.floor(3600 * D), (q, m) => { if (q.y < -.2) return; const k = Math.min(sizeAt(q), 1.1), r = rand(), under = m.y < -.35, toHim = m.x < -.5;
+    br.lay(q, m, gauss() * .2, rr(.4, .8) * k, rr(.16, .3) * k, under ? (r < .4 ? 3 : 15) : toHim ? (r < .5 ? 15 : r < .85 ? 11 : 12) : (r < .5 ? 12 : r < .8 ? 11 : 16), 0, 0); });
+  scatterOn(stoneGeom, Math.floor(1400 * D), (q, m) => { if (q.y < -.2) return; const k = Math.min(sizeAt(q), 1.1), r = rand(); br.lay(q, m, gauss() * .2, rr(.35, .7) * k, rr(.14, .26) * k, r < .55 ? 12 : r < .8 ? 16 : 11, 0, 0); });
+  scatterOn(ironGeom, Math.floor(500 * D), (q, m) => { const k = Math.min(sizeAt(q), 1.1); br.lay(q, m, Math.abs(m.y) > .5 ? 0 : Math.PI / 2, rr(.3, .6) * k, rr(.05, .08) * k, rand() < .65 ? 3 : 15, 0, 0); });
+  // the people at the rail on his side, dark figures with a warm note for the head, one with a parasol
+  for (const [z, w, par] of [[-158.5, .5, 0], [-160.2, .45, 1], [-166, .5, 0], [-174.5, .45, 0], [-183, .5, 0]]) {
+    p.set(AB.x - AB.half + .55, AB.y + .85, z); f.set(-1, 0, 0);
+    br.stand(p, f, w, 1.7, 3, 0, 0); p.y = AB.y + 1.62; br.stand(p, f, .22, .24, rand() < .5 ? 14 : 12, 0, 0);
+    if (par) { p.y = AB.y + 2.05; br.lay(p, n.set(0, 1, 0), 0, .9, .8, 2, 0, 0); }
+  }
   placeGroup.add(br.mesh(MAT.patch));
+  // the toll house at the bridge's far end, on his side of the road: three storeys of coral wall with cream at the corners under a low
+  // pyramid roof, the deck meeting it at its middle storey; a window a storey on the faces he sees. The white two-storey house a little
+  // to its left along the bank is in the row above
+  { const tx = AB.x - AB.half - 1.3, tz = AB.z0 - 1.6, ty = .6, tw = 3.8, th = 8.4, tp = new Patches(), tk = sizeAt(V(tx, ty + 4, tz));
+    const walls = new THREE.BoxGeometry(tw, th, tw); walls.translate(tx, ty + th / 2, tz);
+    const roof = new THREE.ConeGeometry((tw + .6) / Math.SQRT2, 1.7, 4); roof.rotateY(Math.PI / 4); roof.translate(tx, ty + th + .85, tz);
+    placeGroup.add(baseMesh(walls, 14, MAT.base)); placeGroup.add(baseMesh(roof, 17, MAT.base));
+    scatterOn(walls, Math.floor(520 * D), (q, m) => { const r = rand(), edge = Math.max(Math.abs(q.x - tx), Math.abs(q.z - tz)) > tw / 2 - .35; tp.lay(q, m, gauss() * .2, rr(.4, .7) * tk, rr(.18, .3) * tk, edge ? (r < .8 ? 12 : 16) : r < .78 ? 14 : r < .9 ? 16 : 12, 0, 0); });
+    scatterOn(roof, Math.floor(160 * D), (q, m) => { if (m.y < .2) return; tp.lay(q, m, gauss() * .3, rr(.4, .7) * tk, rr(.18, .3) * tk, rand() < .8 ? 17 : 12, 0, 0); });
+    for (const [dx, dz, fx, fz] of [[-tw / 2 - .02, 0, -1, 0], [0, tw / 2 + .02, 0, 1]]) for (const y of [2.4, 5.2, 7.4]) { p.set(tx + dx, ty + y, tz + dz); f.set(fx, 0, fz); tp.stand(p, f, .7, .95, 3, 0, 0); }
+    placeGroup.add(tp.mesh(MAT.patch));
+  }
 
   // --- water: base plane + painted patches, dense where the painter stands, broad and sparse far out
   const wb = new THREE.PlaneGeometry(520, 54, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(5, WATER_Y - .03, -172);
@@ -2712,7 +2741,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm19-open-square', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm20-argenteuil-bridge', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
