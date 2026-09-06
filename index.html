@@ -944,16 +944,18 @@ function westHills(x, z) { return (11 + 5 * Math.sin(z * .045) + 3 * Math.sin(z 
 // Rouen: the town sits on flattened land at the end of the road; a short street runs from the fields to the square, which is open from
 // its near edge (Monet's window) to the cathedral's facade, houses along its two sides
 const TOWN = { x: -44, z: -440, hx: 44, hz: 92, y: .55 }, CATH = { x: -44, zf: -442 };
-// the solids: buildings a walker or a flyer cannot pass through (the town's houses, the cathedral). Each a box in the ground plane, turned by
-// yaw, with the height of its top; solidTop gives the top over a point, or -Infinity in the open. The Orangerie has its own walls (orangBlocks)
+// the solids: buildings a walker or a flyer cannot pass through (the town's houses, the cathedral, Argenteuil's houses and its bridge). Each a
+// footprint in the ground plane (a box, turned by yaw) with the height of its surface over every point of it: a flat top, or surf(lx, lz) in
+// the box's own frame (a roof's slopes, a pyramid, a spire's taper), -Infinity where the surface is not there (the corners of a spire's box).
+// A solid with an `under` (the bridge's deck) has open air beneath it. The Orangerie has its own walls (orangBlocks), roof and ceilings
 const SOLIDS = [];
-function inSolid(S, x, z) { const dx = x - S.x, dz = z - S.z, c = Math.cos(S.yaw), sn = Math.sin(S.yaw), lx = dx * c - dz * sn, lz = dx * sn + dz * c; return Math.abs(lx) < S.hw && Math.abs(lz) < S.hd; }
-function solidTop(x, z) { let top = -Infinity; for (const S of SOLIDS) if (S.top > top && inSolid(S, x, z)) top = S.top; return top; }
-// the solids one is within at (x, z, y): their footprint holds the point and their top is over the eye. A step is refused into any solid one
-// is not already within, so a solid one is within is left freely, and, solid by solid, a spire's bounds over the roof do not open the roof
-function solidsWithin(x, z, y) { const r = []; for (const S of SOLIDS) if (S.top > y && inSolid(S, x, z)) r.push(S); return r; }
-// the highest solid top under the eye at (x, z): the roof a flyer comes to rest on
-function floorAt(x, z, y) { let top = -Infinity; for (const S of SOLIDS) if (S.top <= y && S.top > top && inSolid(S, x, z)) top = S.top; return top; }
+function solidH(S, x, z) { const dx = x - S.x, dz = z - S.z, c = Math.cos(S.yaw), sn = Math.sin(S.yaw), lx = dx * c - dz * sn, lz = dx * sn + dz * c; if (Math.abs(lx) >= S.hw || Math.abs(lz) >= S.hd) return -Infinity; return S.surf ? S.surf(lx, lz) : S.top; }
+function solidTop(x, z) { let top = -Infinity; for (const S of SOLIDS) { const h = solidH(S, x, z); if (h > top) top = h; } return top; }
+// a solid stands in the way at (x, z, y) when its surface is over the eye and the eye is not beneath it: its surface then, else -Infinity
+function solidOver(S, x, z, y) { const h = solidH(S, x, z); return h > y && y >= (S.under === undefined ? -Infinity : S.under) ? h : -Infinity; }
+// the highest surface at or below the eye at (x, z): the roof a flyer comes to rest on; and the lowest over it: the underside a flyer rising meets
+function floorAt(x, z, y) { let top = -Infinity; for (const S of SOLIDS) { const h = solidH(S, x, z); if (h <= y && h > top) top = h; } return top; }
+function ceilAt(x, z, y) { let c = Infinity; for (const S of SOLIDS) { const h = solidH(S, x, z); if (h > y) { const u = S.under === undefined ? h : S.under; if (u > y && u < c) c = u; } } return c; }
 function streetX(z) { return -45 - (z + 417) * (7 / 60); }
 function townFlat(x, z) { const dx = Math.max(Math.abs(x - TOWN.x) - TOWN.hx, 0), dz = Math.max(Math.abs(z - TOWN.z) - TOWN.hz, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 22); }
 // Le Havre: the harbour basin east of the town; the quay follows its edge
@@ -1066,25 +1068,33 @@ ORANG.ovals.forEach((O, ri) => {
   for (let i = 0; i < list.length; i++) { const A = list[i], B = list[(i + 1) % list.length]; const e0 = A.sc + A.P.L / 2; let e1 = B.sc - B.P.L / 2; if (e1 < e0) e1 += O.len; if (e1 - e0 > 1.9) ORANG.doors[ri].push(O.wrap((e0 + e1) / 2)); }
 });
 function orangFlat(x, z) { const dx = Math.max(Math.abs(x - ORANG.x) - ORANG.hx - 2, 0), dz = Math.max(Math.abs(z - ORANG.z) - ORANG.hz - 2, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 12); }
-// where one can stand inside the building: the rooms, the spaces between them, the rotunda and the passage; the walls only at their doors
-function orangWalkable(x, z) {
+// where one can stand inside the building: the rooms, the spaces between them, the rotunda and the passage; the walls only at their doors, and
+// (yr the eye's height over the floor: a flyer's) only below the doors' heads
+function orangWalkable(x, z, yr = 0) {
   let inRoom = false;
   for (let i = 0; i < 2; i++) { const O = ORANG.ovals[i];
-    if (O.inside(x, z, -.3) && !O.inside(x, z, .35)) { const s = O.sAt(x, z); return ORANG.doors[i].some(d => O.arcDist(s, d) < ORANG.doorW / 2 + .15); } // in the wall
+    if (O.inside(x, z, -.3) && !O.inside(x, z, .35)) { const s = O.sAt(x, z); return yr < ORANG.doorH && ORANG.doors[i].some(d => O.arcDist(s, d) < ORANG.doorW / 2 + .15); } // in the wall
     if (O.inside(x, z, .35)) inRoom = true; }
   if (inRoom) return true;
   if (x > LENS.x0 + .3 && x < LENS.x1 - .3 && Math.abs(z - ORANG.z) < LENS.hz - .3) return true;
   if (x > VEST.x0 - .5 && x < VEST.x1 + .5 && Math.abs(z - ORANG.z) < VEST.hz - .3) return true;
   const rd = Math.hypot(x - ROTUNDA.cx, z - ROTUNDA.cz), ph = Math.atan2(-(z - ROTUNDA.cz), x - ROTUNDA.cx) * 180 / Math.PI;
-  if (rd > ROTUNDA.r - .35 && rd < ROTUNDA.r + .3) return Math.abs(ph) < 36 || Math.abs(Math.abs(ph) - 180) < 16; // the rotunda's wall, its two openings
+  if (rd > ROTUNDA.r - .35 && rd < ROTUNDA.r + .3) return yr < ORANG.doorH + .3 && (Math.abs(ph) < 36 || Math.abs(Math.abs(ph) - 180) < 16); // the rotunda's wall, its two openings
   if (rd < ROTUNDA.r - .35) return true;
-  if (x > PASS.x0 && x < ROTUNDA.cx && Math.abs(z - ORANG.z) < PASS.hz - .3) return true;
+  if (x > PASS.x0 && x < ROTUNDA.cx && Math.abs(z - ORANG.z) < PASS.hz - .3) return x > ORANG.x - ORANG.hx + .3 || yr < ORANG.wallH + .1; // the passage; the west door's lintel
   return false;
 }
-function orangBlocks(x, z) { return Math.abs(x - ORANG.x) < ORANG.hx + .5 && Math.abs(z - ORANG.z) < ORANG.hz + .5 && !orangWalkable(x, z); }
+function orangBlocks(x, z, yr = 0) { return Math.abs(x - ORANG.x) < ORANG.hx + .5 && Math.abs(z - ORANG.z) < ORANG.hz + .5 && !orangWalkable(x, z, yr); }
 // the roof over a point of the building (a low prism, its ridge along x), -Infinity elsewhere; the ceiling within is the cove's height
 function orangRoof(x, z) { const dz = Math.abs(z - ORANG.z); return Math.abs(x - ORANG.x) < ORANG.hx + .6 && dz < ORANG.hz + .6 ? ORANG.y + 7.55 + 2.6 * (1 - dz / (ORANG.hz + .6)) : -Infinity; }
-const ORANG_CEIL = ORANG.y + ORANG.coveH - .3;
+// the ceiling over a point within: in a room the cove, a quarter-ellipse from the wall's height to the ceiling's 1.7 m in (as built below),
+// the ceiling itself beyond; the rotunda's own; the lens's, the vestibule's and the passage's at the walls' height
+const _oq = V();
+function orangCeil(x, z) {
+  for (const O of ORANG.ovals) if (O.inside(x, z, -.3)) { const t = Math.atan2(-(z - O.cz) / O.b, (x - O.cx) / O.a); O.at(t, 0, 0, _oq); const k = Math.min(Math.hypot(_oq.x - x, _oq.z - z) / 1.7, 1); return ORANG.y + ORANG.wallH + (ORANG.coveH - ORANG.wallH) * Math.sqrt(1 - (1 - k) * (1 - k)); }
+  if (Math.hypot(x - ROTUNDA.cx, z - ROTUNDA.cz) < ROTUNDA.r) return ORANG.y + 4.6;
+  return ORANG.y + ORANG.wallH;
+}
 // the way through, for the promenade: in at the west door, through the rotunda and both rooms, out again
 const ORANG_PATH = (() => {
   const O0 = ORANG.ovals[0], O1 = ORANG.ovals[1], d0 = ORANG.doors[0], d1 = ORANG.doors[1], q = V();
@@ -1564,7 +1574,7 @@ function buildRiver(D) {
     const roof = prism(w + .5, d + .5, rh); roof.translate(0, h, 0);
     const chimney = new THREE.BoxGeometry(.5, rh + .9, .5); chimney.translate(w * .3, h + rh * .35, 0);
     const parts = [walls, roof, chimney]; for (const gq of parts) { gq.rotateY(yaw); gq.translate(x, y, z); hp.push(gq); }
-    SOLIDS.push({ x, z, hw: w / 2 + .5, hd: d / 2 + .5, top: y + h + rh, yaw });
+    SOLIDS.push({ x, z, hw: w / 2 + .5, hd: d / 2 + .5, yaw, surf: (lx, lz) => y + h + rh * Math.max(0, 1 - Math.abs(lz) / (d / 2 + .25)) }); // the roof's two slopes
     const k = sizeAt(V(x, y, z)), shade = Math.cos(yaw) * .7 - Math.sin(yaw) * .5;
     scatterOn(walls, Math.floor(w * h * 2.6 * D), (q, m) => { const dark = m.x * shade < -.3; town.lay(q, m, gauss() * .2, rr(.5, .9) * k, rr(.22, .4) * k, dark ? 15 : warm ? 16 : 18, 0, 0); });
     scatterOn(roof, Math.floor(w * d * 1.5 * D), (q, m) => { const r = rand(); town.lay(q, m, gauss() * .25, rr(.5, .9) * k, rr(.2, .36) * k, r < .78 ? 17 : r < .95 ? 12 : 14, 0, 0); });
@@ -1590,7 +1600,7 @@ function buildRiver(D) {
     for (let z = AB.z0 - 2.4; z <= AB.z1 + 2.4; z += 2.4) { const post = new THREE.BoxGeometry(.1, 1.15, .1); post.translate(x, AB.y + .575, z); iron.push(post); }
     for (const y of [AB.y + 1.12, AB.y + .62]) { const rail = new THREE.BoxGeometry(.07, .07, AB.z1 - AB.z0 + 5); rail.translate(x, y, (AB.z0 + AB.z1) / 2); iron.push(rail); } }
   const stoneGeom = mergeParts(stone), ironGeom = mergeParts(iron);
-  SOLIDS.push({ x: AB.x, z: (AB.z0 + AB.z1) / 2, hw: AB.half + .5, hd: (AB.z1 - AB.z0) / 2 + 3.3, top: AB.y + .9, yaw: 0 }); // a flyer meets the piers and the wall; the road's walker, eye at 5.75, is above it
+  SOLIDS.push({ x: AB.x, z: (AB.z0 + AB.z1) / 2, hw: AB.half + .5, hd: (AB.z1 - AB.z0) / 2 + 3.3, top: AB.y + .9, under: AB.y - .7, yaw: 0 }); // the deck and its parapet, open beneath: a flyer meets it from the side or from below; the road's walker, eye at 5.75, is above it
   placeGroup.add(baseMesh(bg, 11, MAT.base)); placeGroup.add(baseMesh(stoneGeom, 12, MAT.base)); placeGroup.add(baseMesh(ironGeom, 3, MAT.base));
   const br = new Patches();
   scatterOn(bg, Math.floor(3600 * D), (q, m) => { if (q.y < -.2) return; const k = Math.min(sizeAt(q), 1.1), r = rand(), under = m.y < -.35, toHim = m.x < -.5;
@@ -1610,7 +1620,7 @@ function buildRiver(D) {
   { const tx = AB.x - AB.half - 1.3, tz = AB.z0 - 1.6, ty = .6, tw = 3.8, th = 8.4, tp = new Patches(), tk = sizeAt(V(tx, ty + 4, tz));
     const walls = new THREE.BoxGeometry(tw, th, tw); walls.translate(tx, ty + th / 2, tz);
     const roof = new THREE.ConeGeometry((tw + .6) / Math.SQRT2, 1.7, 4); roof.rotateY(Math.PI / 4); roof.translate(tx, ty + th + .85, tz);
-    placeGroup.add(baseMesh(walls, 14, MAT.base)); placeGroup.add(baseMesh(roof, 17, MAT.base)); SOLIDS.push({ x: tx, z: tz, hw: tw / 2 + .5, hd: tw / 2 + .5, top: ty + th + 1.7, yaw: 0 });
+    placeGroup.add(baseMesh(walls, 14, MAT.base)); placeGroup.add(baseMesh(roof, 17, MAT.base)); SOLIDS.push({ x: tx, z: tz, hw: tw / 2 + .5, hd: tw / 2 + .5, yaw: 0, surf: (lx, lz) => ty + th + 1.7 * Math.max(0, 1 - Math.max(Math.abs(lx), Math.abs(lz)) / (tw / 2 + .3)) }); // its pyramid
     scatterOn(walls, Math.floor(520 * D), (q, m) => { const r = rand(), edge = Math.max(Math.abs(q.x - tx), Math.abs(q.z - tz)) > tw / 2 - .35; tp.lay(q, m, gauss() * .2, rr(.4, .7) * tk, rr(.18, .3) * tk, edge ? (r < .8 ? 12 : 16) : r < .78 ? 14 : r < .9 ? 16 : 12, 0, 0); });
     scatterOn(roof, Math.floor(160 * D), (q, m) => { if (m.y < .2) return; tp.lay(q, m, gauss() * .3, rr(.4, .7) * tk, rr(.18, .3) * tk, rand() < .8 ? 17 : 12, 0, 0); });
     for (const [dx, dz, fx, fz] of [[-tw / 2 - .02, 0, -1, 0], [0, tw / 2 + .02, 0, 1]]) for (const y of [2.4, 5.2, 7.4]) { p.set(tx + dx, ty + y, tz + dz); f.set(fx, 0, fz); tp.stand(p, f, .7, .95, 3, 0, 0); }
@@ -1863,7 +1873,7 @@ function buildRouen(D) {
     const roof = gable ? prism(d + .9, w + .9, rh).rotateY(Math.PI / 2) : prism(w + .9, d + .9, rh); roof.translate(0, h, 0);
     const chimney = new THREE.BoxGeometry(.6, rh + 1, .6); chimney.translate((rand() - .5) * w * .5, h + rh * .4, 0);
     for (const g of [lower, upper, roof, chimney]) { g.rotateY(yaw); g.translate(x, y, z); }
-    hp[wallPal].push(lower, upper, chimney); hp[17].push(roof); SOLIDS.push({ x, z, hw: w / 2 + .5, hd: d / 2 + .5, top: y + h + rh, yaw });
+    hp[wallPal].push(lower, upper, chimney); hp[17].push(roof); SOLIDS.push({ x, z, hw: w / 2 + .5, hd: d / 2 + .5, yaw, surf: (lx, lz) => y + h + rh * Math.max(0, 1 - Math.abs(gable ? lx : lz) / ((gable ? w : d) / 2 + .45)) }); // the roof's two slopes, the ridge across for a gabled house
     const k = clamp(Math.min(Math.hypot(x - viewP.x, z - viewP.z), Math.max(pathDist(x, z) - d / 2, 2) * 2.2 + 6) / 13, 1, 2.6), other = style === 1 ? 18 : 16;
     for (const g of [lower, upper]) scatterOn(g, Math.floor((w + d) * (g === lower ? h * .45 : h * .55) * 7.2 * D / k), (q, m) => {
       if (Math.abs(m.y) > .5) return;
@@ -1923,8 +1933,23 @@ function buildRouen(D) {
   const NW = 13, AW = 20, WALL = 33, RIDGE = 46, AISLE = 16, BAY = 6.25, ZN = ZF - 2.5, ZT0 = ZF - 40, ZT1 = ZF - 52, ZC = ZF - 66, ZTM = (ZT0 + ZT1) / 2;
   const box = (list, w, h, d, x, y0, z) => { const g = new THREE.BoxGeometry(w, h, d); g.translate(x, y0 + h / 2, z); list.push(g); return g; };
   const roses = [];
+  // as solids, part by part, each with its roof's surface (SOLIDS): the towers (Saint-Romain's pyramid, the Butter Tower's crown with its ring of
+  // small spires and its corner pinnacles), the front with its gable, the vessels with their ridges, the aisles' slopes, every pier with its pinnacle
+  // and its flyer, the transept and its turrets, the lantern and its pinnacles, the spire and its four turrets tapering as their profiles do, the
+  // apse's cone and the ambulatory's slope. Heights are the geometry's; a box's top is where its roof begins
+  const S = (x, z, hw, hd, surf, yaw = 0) => SOLIDS.push({ x, z, hw: hw + .3, hd: hd + .3, surf, yaw });
+  const lathe = (yb, prof) => r => { r = Math.max(r - .3, 0); for (let i = 1; i < prof.length; i++) if (r <= prof[i - 1][0] && r >= prof[i][0]) { const [r0, h0] = prof[i - 1], [r1, h1] = prof[i]; return yb + h0 + (h1 - h0) * (r0 - r) / (r0 - r1); } return -Infinity; }; // a lathe's height at a radius, its profile read back
+  const pinnacle = (base, r, h) => (lx, lz) => base + h * Math.max(0, 1 - Math.hypot(lx, lz) / r);
+  S(TX[0], TOW[0].zf - TOW[0].w / 2, TOW[0].w / 2 + .5, TOW[0].w / 2 + .5, (lx, lz) => TOW[0].h + 18 * Math.max(0, 1 - Math.max(Math.abs(lx), Math.abs(lz)) / (TOW[0].w / 2 + .5)));
+  { const T = TOW[1], hw = T.w / 2 + .4, rc = T.w * .37, pc = T.w / 2 - .9; S(T.x, T.zf - T.w / 2, hw, hw, (lx, lz) => { const r = Math.hypot(lx, lz); return r < T.w * .4 + .4 ? Math.max(T.h + 11.85, T.h + 16.8 - 5 * Math.abs(r - rc) / .7) : T.h + 7 * Math.max(0, 1 - Math.hypot(Math.abs(lx) - pc, Math.abs(lz) - pc)); }); }
+  S(CX, ZF - .6, 6, 1.9, (lx, lz) => 46 + 7 * Math.max(0, 1 - Math.max(Math.abs(lx), Math.abs(lz + .3) / .15) / 6));
+  const pierS = (x, z, yaw) => S(x, z, 1.3, 1.3, (lx, lz) => Math.abs(lx) < 1 && Math.abs(lz) < 1.1 ? 22.5 + 6 * Math.max(0, 1 - Math.hypot(lx, lz) / 1.1) : 11.5, yaw); // the stepped pier, its pinnacle
+  const flyerS = (x, z, yaw) => S(x, z, 3.75, .55, lx => 28.6 - lx * 9 / 7, yaw); // the flyer's top, sloping down and out from the clerestory (lx outward)
   const vessel = (z0, z1) => { // the tall vessel and the aisles leaning on it, from z0 (west) to z1 (east)
     const L = z0 - z1, zm = (z0 + z1) / 2;
+    S(CX, zm, NW + .6, L / 2, lx => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lx) / (NW + .6)));
+    for (const sx of [-1, 1]) S(CX + sx * (NW + 3.75), zm, 3.75, L / 2, lx => AISLE + 5.5 * clamp(1 - (3.75 + sx * lx) / 7.5, 0, 1));
+    for (let z = z0 - BAY / 2; z > z1 + 1; z -= BAY) for (const sx of [-1, 1]) { pierS(CX + sx * (AW + .8), z, 0); flyerS(CX + sx * (AW + NW) / 2, z, sx < 0 ? Math.PI : 0); }
     box(catBack, NW * 2, WALL, L, CX, -.5, zm); const r = prism(L + .6, NW * 2 + 1.2, RIDGE - WALL).rotateY(Math.PI / 2); r.translate(CX, WALL, zm); catRoof.push(r);
     for (const sx of [-1, 1]) { box(catBack, AW - NW, AISLE, L, CX + sx * (NW + AW) / 2, -.5, zm); const a = prism(L + .6, (AW - NW) * 2 + 1, 5.5).rotateY(Math.PI / 2); a.translate(CX + sx * NW, AISLE, zm); catRoof.push(a); }
     for (let z = z0 - BAY / 2; z > z1 + 1; z -= BAY) for (const sx of [-1, 1]) { // a pier, its pinnacle and the flyer up to the clerestory at every bay
@@ -1934,6 +1959,14 @@ function buildRouen(D) {
   vessel(ZN, ZT0); vessel(ZT1, ZC);
   // the transept: the wide arm across, a gable at either end with its rose and portal, turrets at the corners
   box(catBack, 50, WALL, ZT0 - ZT1, CX, -.5, ZTM); const tr = prism(51, ZT0 - ZT1 + 1.2, RIDGE - WALL); tr.translate(CX, WALL, ZTM); catRoof.push(tr);
+  S(CX, ZTM, 25.5, (ZT0 - ZT1) / 2 + .6, (lx, lz) => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lz) / ((ZT0 - ZT1) / 2 + .6)));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) S(CX + sx * 24.2, ZTM + sz * ((ZT0 - ZT1) / 2 - 1.1), 1.3, 1.3, pinnacle(43.5, 1.7, 7));
+  S(CX, ZTM, 7, 7, (lx, lz) => WALL - 1 + 25 + 7 * Math.max(0, 1 - Math.hypot(Math.abs(lx) - 6.2, Math.abs(lz) - 6.2) / 1.1));
+  { const sp = lathe(WALL - 1 + 25, [[6, 0], [4.7, 9], [3.4, 22], [2.1, 38], [1.0, 54], [.3, 67], [0, 72]]), tu = lathe(WALL - 1 + 25 + 1, [[1.5, 0], [1.0, 4], [.45, 9], [0, 13]]);
+    S(CX, ZTM, 6.3, 6.3, (lx, lz) => sp(Math.hypot(lx, lz))); for (const sx of [-1, 1]) for (const sz of [-1, 1]) S(CX + sx * 5.6, ZTM + sz * 5.6, 1.8, 1.8, (lx, lz) => tu(Math.hypot(lx, lz))); }
+  S(CX, ZC, NW + .9, NW + .9, (lx, lz) => { const r = Math.hypot(lx, lz); return lz > 0 || r > NW + .9 ? -Infinity : WALL + (RIDGE - WALL) * Math.max(0, 1 - r / (NW + .6)); });
+  S(CX, ZC, AW + .9, AW + .9, (lx, lz) => { const r = Math.hypot(lx, lz); return lz > 0 || r > AW + .9 ? -Infinity : AISLE + 5.5 * clamp((AW + .6 - r) / (AW + .6 - NW), 0, 1); });
+  for (let i = 1; i < 7; i++) { const a = Math.PI / 2 + i / 7 * Math.PI, ux = Math.sin(a), uz = Math.cos(a); pierS(CX + ux * (AW + .8), ZC + uz * (AW + .8), a); flyerS(CX + ux * (AW + NW) / 2, ZC + uz * (AW + NW) / 2, a - Math.PI / 2); }
   for (const sx of [-1, 1]) {
     const rs = new THREE.CylinderGeometry(4.2, 4.2, .5, 24); rs.rotateZ(Math.PI / 2); rs.translate(CX + sx * 25, 26, ZTM); roses.push({ g: rs, cy: 26, cz: ZTM, axis: 'x' });
     box(catDeep, .6, 9.5, 5, CX + sx * 24.9, -.5, ZTM);
@@ -1952,10 +1985,6 @@ function buildRouen(D) {
     const pr = box(catBack, 2.0, 23, 2.2, 0, -.5, 0); pr.rotateY(a); pr.translate(CX + ux * (AW + .8), 0, ZC + uz * (AW + .8)); const pb = box(catBack, 2.6, 12, 2.6, 0, -.5, 0); pb.rotateY(a); pb.translate(CX + ux * (AW + 1.0), 0, ZC + uz * (AW + 1.0));
     const pin = new THREE.ConeGeometry(1.0, 6, 5); pin.translate(CX + ux * (AW + .7), 25.5, ZC + uz * (AW + .7)); catBack.push(pin);
     const ang = Math.atan2(9, AW - NW), fl = new THREE.BoxGeometry(Math.hypot(9, AW - NW) + .8, 2.6, 1.1); fl.rotateZ(Math.PI - ang); fl.rotateY(a - Math.PI / 2); fl.translate(CX + ux * (AW + NW) / 2, 26.5, ZC + uz * (AW + NW) / 2); catBack.push(fl); }
-  // the cathedral as solids: the bounds of the west front, of the body, and of the spire over the crossing
-  const boxSolid = b => SOLIDS.push({ x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, hw: (b.max.x - b.min.x) / 2 + .3, hd: (b.max.z - b.min.z) / 2 + .3, top: b.max.y, yaw: 0 });
-  for (const list of [cat, catBack]) { const b = new THREE.Box3(); for (const g of list) { g.computeBoundingBox(); b.union(g.boundingBox); } boxSolid(b); } // the west front, the body
-  for (const g of catIron) { g.computeBoundingBox(); if (g.boundingBox.max.y - g.boundingBox.min.y > 10) boxSolid(g.boundingBox); } // the spire and its four turrets, each its own; not the roof's small fins
   const catGeom = mergeParts(cat), backGeom = mergeParts(catBack), deepGeom = mergeParts(catDeep), roofGeom = mergeParts(catRoof), ironGeom = mergeParts(catIron);
   placeGroup.add(baseMesh(catGeom, 4, MAT.base)); placeGroup.add(baseMesh(backGeom, 4, MAT.base)); placeGroup.add(baseMesh(deepGeom, 3, MAT.base)); placeGroup.add(baseMesh(rose, 15, MAT.base));
   placeGroup.add(baseMesh(roofGeom, 17, MAT.base)); placeGroup.add(baseMesh(ironGeom, 3, MAT.base)); for (const R of roses) placeGroup.add(baseMesh(R.g, 15, MAT.base));
@@ -2440,10 +2469,18 @@ function updateWalk(dt) {
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
   const wet = isWater(pos.x, pos.z);
-  // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking, or flying below its roof; its doors are open to both), or into a solid below its top; a step
-  // out of a solid one is already inside, or back toward the box from outside it (the aerial view starts beyond its north side), is always allowed, so nothing can trap
+  // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking, or flying below its roof; its doors are open to both, up to their heads),
+  // or under a solid's surface: unless, flying, the surface is no more than a shoulder above the eye or the step's rise up a roof's slope, when the flyer is lifted onto it
+  // (a roof is a floor one walks up; a wall or a spire's flank is not). A step out of a solid one is already inside, or back toward the box from outside it (the aerial
+  // view starts beyond its north side), is always allowed, so nothing can trap. A flyer at rest on a roof follows its slope down as well
   edgeHit = false;
-  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return false; } if (orangBlocks(nx, nz) && (!fly || pos.y < orangRoof(nx, nz))) return false; const w = solidsWithin(nx, nz, pos.y); if (w.length && w.some(S => !inSolid(S, pos.x, pos.z))) return false; pos.x = nx; pos.z = nz; return true; };
+  const restOn = fly ? Math.max(floorAt(pos.x, pos.z, pos.y), orangRoof(pos.x, pos.z) <= pos.y ? orangRoof(pos.x, pos.z) : -Infinity) : -Infinity, resting = pos.y - restOn < .3;
+  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz, y = pos.y, yr = y - ORANG.y; if (!fly && !wet && isWater(nx, nz)) return false;
+    const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return false; }
+    const climb = fly ? Math.max(.8, 2.2 * Math.hypot(dx, dz)) : 0; let rise = 0;
+    if (orangBlocks(nx, nz, yr)) { const h = orangRoof(nx, nz) - y; if (h > 0 && !(orangBlocks(pos.x, pos.z, yr) && orangRoof(pos.x, pos.z) > y)) { if (h > climb) return false; rise = h; } }
+    for (const S of SOLIDS) { const h = solidOver(S, nx, nz, y) - y; if (h <= 0 || solidOver(S, pos.x, pos.z, y) > y) continue; if (h > climb) return false; if (h > rise) rise = h; }
+    pos.x = nx; pos.z = nz; if (rise) pos.y += rise + .2; return true; };
   if (!tryMove(step.x, step.z)) { if (!tryMove(step.x, 0)) tryMove(0, step.z); }
   // the edge of the world, felt: the step back a little, no climbing along the gaze there, and a line saying where the next painting lies
   if (edgeHit) { step.y = 0; glide = 0; if (!edgeWas) { velocity.multiplyScalar(-.35); if (realTime > edgeSaid + 8) { edgeSaid = realTime; say('The world ends here · ' + nextLine(), 6); } } }
@@ -2451,10 +2488,11 @@ function updateWalk(dt) {
   if (fly) { // the eased lift of the button and the glide of the wheel, along the gaze
     const k = 1 - Math.pow(.02, dt), dl = lift * k, dg = glide * k; lift -= dl; glide -= dg;
     if (dg) { if (!tryMove(_fwd.x * dg, _fwd.z * dg)) { if (!tryMove(_fwd.x * dg, 0)) tryMove(0, _fwd.z * dg); } step.y += _fwd.y * dg; }
-    // a flyer above a roof (a house, the cathedral, the Orangerie) comes to rest on it; one inside the Orangerie, below its roof, has its ceiling
-    let lo = walkHeight(pos.x, pos.z) + .6, hi = 300; const oR = orangRoof(pos.x, pos.z), st = Math.max(floorAt(pos.x, pos.z, pos.y), oR <= pos.y ? oR : -Infinity);
-    if (st > -Infinity) lo = Math.max(lo, st + .2); if (oR > pos.y) hi = Math.max(ORANG_CEIL, pos.y);
-    pos.y = clamp(pos.y + step.y + dl, lo, hi); }
+    // a flyer above a roof (a house, the cathedral, the Orangerie) comes to rest on its slates, .2 above them, and at rest follows them down; one under
+    // the bridge's deck has the water for a floor (not the deck, the road's ground) and stops beneath the deck when rising; one inside the Orangerie, below its roof, has the ceiling of the space it is in, the cove's curve included
+    const cl = ceilAt(pos.x, pos.z, pos.y), wh = walkHeight(pos.x, pos.z); let lo = (cl <= wh ? Math.max(groundHeight(pos.x, pos.z), WATER_Y) : wh) + .6, hi = Math.min(300, cl - .2); const oR = orangRoof(pos.x, pos.z), st = Math.max(floorAt(pos.x, pos.z, pos.y), oR <= pos.y ? oR : -Infinity);
+    if (st > -Infinity) { lo = Math.max(lo, st + .2); if (resting && step.y + dl <= 0 && st + .2 < pos.y) pos.y = Math.max(lo, st + .2); } if (oR > pos.y && Math.abs(pos.x - ORANG.x) < ORANG.hx && orangWalkable(pos.x, pos.z)) hi = Math.min(hi, orangCeil(pos.x, pos.z) - .3); // within the walls
+    pos.y = clamp(pos.y + step.y + dl, lo, Math.max(hi, lo)); }
   else { const target = eyeHeight(pos.x, pos.z); pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
   camera.rotation.set(pitch, yaw, 0);
 }
@@ -2847,12 +2885,12 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm24-the-roofs', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm25-the-slates', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
-  get solids() { return SOLIDS; }, top(x, z) { return [solidTop(x, z), orangRoof(x, z)]; },
-  set(x, y, z, yw = 0, pt = 0) { camera.position.set(x, y, z); fly = true; syncFly(); this.look(yw, pt); update(0); }, // the flyer put somewhere, as ?cam= does
+  get solids() { return SOLIDS; }, top(x, z) { return [solidTop(x, z), orangRoof(x, z), orangCeil(x, z)]; },
+  set(x, y, z, yw = 0, pt = 0) { camera.position.set(x, y, z); fly = true; syncFly(); velocity.set(0, 0, 0); lift = glide = 0; this.look(yw, pt); update(0); }, // the flyer put somewhere, still, as ?cam= does
   at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, eyeHeight(q.x, q.z), q.z); update(0); },
   U, hourFog, get projMs() { return projMs; },
 };

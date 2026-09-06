@@ -1398,3 +1398,58 @@ within the usual noise (nothing here draws).
 **Still visible.** A flyer resting on a roof sits .2 m above its box, not on the slates; on the cathedral the box is the body's bounds,
 flat at 64 m, so one hovers over the aisles. The spire's box is square; a flyer meets it 6 m from the spire's foot. The Orangerie's
 ceiling is the cove's height everywhere within, the rotunda and passage included.
+
+### Progress · M25 — the slates: every roof a surface, the spire's taper, the cathedral part by part, the Orangerie's ceilings (what M24 left visible)
+
+**What was wrong.** A solid was a box with a flat top, so a flyer came to rest at a house's ridge height over its eaves, and over the
+cathedral at 64 m (the lantern's pinnacles) everywhere, aisles included. The spire's solid was a square met 6 m from its foot. The
+Orangerie's ceiling was the cove's height everywhere within. And a flyer could not go under the Argenteuil bridge: the deck counted as
+ground there, and its solid had no underside.
+
+**What changed.**
+- *Surfaces.* A solid carries `surf(lx, lz)`, its surface's height over every point of its footprint in its own frame, or −∞ where
+  there is none (the corners of a spire's box); `solidH(S, x, z)` reads it. A house's is its roof's two slopes (the ridge across for a
+  gabled Rouen house), the toll house's its pyramid. `floorAt` is the highest surface at or below the eye, `ceilAt` the lowest above
+  it (a solid with an `under`, the bridge's deck, has open air beneath), `solidOver` whether a solid stands in the way at a height.
+- *The cathedral* is 66 solids: the two towers (Saint-Romain's pyramid to 78 m, the Butter Tower's crown with its ring of small
+  spires and its corner pinnacles), the front and its gable, the nave and choir vessels with their ridges at 46, the aisles' slopes
+  from 21.5 down to 16, every pier with its pinnacle and its flyer sloping down from the clerestory, the transept and its four turrets,
+  the lantern and its pinnacles, the spire and its four turrets tapering as their lathe profiles do (`lathe` reads a profile back as
+  height at a radius), the apse's cone and the ambulatory's slope. Heights are the geometry's.
+- *The climb.* A step under a surface no more than a shoulder (.8 m) above the eye, or the step's own rise up a slope (2.2 : 1), lifts
+  a flyer onto it; anything higher refuses the step. So a roof is a floor one walks up, and a wall or a spire's flank is not. At rest
+  on a roof a flyer follows its slope down too; off its edge one hovers (it is flight). A walker is refused by every surface over the eye.
+- *The Orangerie.* `orangCeil(x, z)`: in a room the cove's quarter-ellipse from the wall's 3.4 to the ceiling's 4.7 over 1.7 m in, the
+  ceiling beyond; the rotunda's 4.6; the lens's, vestibule's and passage's 3.4. A flyer rising meets it (.3 below), and moving toward a
+  wall under the cove is pushed down by it. The doors stop a flyer above their heads (`orangWalkable(x, z, yr)`: the rooms' at 2.4,
+  the rotunda's openings at 2.7, the west door's lintel at 3.5), so nothing passes over a lintel. The ceiling applies within the walls only.
+- *The bridge* has an underside (3.6): a flyer on the water passes beneath it, one rising stops under the deck, one at deck height
+  meets it as a wall, one within a shoulder of the parapet steps up onto it. `walkHeight` still gives the road its deck; a flyer beneath
+  has the water for a floor.
+- Debug: `monet.set` now puts the flyer down still (no velocity, lift or glide carried over); `monet.top(x, z)` adds the Orangerie
+  ceiling. Build `m25-the-slates`.
+
+**Verified.** Headless, keys held. Surfaces read: a house 5.62 at its ridge, 4.47 half-way, 3.78 near the eave; the nave 46 at the
+ridge, 33 at the eave, the aisle 18.6 mid-slope and 16 at its eave, the lantern's pinnacle 64, the apse 39.3, the ambulatory 18.6,
+Saint-Romain 78 at the apex and 64.9 four metres off it, the Butter Tower 67.9, the front's gable 51.4, nothing beside the church.
+Q over a house's eave rests at 4.14; over the aisle at 18.77; over the nave's centre at 46.2. At rest on the nave's west slope, W
+climbs it (40.2 → 44.2 past the ridge), follows the east slope down (36.1), steps down onto the aisle (18.2), and off its eave hovers
+at 16.2. W at 100 m along z −488 meets the spire at x −41.7 (its radius there 1.8 m; M24: −37.3). The Orangerie: E from the first
+room's centre stops at 5.3, near its wall at 4.84, in the rotunda at 5.2, in the passage at 4.0; S at the ceiling from the centre
+is pushed down to 4.86 at the wall. East through the west door at 3.0 m reaches the room's west panel at x −20.4; at 4.0 the
+rotunda's opening stops it at −29.8; at 4.6 the west door's lintel at −36.6. The bridge: E from the water stops at 3.4; W at 3 m
+passes beneath; at 4.1 the deck is a wall (x 27.1); at 4.7 the flyer steps up onto it (5.4). Regressions: walking into the far bank's
+house stops at z −215.5; the road walker crosses the deck at 5.75; the M21 flight from the cathedral's spot is held at the facade,
+climbing; the walker through the west door stops at the panel at −20.3. Frames in `m25-sheet.jpg`.
+
+**Found on the way.** In the tests the flyer drifted a metre sideways after a teleport: `monet.set` carried the previous key's
+velocity, which then decayed at the new place. Not reachable by a player (there is no teleport), but `set` now puts the flyer down still.
+Bench, DPR 2, one run: pond 12.8 · argenteuil 9.4 · rouen 8.3 · sunrise 5.6 · aerial 5.3 ms, within the usual noise (nothing here draws;
+the solids are read per step, 97 of them, and per frame for the floor and ceiling).
+
+**Still visible.** A flyer rests .2 m above the slates, the eye just over them, and off a roof's edge hovers rather than falls. The
+spire's octagon is read as a circle, so its flats are met up to 8 % early, with a .3 m margin on every solid. The flying buttresses are
+slabs by their top line, not arches one can pass under; the bridge's piers are not solids, so a flyer beneath the deck passes through
+them; the pond's Japanese bridge is no solid at all. The cove's inset is read radially, not along the wall's normal, so at a room's ends
+its height is off by a few centimetres. The climb is judged per step, so a sprinting flyer may be refused on Saint-Romain's steep pyramid
+where a slow one climbs it.
