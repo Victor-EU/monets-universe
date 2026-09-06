@@ -1329,3 +1329,35 @@ noise (the veil is one quad, drawn only near an edge).
 **Still visible.** The veil's breakup is soft blotches rather than dabs; it is one plane, so pressing along a wall it slides with you
 rather than standing in the world. The bridge at Argenteuil is not a solid (its deck is reached by no walker; a flyer passes through
 its piers). The next-line does not say the promenade's own way there, only the straight-line distance and direction.
+
+### Progress · M23 — the bank of fog in the world's own strokes; the bridge solid; the way said along the promenade (what M22 left visible)
+
+**What was wrong.** The veil's breakup was three octaves of value noise, soft blotches, not dabs; its opacity was a patch about the
+plane's centre, and the plane followed the eye, so pressing along a wall the bank slid with you. The bridge at Argenteuil was not a
+solid (the promenade crosses its deck, so it could not simply be a box). The next-line gave the straight-line distance and direction,
+though the promenade is the way there.
+
+**What changed.**
+- *The bank.* The plane is 800 × 400 m, the whole side; its strokes are the world's own — `paintAt(uPaint, …)` read in world space on
+  the wall's plane, sized to the eye (1.6 × `STROKE`), drifting slowly — pushing colour (`applyPaint`) and opacity (the value and relief
+  offsets) so the fog is a field of dabs, as the sky and the ground are. Opacity thins with distance from the eye into the ordinary fog
+  (from .3 to 1 × `uFogFar`), and a slow broad noise varies it. Nothing is tied to the plane's centre, so the bank stands in the world
+  as one moves along it. The foot on the terrain and the approach over 18 m are as in M22.
+- *The bridge.* One solid: 6.2 × 52 m, to .9 m above the deck. A flyer meets its piers and wall; the road rises to the deck at both
+  ends, so the walker's eye (5.75 m) is above the top and the promenade's crossing is untouched.
+- *The way.* `wayTo(p)`: on the promenade (within 6 m of it), the distance along it to the spot and the direction the promenade sets off
+  in, six metres on, against the gaze — `130 m along the promenade, to your right`; off it, or within 15 m, as the crow flies as before.
+  `dirOf(p)` is the direction alone, shared. Build `m23-the-bank`.
+
+**Verified.** Headless, keys held: flying east at 2.5 m into the bridge stops at x 20.8 (its west face + .5); walking the road south
+from z −138 crosses the deck to −202 without a check. The lines after flights: at the pond `Woman with a Parasol · 130 m along the
+promenade, to your right · key 2`; at the hill `The Bridge at Argenteuil · 60 m along the promenade, ahead to your left · key 3`; at the
+cathedral `Impression, Sunrise · 110 m along the promenade, ahead to your left · key 7`; at the Orangerie `The Water-Lily Pond · 110 m
+along the promenade, ahead · key 1`; at the harbour `The whole universe · key 9`. The veil (`m23-sheet.jpg`): dabbed at the four
+edges, the bank ahead behind the hill on the approach, the sun through the strokes at the harbour; after seven metres along the west
+wall the bank stands. Bench, DPR 2, two runs: pond 11.8–12.0 · argenteuil 9.2–9.4 · rouen 8.9–9.7 · sunrise 6.0–6.5 · aerial 5.3–5.5 ms, the
+usual noise (the veil is drawn only near an edge).
+
+**Still visible.** The veil's dabs are a size larger than the world's, a deliberate coarseness that could be tuned. The direction in
+the next-line is the promenade's first six metres, which at a bend is not the direction of the spot. The Orangerie's walls stop only
+walkers (a flyer passes through its roof, as before).
