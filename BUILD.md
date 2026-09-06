@@ -1695,3 +1695,67 @@ prism and 180-odd balusters are in the cathedral's merged stone.
 44°, so the valleys are not at 45° in plan. In water one is afloat with the eye .35 over the face wherever the bed is deeper than
 1.1, without swimming's slowness or the current of the river. A swimmer climbs out onto anything up to .9 over the water, the
 road bridge's abutment included where its ramp is that low. The balusters are square, the same on the crown and the top.
+
+### Progress · M31 — the gutter: the valleys' lead and a body sliding in a trough; swimming, and the river's current; the climb out of the water by the bank's face; turned balusters, a traceried parapet (what M30 left visible)
+
+**What was wrong.** The valleys at the crossing were the bare meeting of two prisms, and a body sliding in one followed the slide
+rule (the steeper side of each axis), so it slid down one slope into the other and back, not along the trough. Afloat one moved at
+the wader's pace and the Seine stood still. A swimmer climbed out onto any solid up to .9 over the water, a pool's edge at the hip;
+and under a deck (the Japanese bridge's arch, the road bridge's) the walker's ground was the deck, so a swimmer passing beneath rose
+through it onto the road. M30's note that the road bridge's abutment could be climbed from the water where its ramp is low was
+wrong: the abutments stand on the embankment, 4.1 m and more over the water, and a bank of .8 lies between the water and the
+embankment's face. The balusters were .11 boxes, the same on the crown and round the top.
+
+**What changed.**
+- `troughAt(x, z, A)`: with the floor solid A under the feet, the highest other solid whose surface is within .25 below it and whose
+  gradient differs from A's (the same slope carried on by another solid, the nave's roof by the crossing's, is no valley) makes a
+  trough. Its line runs where the two heights stay equal (across the difference of the gradients), its fall is A's slope along that
+  line, and each frame of the slide the body is drawn to the line's bottom (the Newton step to equal heights, at most 5 cm). The
+  slide takes the trough's direction and fall and the rougher of the two materials' pair; a level line (the eaves' at the corner)
+  leaves the slide its last direction, so it carries on, slowing.
+- The valleys' lead: for each of the four lines from the lantern's foot (|lx| = 7) to the eaves' corner, a strip .42 wide laid in
+  each roof's plane 2.5 cm over it, up from the line into its own roof (eight quads, the cathedral's palette 10).
+- Swimming: afloat (the bed deeper than 1.1) the pace is .9 m/s (wading 1.3, walking 3.2), Shift doubles it as before. `currentAt`:
+  the river's current sets west along its line, .55 m/s in mid-stream, slack to the banks (`sstep` over the first 7 m of the river's
+  SDF) and over the shallows (over the depth .2 to 1.4); it moves a swimmer by its whole and pushes at a wader's legs by .45 of it.
+  The pond and the harbour have none. The line at the step in, or at a fall's end, says "In the river · the current sets west · swim
+  for a bank, or F to fly" within 6 m of the river; the pond's line is as before.
+- The climb out: in water one heaves out onto a solid a knee's height (.5) over the water's face, or over the bed where one stands
+  (M30: .9); and the same for the ground: a walker in the water is refused a step onto land or a deck's end more than .5 over the
+  water's face (`trace`: bank). `inWater(x, z, y)`: under a deck more than a knee over the water's face one is in the water beneath
+  it, not on it, so `eyeHeight` keeps the water's eye there and a swimmer passes under the Japanese bridge and the road bridge's
+  arches; `isWater` is unchanged for what is laid on the water.
+- The crown's balustrades: turned balusters, a lathe of a ten-point vase profile (8 sides), every .34 as before. The top's parapet:
+  colonnettes (.06, six-sided) every .5 under pointed heads, two bars leaning together beneath the rail, an arcade of tracery. The
+  solids of both are as before.
+- Debug: `monet.trough(x, z, y)`, `monet.current(x, z)`. Build `m31-the-gutter`.
+
+**Verified.** Headless, keys held. `trough` on the north-east valley's line (t .7): direction (.90, .44), the line's own (13.6, 6.6),
+fall .86 (40.7°), no correction; 10 cm off it toward either roof the correction points back to the line (−.02, .04 and .04, −.08);
+on the aisle and on the tower's top, none. Q onto the valley at t .6 (39.65): the slide runs along the line to the eaves' corner in
+1.5 s, off it, onto the nave's aisle (21.33), off the aisle's eave to the ground (2.0). Q onto the spire's west flank from
+(−47.5, 110): down the flank, over the lantern's rim onto the transept's south slope (44.41 at 1 s), into the valley and along it to
+the corner (past it at 2 s), the choir's aisle 17.45: M30's end by the trough's rule. Q onto the spire's north-east flank: the slide
+down the flank stops at a turret's foot on the lantern's top (58.45; `trace`: wall 58.3 feet 57). `current`: mid-stream (0, −172)
+(−.55, −.03), at (60, −172) (−.55, .01), at the bank (0, −189) 0, the pond 0. Afloat in the river with no key held: 1.1 m west per 2 s
+(.55 m/s), the river's own curve in z; D (east, against it) .35 m/s, A (with it) 1.45 m/s; at (−10, −187) by the bank .15 m/s. Across
+the pond afloat at .9 m/s (M30 1.04), out on the west bank at x −8.9. From the water the road bridge's pier is a wall (`trace`: wall
+5.2 feet 0) and its arch is passed under afloat (x 21.45 to 27.76 at .35 m/s, the eye .35 throughout); the Japanese bridge is passed
+under (z −.72 to 2.17, the eye .35–.39) and the north bank walked out on. Out of the river at (20.5, −190) onto the .41 bank, then
+the embankment on foot (the walk ends at a house's wall, `trace`: wall 9). The step in from the bank at (0, −189.5) says the river's
+line. M28's walkers and M30's flyers as before: the pond bridge's rail (3.81) and the walk across and onto it, the road both ways
+(5.75, the ramps), the house, the Orangerie's door, the spire's flank at 100 m (−45.99), the pyramid (−57.57), contact on the nave
+(46.1), the deck landing (5.75) and the parapet (26.24), the aisle's slip to its band (17.45), Saint-Romain's (42.34), the lantern's
+edge, the crossing walk (37.89 → 45.24 → 37.89) and the lantern's wall at z −480.9. 120 solids. Frames in `m31-sheet.jpg`.
+Bench, DPR 2, one run: pond 11.3 · parasol 8.8 · argenteuil 9.2 · poplars 10.4 · haystacks 12.8 · rouen 8.2 · sunrise 4.9 ·
+orangerie 8.7 · aerial 4.8 ms (M30: 12.4 / 10.3 / 10.9 / 11.7 / 13.0 / 9.2 / 6.0 / 9.8 / 5.9): within the runs' spread, a little
+under; the lead is one more draw call (27), the balusters and colonnettes 80 triangles more in the merged stone.
+
+**Still visible.** The lead is a flat strip in each roof's plane, not a lined trough with a lip, and a body sliding down the valley
+shoots off the eaves' corner where a real gutter would catch it (the corner's flat margin lets it by). In the trough the friction is
+the rougher material's pair; the wedging between two faces is not counted. The current is one field along the river's centreline,
+slack at the banks, not bent round the piers, and it carries nothing but the swimmer; swimming is a pace without strokes or tiring.
+The climb out is judged against the water's face even in the shallows, so a bank .5 over the water is climbed from a bed a metre
+down; no bank in the world is a cliff (the harbour's quay slopes one in one), so the bank rule is exercised only by the piers, the
+decks and the abutments. At a deck's end a knee over the water the eye rises through the deck's end onto it. The parapet's heads are
+two leaning bars, not cusped tracery, and the balusters are one profile all round the crown.
