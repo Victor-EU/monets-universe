@@ -1540,3 +1540,49 @@ stands until Q is pressed. The skim clearance is .3, so on a steep slope the eye
 Standing, anything under .8 m is stepped over (a .9 parapet and a 1.25 rail hold; a .7 kerb would not); walking, walls are still by the
 eye, so a walker steps over a rail and is kept from the water's edge by the water rule alone. The fall's end on water hovers. The Butter
 Tower's crown is a solid drum to a flyer, its ring of tall openings closed.
+
+### Progress · M28 — on contact: landing where the roof meets one; friction by material; walls by the feet for all; the crown opened (what M27 left visible)
+
+**What was wrong.** Landing needed a descent: a flyer arriving at a roof level, below its own height over it, skimmed it until Q was
+pressed. One friction served slates, stone, lead and iron alike, and a slide carried over a flat roof's edge by momentum. Standing
+flyers stepped over anything under .8 m, and walkers measured walls by the eye, so a walker stepped over the Japanese bridge's rails
+and was kept from the water by the water rule alone. The Butter Tower's crown, "a ring of tall openings", was a plain drum in the
+geometry and a closed one to a flyer.
+
+**What changed.**
+- *Landing is contact.* A flyer skims a roof at .3 over it, flying level; when the intended height would come within that .3 of the
+  surface, whether one comes down onto it (Q, a fall) or the roof rises into one flying level (a slope met head-on), one touches down
+  and stands. Lifting still ends it. A flyer flying level at 40 m into the nave's east slope lands on it at the ridge.
+- *Friction by material.* A solid carries `mu`: slate .45 (houses, the cathedral's roofs, Saint-Romain's pyramid), stone .6 (the front,
+  the piers and flyers, the lantern, the towers' tops, the Butter Tower), iron .3 (the spire and its turrets), the Orangerie's zinc .5,
+  the Japanese bridge's wood .6, the road's deck .8. `roofAt` remembers the surface's friction (`roofMu`). The slip starts where the
+  slope is steeper than the friction holds (slate 24°, stone 31°, iron 17°) and slows on the gentler; a flat roof's edge stops a slide
+  (as a gutter or a parapet would), a steep eave lets it off.
+- *Walls by the feet, for all.* A walker's feet are the eye less its height too, so the bridge's rails (1.25) hold a walker as they
+  hold a standing flyer. On foot, a flyer or a walker, the step is knee-high (.5): a .9 parapet holds, the Japanese bridge's deck
+  (.5 up from the bank) is stepped onto. In the air the climb stays .8. The road bridge's abutments carry the road's own ramp height
+  beyond the deck's ends, so a walker's feet on the ramp are never under the solid.
+- *The Butter Tower's crown* is built as eight piers (.9 m square, 11 m tall, at the octagon's vertices) under its cap, the tall
+  openings between them real; as solids: the tower's top (56, the crown's floor), the cap (67.85, its spires) with the air of the
+  crown under it (its underside 67), and the eight piers. A flyer flies in between two piers and out the other side; a pier holds;
+  E under the cap stops at 66.75; Q from under it lands on the tower's top at 57.45.
+- Build `m28-on-contact`.
+
+**Verified.** Headless, keys held. Level at 40 m west into the nave's east slope: at x −42.6 one is standing at 46.1, then (W held) over
+the ridge, down onto the aisle and off it. Skimming the aisle at .6 stays airborne (19.2). Through the crown from the south-west at
+60 m between two piers: in at −31.5 / −445.2, out the north side; at 0° the pier holds at z −441.2; E under the cap stops at 66.75; Q
+inside lands at 57.45. Q on Saint-Romain's pyramid lands at 72.9 and, standing still, one slides off it onto the nave's roof (40.9 + 1.45)
+and stops there against the tower's flank. The Orangerie's roof does not slip. On the road bridge D into the parapet holds at x 26.18.
+A walker on the Japanese bridge, A into the rail, holds at z 1.22; walking across and off its end onto the bank passes; from the bank
+onto the deck and across passes; the road over the bridge passes both ways with its ramps; the far bank's house and the Orangerie's
+west door as before. Landed on the lantern's flat top at its edge, no slip. Frames in `m28-sheet.jpg`.
+Bench, DPR 2, one run: pond 31.0 · argenteuil 27.3 · rouen 26.2 · sunrise 15.6 · aerial 13.8 ms: the machine is still at about twice
+its usual times (M27's note: the M26 build rebenched the same); nothing here draws but the crown's eight piers in place of its drum.
+To be rebenched on a quiet machine.
+
+**Still visible.** Contact is judged by height within .3 of the surface, so a near-vertical flank (the spire's foot, an iron slope of
+82°) met at eye height is "landed on" for a moment before the slip takes one off it. The slip's start is the surface's friction against
+its slope, but the slide's own friction is the same number whether one is on one's feet or one's back. Water is still no floor for a
+walker (a fall's end on water hovers). Walkers' feet are the eye less its height while the eye is still settling after a landing, a
+few centimetres off for half a second. The crown's piers are boxes at the vertices; the drum's cap has no rim or rail, so a flyer
+standing on the tower's top between the piers is held only by them.
