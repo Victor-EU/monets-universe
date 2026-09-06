@@ -1649,3 +1649,49 @@ that steep but rails and walls. The kinetic friction is a fixed three quarters o
 one is a walker whose feet are 1.1 under the surface: a deck or a bank higher than the knee above the water is a wall to the swimmer,
 so one leaves the water only where a bank is low, and one cannot step into water from a bank. The valley between the transept's
 slope and the choir's roof is where two boxes overlap, not a gutter. The crown's balustrade is solid stone, not pierced.
+
+### Progress · M30 — the valley: the nave's roof carried across the transept; a slope and a step's face told apart at any steepness; each material's own two frictions; wading in and out; the balustrade pierced (what M29 left visible)
+
+**What was wrong.** The flank test ignored a rise of a metre and more in 5 cm as a step's face, so a surface steeper than 86° read as a
+step and its slice within the skim could be landed on by chance. The kinetic friction was three quarters of the static for every
+material. A walker was kept out of the water by a rule, and afloat one's feet were 1.1 under the surface, so a deck or a bank hip-high
+over the water was a wall to the swimmer. The choir's and the nave's roofs stopped at the transept, whose roof ran across them: a
+slider coming down the transept's slope stopped against the choir's gable end standing out of it (M29's "valley"). The crown's
+balustrade and the tower's parapet were solid boxes.
+
+**What changed.**
+- A slope rises evenly, a step's face all at once: `flankS` counts a rising side only if the surface halfway out has half the rise
+  (within a quarter of it), at any height of rise. A rail's, a parapet's or a wall's face beside the point is not the surface's
+  slope; a slope of 86° and more is (the spire's tip, 86.6°, was already read as one, its rise under a metre).
+- `MAT`: slate [.45, .34], stone [.6, .5], iron [.3, .2], zinc [.5, .4], wood [.6, .45], road [.8, .65], static and kinetic; a solid's
+  `mu` is the material's name, the slide reads its pair (stone and wood, the same to shoes, part on one's back).
+- Water for a walker: the step in from a bank is taken (the eye sinks to the wading height over the next metre, a line says where
+  one is); in the water the body is at the surface, so a walker's feet for the step out are the water's face and the climb is .9,
+  onto a bank or a deck hip-high over the water. Out of the water onto a bank is a step like any.
+- The crossing: the nave's roof is carried across the transept at the same ridge (a prism and a solid over the crossing), so the two
+  roofs meet in valleys running from the ridge to the eaves' corners, the transept's slope the steeper. The lantern stands on the
+  crossing as before: its wall is met at |x − CX| < 7.15.
+- The balustrade between the crown's piers and the parapet round the tower's top are pierced: a rail on balusters (.11 square, every
+  .34) on a plinth, in the cathedral's stone; their solids are as before (a body does not pass a balustrade).
+- Build `m30-the-valley`.
+
+**Verified.** Headless, keys held. `flank`: the spire's tip (126.5, 86.6°) is a flank; the Japanese bridge's deck 2 cm from its rail
+is not, the tower's top 2 cm from the balustrade and next to the parapet is not (the cap's small spire over the first is). The spire's
+flank at 100 m still holds a level flyer at x −45.98, not landed; the pyramid at −57.57; level into the nave's east slope still lands
+at 46.1; Q onto the road bridge's deck lands at 5.75 and D holds at the parapet, 26.24. The aisle's slip as before (stops at the eave's
+band in 1.5 s); Saint-Romain's slip ends on the nave's roof at 42.34; the lantern's edge, no slip. Q onto the spire's flank: the slide
+now runs down the transept's south slope along the valley to the eaves' corner (x −57.5, z −494.6: lx/13.6 = .99, lz/6.6 = 1.0), off
+it onto the choir's aisle (17.45) and stops at its band. Landed on the nave's roof at x −54 (37.89), W south goes up the transept's
+north slope (45.24 near the ridge) and down onto the choir's roof (37.89), one surface; at x −51 the same walk meets the lantern's
+wall at z −480.9 (`trace`: wall 57). On foot from the east bank at z −8, W west: in the water at x 9.6 (the eye .65, then .35), across
+the pond afloat at 1.04 m/s, out on the west bank at x −8.6 (the eye 1.79 at −11.9); the hint reads "In the water · wade out at a
+bank, or F to fly". Frames in `m30-sheet.jpg`.
+Bench, DPR 2, one run: pond 12.4 · parasol 10.3 · argenteuil 10.9 · poplars 11.7 · haystacks 13.0 · rouen 9.2 · sunrise 6.0 ·
+orangerie 9.8 · aerial 5.9 ms (M29: 12.1 / 8.6 / 9.0 / 9.3 / 12.1 / 8.4 / 5.5 / 11.7 / 6.6): within the runs' spread; the crossing's
+prism and 180-odd balusters are in the cathedral's merged stone.
+
+**Still visible.** The valley is the meeting of two prisms, without a gutter or lead; the slide along it is the slide rule's
+(the steeper side of each axis), not a body in a trough. The transept's own roof meets the choir's and the nave's at 63° against
+44°, so the valleys are not at 45° in plan. In water one is afloat with the eye .35 over the face wherever the bed is deeper than
+1.1, without swimming's slowness or the current of the river. A swimmer climbs out onto anything up to .9 over the water, the
+road bridge's abutment included where its ramp is that low. The balusters are square, the same on the crown and the top.
