@@ -1361,3 +1361,40 @@ usual noise (the veil is drawn only near an edge).
 **Still visible.** The veil's dabs are a size larger than the world's, a deliberate coarseness that could be tuned. The direction in
 the next-line is the promenade's first six metres, which at a bend is not the direction of the spot. The Orangerie's walls stop only
 walkers (a flyer passes through its roof, as before).
+
+### Progress · M24 — the veil's dabs at the world's size; the way said with the spot's own direction; the Orangerie for flyers; roofs to rest on (what M23 left visible)
+
+**What was wrong.** The veil's strokes were 1.6 × the world's. The next-line's direction was the promenade's first six metres, which at a
+bend is not the spot's. The Orangerie stopped only walkers: a flyer passed through its walls and roof. And, found on the way: the
+solids' escape rule was one rule for all of them (a step into a solid was allowed if the eye was already below *any* solid's top over
+it), and the cathedral's spire had been given the bounds of the whole iron list, 19 × 50 m and 129 m tall over the crossing — so a
+flyer anywhere under that box was "inside", and fell through the cathedral's roof to the ground.
+
+**What changed.**
+- *The veil* reads the paint field at `STROKE`, the world's own size.
+- *The way.* `wayTo` measures the set-off direction ten metres on and says it as such: `130 m along the promenade, setting off to your
+  right`; where the spot's own sector differs by more than one it adds it: `…, the spot itself ahead`. `sectorOf(p)` and `SECTORS`
+  are shared by `dirOf`.
+- *The Orangerie for flyers.* `orangRoof(x, z)`: the roof prism over the building (ridge along x, 11.05 m at the ridge), −∞ elsewhere;
+  `ORANG_CEIL` the cove's height less .3. A flyer below the roof meets the walls as a walker does (`orangBlocks`), and the doors are open
+  to both; above the roof there is nothing to meet.
+- *Roofs.* A flyer above a solid's top (a house, the cathedral's body or west front, the spire, the bridge, the Orangerie) comes to rest
+  on it (`floorAt`: the highest top under the eye, + .2 m); sideways off it, the floor is the ground again. Inside the Orangerie the
+  ceiling holds. Solid by solid: `solidsWithin(x, z, y)` lists the solids whose footprint holds the point and whose top is over the eye,
+  and a step is refused into any of them one is not already within. The cathedral's spire is its own solid (12.6 m square, 129 m) and
+  each of its four turrets theirs; the roof's small fins are none.
+- Debug: `monet.set(x, y, z, yaw, pitch)` puts the flyer somewhere (as `?cam=` does), `monet.solids`, `monet.top(x, z)`. Build `m24-the-roofs`.
+
+**Verified.** Headless, keys held: flying north at 3 m meets the Orangerie's garden front at z 72.1; east at 2 m through the west door,
+along the passage and the rotunda, to the first room's west panel at x −20.4 (a walker's stop too); Q from 25 m over the building
+rests at 10.8 on the roof's slope; E from within the second room stops at 5.3. Q from 80 m over the cathedral's body rests at 64.2 and
+S runs along the roof at that height; W at 100 m along z −488 meets the spire at x −37.3; the M21 flight from the spot is still held at
+the facade, climbing. Q over a town house rests at 7.0. The lines: at the pond `Woman with a Parasol · 130 m along the promenade,
+setting off to your right, the spot itself ahead · key 2`; at the Orangerie `The Water-Lily Pond · 110 m along the promenade, setting
+off ahead, the spot itself to your right · key 1`; at the cathedral `Impression, Sunrise · 110 m along the promenade, setting off
+ahead · key 7`. Frames in `m24-sheet.jpg`. Bench, DPR 2, one run: pond 12.3 · argenteuil 9.6 · rouen 10.0 · sunrise 6.8 · aerial 5.7 ms,
+within the usual noise (nothing here draws).
+
+**Still visible.** A flyer resting on a roof sits .2 m above its box, not on the slates; on the cathedral the box is the body's bounds,
+flat at 64 m, so one hovers over the aisles. The spire's box is square; a flyer meets it 6 m from the spire's foot. The Orangerie's
+ceiling is the cove's height everywhere within, the rotunda and passage included.

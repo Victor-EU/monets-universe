@@ -947,7 +947,13 @@ const TOWN = { x: -44, z: -440, hx: 44, hz: 92, y: .55 }, CATH = { x: -44, zf: -
 // the solids: buildings a walker or a flyer cannot pass through (the town's houses, the cathedral). Each a box in the ground plane, turned by
 // yaw, with the height of its top; solidTop gives the top over a point, or -Infinity in the open. The Orangerie has its own walls (orangBlocks)
 const SOLIDS = [];
-function solidTop(x, z) { let top = -Infinity; for (const S of SOLIDS) { const dx = x - S.x, dz = z - S.z, c = Math.cos(S.yaw), sn = Math.sin(S.yaw), lx = dx * c - dz * sn, lz = dx * sn + dz * c; if (Math.abs(lx) < S.hw && Math.abs(lz) < S.hd && S.top > top) top = S.top; } return top; }
+function inSolid(S, x, z) { const dx = x - S.x, dz = z - S.z, c = Math.cos(S.yaw), sn = Math.sin(S.yaw), lx = dx * c - dz * sn, lz = dx * sn + dz * c; return Math.abs(lx) < S.hw && Math.abs(lz) < S.hd; }
+function solidTop(x, z) { let top = -Infinity; for (const S of SOLIDS) if (S.top > top && inSolid(S, x, z)) top = S.top; return top; }
+// the solids one is within at (x, z, y): their footprint holds the point and their top is over the eye. A step is refused into any solid one
+// is not already within, so a solid one is within is left freely, and, solid by solid, a spire's bounds over the roof do not open the roof
+function solidsWithin(x, z, y) { const r = []; for (const S of SOLIDS) if (S.top > y && inSolid(S, x, z)) r.push(S); return r; }
+// the highest solid top under the eye at (x, z): the roof a flyer comes to rest on
+function floorAt(x, z, y) { let top = -Infinity; for (const S of SOLIDS) if (S.top <= y && S.top > top && inSolid(S, x, z)) top = S.top; return top; }
 function streetX(z) { return -45 - (z + 417) * (7 / 60); }
 function townFlat(x, z) { const dx = Math.max(Math.abs(x - TOWN.x) - TOWN.hx, 0), dz = Math.max(Math.abs(z - TOWN.z) - TOWN.hz, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 22); }
 // Le Havre: the harbour basin east of the town; the quay follows its edge
@@ -1076,6 +1082,9 @@ function orangWalkable(x, z) {
   return false;
 }
 function orangBlocks(x, z) { return Math.abs(x - ORANG.x) < ORANG.hx + .5 && Math.abs(z - ORANG.z) < ORANG.hz + .5 && !orangWalkable(x, z); }
+// the roof over a point of the building (a low prism, its ridge along x), -Infinity elsewhere; the ceiling within is the cove's height
+function orangRoof(x, z) { const dz = Math.abs(z - ORANG.z); return Math.abs(x - ORANG.x) < ORANG.hx + .6 && dz < ORANG.hz + .6 ? ORANG.y + 7.55 + 2.6 * (1 - dz / (ORANG.hz + .6)) : -Infinity; }
+const ORANG_CEIL = ORANG.y + ORANG.coveH - .3;
 // the way through, for the promenade: in at the west door, through the rotunda and both rooms, out again
 const ORANG_PATH = (() => {
   const O0 = ORANG.ovals[0], O1 = ORANG.ovals[1], d0 = ORANG.doors[0], d1 = ORANG.doors[1], q = V();
@@ -1944,7 +1953,9 @@ function buildRouen(D) {
     const pin = new THREE.ConeGeometry(1.0, 6, 5); pin.translate(CX + ux * (AW + .7), 25.5, ZC + uz * (AW + .7)); catBack.push(pin);
     const ang = Math.atan2(9, AW - NW), fl = new THREE.BoxGeometry(Math.hypot(9, AW - NW) + .8, 2.6, 1.1); fl.rotateZ(Math.PI - ang); fl.rotateY(a - Math.PI / 2); fl.translate(CX + ux * (AW + NW) / 2, 26.5, ZC + uz * (AW + NW) / 2); catBack.push(fl); }
   // the cathedral as solids: the bounds of the west front, of the body, and of the spire over the crossing
-  for (const list of [cat, catBack, catIron]) { const b = new THREE.Box3(); for (const g of list) { g.computeBoundingBox(); b.union(g.boundingBox); } SOLIDS.push({ x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, hw: (b.max.x - b.min.x) / 2 + .3, hd: (b.max.z - b.min.z) / 2 + .3, top: b.max.y, yaw: 0 }); }
+  const boxSolid = b => SOLIDS.push({ x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, hw: (b.max.x - b.min.x) / 2 + .3, hd: (b.max.z - b.min.z) / 2 + .3, top: b.max.y, yaw: 0 });
+  for (const list of [cat, catBack]) { const b = new THREE.Box3(); for (const g of list) { g.computeBoundingBox(); b.union(g.boundingBox); } boxSolid(b); } // the west front, the body
+  for (const g of catIron) { g.computeBoundingBox(); if (g.boundingBox.max.y - g.boundingBox.min.y > 10) boxSolid(g.boundingBox); } // the spire and its four turrets, each its own; not the roof's small fins
   const catGeom = mergeParts(cat), backGeom = mergeParts(catBack), deepGeom = mergeParts(catDeep), roofGeom = mergeParts(catRoof), ironGeom = mergeParts(catIron);
   placeGroup.add(baseMesh(catGeom, 4, MAT.base)); placeGroup.add(baseMesh(backGeom, 4, MAT.base)); placeGroup.add(baseMesh(deepGeom, 3, MAT.base)); placeGroup.add(baseMesh(rose, 15, MAT.base));
   placeGroup.add(baseMesh(roofGeom, 17, MAT.base)); placeGroup.add(baseMesh(ironGeom, 3, MAT.base)); for (const R of roses) placeGroup.add(baseMesh(R.g, 15, MAT.base));
@@ -2362,7 +2373,7 @@ void main(){
   float t = clamp((mix(vW.x, vW.z, uAlong.z) - uAlong.x) * uAlong.y, 0., 1.) * 127.; int i = int(t); float gy = mix(uG[i], uG[min(i + 1, 127)], fract(t));
   a *= smoothstep(gy - .3, gy + 1.8, vW.y);
   vec3 bw = mix(vec3(0., 0., 1.), vec3(1., 0., 0.), uAlong.z);
-  vec4 O = paintAt(uPaint, vW + vec3(uTime * .2, uTime * .05, uTime * .2), bw, max(dc, .5), STROKE * 1.6);
+  vec4 O = paintAt(uPaint, vW + vec3(uTime * .2, uTime * .05, uTime * .2), bw, max(dc, .5), STROKE);
   a *= clamp(1. + O.g * 1.3 + O.a * .8, .25, 1.5) * (.7 + .5 * vn(vW.xz * .06 + vW.y * .04 + uTime * .03));
   gl_FragColor = vec4(tone(applyPaint(uFogCol * 1.1, O, .5)), clamp(a, 0., .72)); }`,
   transparent: true, depthWrite: false, side: THREE.DoubleSide }));
@@ -2429,10 +2440,10 @@ function updateWalk(dt) {
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
   const wet = isWater(pos.x, pos.z);
-  // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking), or into a solid below its top; a step
+  // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking, or flying below its roof; its doors are open to both), or into a solid below its top; a step
   // out of a solid one is already inside, or back toward the box from outside it (the aerial view starts beyond its north side), is always allowed, so nothing can trap
   edgeHit = false;
-  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return false; } if (!fly && orangBlocks(nx, nz)) return false; if (pos.y < solidTop(nx, nz) && pos.y >= solidTop(pos.x, pos.z)) return false; pos.x = nx; pos.z = nz; return true; };
+  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return false; } if (orangBlocks(nx, nz) && (!fly || pos.y < orangRoof(nx, nz))) return false; const w = solidsWithin(nx, nz, pos.y); if (w.length && w.some(S => !inSolid(S, pos.x, pos.z))) return false; pos.x = nx; pos.z = nz; return true; };
   if (!tryMove(step.x, step.z)) { if (!tryMove(step.x, 0)) tryMove(0, step.z); }
   // the edge of the world, felt: the step back a little, no climbing along the gaze there, and a line saying where the next painting lies
   if (edgeHit) { step.y = 0; glide = 0; if (!edgeWas) { velocity.multiplyScalar(-.35); if (realTime > edgeSaid + 8) { edgeSaid = realTime; say('The world ends here · ' + nextLine(), 6); } } }
@@ -2440,7 +2451,10 @@ function updateWalk(dt) {
   if (fly) { // the eased lift of the button and the glide of the wheel, along the gaze
     const k = 1 - Math.pow(.02, dt), dl = lift * k, dg = glide * k; lift -= dl; glide -= dg;
     if (dg) { if (!tryMove(_fwd.x * dg, _fwd.z * dg)) { if (!tryMove(_fwd.x * dg, 0)) tryMove(0, _fwd.z * dg); } step.y += _fwd.y * dg; }
-    pos.y = clamp(pos.y + step.y + dl, walkHeight(pos.x, pos.z) + .6, 300); }
+    // a flyer above a roof (a house, the cathedral, the Orangerie) comes to rest on it; one inside the Orangerie, below its roof, has its ceiling
+    let lo = walkHeight(pos.x, pos.z) + .6, hi = 300; const oR = orangRoof(pos.x, pos.z), st = Math.max(floorAt(pos.x, pos.z, pos.y), oR <= pos.y ? oR : -Infinity);
+    if (st > -Infinity) lo = Math.max(lo, st + .2); if (oR > pos.y) hi = Math.max(ORANG_CEIL, pos.y);
+    pos.y = clamp(pos.y + step.y + dl, lo, hi); }
   else { const target = eyeHeight(pos.x, pos.z); pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
   camera.rotation.set(pitch, yaw, 0);
 }
@@ -2556,18 +2570,21 @@ function updateAudio(dt) {
 let awoke = false, locationTimer = 0, sayTimer = 0, realTime = 0;
 function awake() { if (!awoke) { awoke = true; document.body.classList.add('awake'); $('#hint').classList.remove('show'); } }
 // where a point lies from here, for the ear: distance and the direction against the gaze
-function dirOf(p) { // the direction of a point against the gaze, in eight sectors
+const SECTORS = ['ahead', 'ahead to your right', 'to your right', 'behind you to your right', 'behind you', 'behind you to your left', 'to your left', 'ahead to your left'];
+function sectorOf(p) { // the direction of a point against the gaze, in eight sectors
   const dx = p.x - camera.position.x, dz = p.z - camera.position.z;
   const f = -dx * Math.sin(yaw) - dz * Math.cos(yaw), r = dx * Math.cos(yaw) - dz * Math.sin(yaw), k = Math.round(Math.atan2(r, f) * 4 / Math.PI);
-  return ['ahead', 'ahead to your right', 'to your right', 'behind you to your right', 'behind you', 'behind you to your left', 'to your left', 'ahead to your left'][(k + 8) % 8];
+  return (k + 8) % 8;
 }
+function dirOf(p) { return SECTORS[sectorOf(p)]; }
 function whereIs(p) { const dist = Math.hypot(p.x - camera.position.x, p.z - camera.position.z); return `${dist < 15 ? 'a few steps' : Math.round(dist / 10) * 10 + ' m'} ${dirOf(p)}`; }
-// the way to a spot: along the promenade when one is on it (within 6 m), its length and the direction it sets off in; else as the crow flies
+// the way to a spot: along the promenade when one is on it (within 6 m), its length and the direction one sets off in (the promenade ten
+// metres on); where that is not the spot's own direction, at a bend, the spot's is given too. Off the promenade, as the crow flies
 function wayTo(p) {
   const cp = camera.position; if (pathDist(cp.x, cp.z) > 6) return whereIs(p);
   const s0 = nearestS(cp.x, cp.z), s1 = nearestS(p.x, p.z), d = Math.abs(s1 - s0); if (d < 15) return whereIs(p);
-  const q = promPoint(clamp(s0 + Math.sign(s1 - s0) * 6, 0, PROM_LEN), V());
-  return `${Math.round(d / 10) * 10} m along the promenade, ${dirOf(q)}`;
+  const q = promPoint(clamp(s0 + Math.sign(s1 - s0) * 10, 0, PROM_LEN), V()), a = sectorOf(q), b = sectorOf(p), off = Math.min((a - b + 8) % 8, (b - a + 8) % 8);
+  return `${Math.round(d / 10) * 10} m along the promenade, setting off ${SECTORS[a]}${off > 1 ? ', the spot itself ' + SECTORS[b] : ''}`;
 }
 // the next painting in the promenade's order, after the spot last stood on: the pond after the Orangerie, the harbour after the cathedral;
 // at the promenade's end, the whole universe from the air. The key is the dock's
@@ -2830,10 +2847,12 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm23-the-bank', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm24-the-roofs', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
+  get solids() { return SOLIDS; }, top(x, z) { return [solidTop(x, z), orangRoof(x, z)]; },
+  set(x, y, z, yw = 0, pt = 0) { camera.position.set(x, y, z); fly = true; syncFly(); this.look(yw, pt); update(0); }, // the flyer put somewhere, as ?cam= does
   at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, eyeHeight(q.x, q.z), q.z); update(0); },
   U, hourFog, get projMs() { return projMs; },
 };
