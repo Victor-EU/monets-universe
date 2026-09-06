@@ -944,6 +944,10 @@ function westHills(x, z) { return (11 + 5 * Math.sin(z * .045) + 3 * Math.sin(z 
 // Rouen: the town sits on flattened land at the end of the road; a short street runs from the fields to the square, which is open from
 // its near edge (Monet's window) to the cathedral's facade, houses along its two sides
 const TOWN = { x: -44, z: -440, hx: 44, hz: 92, y: .55 }, CATH = { x: -44, zf: -442 };
+// the solids: buildings a walker or a flyer cannot pass through (the town's houses, the cathedral). Each a box in the ground plane, turned by
+// yaw, with the height of its top; solidTop gives the top over a point, or -Infinity in the open. The Orangerie has its own walls (orangBlocks)
+const SOLIDS = [];
+function solidTop(x, z) { let top = -Infinity; for (const S of SOLIDS) { const dx = x - S.x, dz = z - S.z, c = Math.cos(S.yaw), sn = Math.sin(S.yaw), lx = dx * c - dz * sn, lz = dx * sn + dz * c; if (Math.abs(lx) < S.hw && Math.abs(lz) < S.hd && S.top > top) top = S.top; } return top; }
 function streetX(z) { return -45 - (z + 417) * (7 / 60); }
 function townFlat(x, z) { const dx = Math.max(Math.abs(x - TOWN.x) - TOWN.hx, 0), dz = Math.max(Math.abs(z - TOWN.z) - TOWN.hz, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 22); }
 // Le Havre: the harbour basin east of the town; the quay follows its edge
@@ -996,6 +1000,14 @@ function deckY(x) { return .5 + 2.0 * (1 - (x / BRIDGE_HALF) ** 2); }
 function onBridge(x, z) { return Math.abs(z - BRIDGE_Z) < 1.0 && Math.abs(x) < BRIDGE_HALF; }
 function onABridge(x, z) { return Math.abs(x - ABRIDGE.x) < ABRIDGE.half && z > ABRIDGE.z0 && z < ABRIDGE.z1; }
 function walkHeight(x, z) { const g = groundHeight(x, z); return onBridge(x, z) ? Math.max(g, deckY(x)) : onABridge(x, z) ? Math.max(g, ABRIDGE.y) : g; }
+// where the eye is over a point: the walker's height over the ground; but at a painting's spot the painting's own eye height (Rouen's is 5 m,
+// a first-floor window; the harbour's 4.6), blended in over the last six metres, never below .6 m over the ground
+function eyeHeight(x, z) {
+  const g = walkHeight(x, z); let e = g + EYE;
+  for (let i = 0; i < places.length; i++) { const pl = places[i]; if (!pl.view || pl.aerial) continue; const p = pl.view.p, d = Math.hypot(p.x - x, p.z - z); if (d > 6) continue;
+    if (pl.lift === undefined) pl.lift = p.y - (walkHeight(p.x, p.z) + EYE); e += pl.lift * (1 - sstep(d, 1.5, 6)); }
+  return Math.max(e, g + .6);
+}
 function isWater(x, z) { return groundHeight(x, z) < WATER_Y - .04 && !onBridge(x, z) && !onABridge(x, z); }
 function groundNormal(x, z, out) { const e = .35; out.set(groundHeight(x - e, z) - groundHeight(x + e, z), 2 * e, groundHeight(x, z - e) - groundHeight(x, z + e)).normalize(); return out; }
 
@@ -1836,7 +1848,7 @@ function buildRouen(D) {
     const roof = gable ? prism(d + .9, w + .9, rh).rotateY(Math.PI / 2) : prism(w + .9, d + .9, rh); roof.translate(0, h, 0);
     const chimney = new THREE.BoxGeometry(.6, rh + 1, .6); chimney.translate((rand() - .5) * w * .5, h + rh * .4, 0);
     for (const g of [lower, upper, roof, chimney]) { g.rotateY(yaw); g.translate(x, y, z); }
-    hp[wallPal].push(lower, upper, chimney); hp[17].push(roof);
+    hp[wallPal].push(lower, upper, chimney); hp[17].push(roof); SOLIDS.push({ x, z, hw: w / 2 + .5, hd: d / 2 + .5, top: y + h + rh, yaw });
     const k = clamp(Math.min(Math.hypot(x - viewP.x, z - viewP.z), Math.max(pathDist(x, z) - d / 2, 2) * 2.2 + 6) / 13, 1, 2.6), other = style === 1 ? 18 : 16;
     for (const g of [lower, upper]) scatterOn(g, Math.floor((w + d) * (g === lower ? h * .45 : h * .55) * 7.2 * D / k), (q, m) => {
       if (Math.abs(m.y) > .5) return;
@@ -1925,6 +1937,8 @@ function buildRouen(D) {
     const pr = box(catBack, 2.0, 23, 2.2, 0, -.5, 0); pr.rotateY(a); pr.translate(CX + ux * (AW + .8), 0, ZC + uz * (AW + .8)); const pb = box(catBack, 2.6, 12, 2.6, 0, -.5, 0); pb.rotateY(a); pb.translate(CX + ux * (AW + 1.0), 0, ZC + uz * (AW + 1.0));
     const pin = new THREE.ConeGeometry(1.0, 6, 5); pin.translate(CX + ux * (AW + .7), 25.5, ZC + uz * (AW + .7)); catBack.push(pin);
     const ang = Math.atan2(9, AW - NW), fl = new THREE.BoxGeometry(Math.hypot(9, AW - NW) + .8, 2.6, 1.1); fl.rotateZ(Math.PI - ang); fl.rotateY(a - Math.PI / 2); fl.translate(CX + ux * (AW + NW) / 2, 26.5, ZC + uz * (AW + NW) / 2); catBack.push(fl); }
+  // the cathedral as solids: the bounds of the west front, of the body, and of the spire over the crossing
+  for (const list of [cat, catBack, catIron]) { const b = new THREE.Box3(); for (const g of list) { g.computeBoundingBox(); b.union(g.boundingBox); } SOLIDS.push({ x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, hw: (b.max.x - b.min.x) / 2 + .3, hd: (b.max.z - b.min.z) / 2 + .3, top: b.max.y, yaw: 0 }); }
   const catGeom = mergeParts(cat), backGeom = mergeParts(catBack), deepGeom = mergeParts(catDeep), roofGeom = mergeParts(catRoof), ironGeom = mergeParts(catIron);
   placeGroup.add(baseMesh(catGeom, 4, MAT.base)); placeGroup.add(baseMesh(backGeom, 4, MAT.base)); placeGroup.add(baseMesh(deepGeom, 3, MAT.base)); placeGroup.add(baseMesh(rose, 15, MAT.base));
   placeGroup.add(baseMesh(roofGeom, 17, MAT.base)); placeGroup.add(baseMesh(ironGeom, 3, MAT.base)); for (const R of roses) placeGroup.add(baseMesh(R.g, 15, MAT.base));
@@ -2319,6 +2333,7 @@ function stepStop(dir) { const n = currentStops().length; if (n < 2) return; con
 // ============================================================ movement
 let yaw = 0, pitch = 0, fly = false, photoMode = false, travel = null;
 let lift = 0, glide = 0; // metres still owed to the flyer: the button's rise, the wheel's glide along the gaze
+let edgeHit = false, edgeWas = false, edgeSaid = -99, spotSaid = 0, lastSpot = 0; // the world's edge met this frame, and last; when it was last said; the spot last announced; the spot last stood on
 let drifting = false, driftS = 0, driftTarget = 0, recover = null;
 const velocity = V(), keys = new Set(), EYE = 1.45;
 function lookAtTarget(look) { camera.lookAt(look); yaw = camera.rotation.y; pitch = camera.rotation.x; }
@@ -2326,7 +2341,7 @@ function fitFov(pl) { const f = pl.view.fov || 58; if (!pl.painting) return f; c
 function paintingHour(pl) { const P = pl.painting || pl.panels; if (!P || !pl.stops || params.has('hour')) return; hourT = pl.stops.length < 2 ? 0 : P.stop / (pl.stops.length - 1); }
 function applyViewNow(i) {
   const v = places[i].view; camera.position.copy(v.p); camera.fov = fitFov(places[i]); camera.updateProjectionMatrix(); lookAtTarget(v.look); paintingHour(places[i]);
-  fly = !!places[i].aerial; syncFly(); travel = null; drifting = false; velocity.set(0, 0, 0);
+  fly = !!places[i].aerial; syncFly(); travel = null; drifting = false; velocity.set(0, 0, 0); if (!fly) lastSpot = spotSaid = i;
   applyHour(); showLocation(places[i]); selectView(i);
 }
 function goView(i) {
@@ -2370,13 +2385,19 @@ function updateWalk(dt) {
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
   const wet = isWater(pos.x, pos.z);
-  const tryMove = (dx, dz) => { const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; if (nx < -110 || nx > 150 || nz > 96 || nz < -540) return false; if (!fly && orangBlocks(nx, nz)) return false; pos.x = nx; pos.z = nz; return true; };
+  // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking), or into a solid below its top; a step
+  // out of a solid one is already inside is always allowed, so nothing can trap
+  edgeHit = false;
+  const tryMove = (dx, dz) => { const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; if (nx < -110 || nx > 150 || nz > 96 || nz < -540) { edgeHit = true; return false; } if (!fly && orangBlocks(nx, nz)) return false; if (pos.y < solidTop(nx, nz) && pos.y >= solidTop(pos.x, pos.z)) return false; pos.x = nx; pos.z = nz; return true; };
   if (!tryMove(step.x, step.z)) { if (!tryMove(step.x, 0)) tryMove(0, step.z); }
+  // the edge of the world, felt: the step back a little, no climbing along the gaze there, and a line saying where the next painting lies
+  if (edgeHit) { step.y = 0; glide = 0; if (!edgeWas) { velocity.multiplyScalar(-.35); if (realTime > edgeSaid + 8) { edgeSaid = realTime; say('The world ends here · ' + nextLine(), 6); } } }
+  edgeWas = edgeHit;
   if (fly) { // the eased lift of the button and the glide of the wheel, along the gaze
     const k = 1 - Math.pow(.02, dt), dl = lift * k, dg = glide * k; lift -= dl; glide -= dg;
     if (dg) { if (!tryMove(_fwd.x * dg, _fwd.z * dg)) { if (!tryMove(_fwd.x * dg, 0)) tryMove(0, _fwd.z * dg); } step.y += _fwd.y * dg; }
     pos.y = clamp(pos.y + step.y + dl, walkHeight(pos.x, pos.z) + .6, 300); }
-  else { const target = walkHeight(pos.x, pos.z) + EYE; pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
+  else { const target = eyeHeight(pos.x, pos.z); pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
   camera.rotation.set(pitch, yaw, 0);
 }
 
@@ -2387,7 +2408,7 @@ function engageDrift() {
   if (fly) { fly = false; syncFly(); }
   if (drifting) return true;
   const pos = camera.position; driftS = driftTarget = nearestS(pos.x, pos.z);
-  const q = promPoint(driftS); const d = Math.hypot(q.x - pos.x, q.z - pos.z, walkHeight(q.x, q.z) + EYE - pos.y);
+  const q = promPoint(driftS); const d = Math.hypot(q.x - pos.x, q.z - pos.z, eyeHeight(q.x, q.z) - pos.y);
   recover = d < .05 ? null : { from: pos.clone(), t: 0, dur: clamp(.6 + d * .06, .8, 3) };
   drifting = true; velocity.set(0, 0, 0); awake();
   return true;
@@ -2396,7 +2417,7 @@ function scrollDrift(meters) { if (fly) { glide += meters; return; } if (!engage
 function updateDrift(dt) {
   const gap = driftTarget - driftS, v = clamp(gap * 2.6, -7, 7);
   driftS += v * dt; if (Math.abs(gap) < .02) driftS = driftTarget;
-  const q = promPoint(driftS), pos = camera.position, ty = walkHeight(q.x, q.z) + EYE;
+  const q = promPoint(driftS), pos = camera.position, ty = eyeHeight(q.x, q.z);
   if (recover) {
     recover.t += dt; const k = Math.min(1, recover.t / recover.dur), e = k * k * (3 - 2 * k);
     pos.x = lerp(recover.from.x, q.x, e); pos.z = lerp(recover.from.z, q.z, e); pos.y = lerp(recover.from.y, ty, e);
@@ -2490,6 +2511,22 @@ function updateAudio(dt) {
 // ============================================================ interface
 let awoke = false, locationTimer = 0, sayTimer = 0, realTime = 0;
 function awake() { if (!awoke) { awoke = true; document.body.classList.add('awake'); $('#hint').classList.remove('show'); } }
+// where a point lies from here, for the ear: distance and the direction against the gaze
+function whereIs(p) {
+  const dx = p.x - camera.position.x, dz = p.z - camera.position.z, dist = Math.hypot(dx, dz);
+  const f = -dx * Math.sin(yaw) - dz * Math.cos(yaw), r = dx * Math.cos(yaw) - dz * Math.sin(yaw), k = Math.round(Math.atan2(r, f) * 4 / Math.PI);
+  const dir = ['ahead', 'ahead to your right', 'to your right', 'behind you to your right', 'behind you', 'behind you to your left', 'to your left', 'ahead to your left'][(k + 8) % 8];
+  return `${dist < 15 ? 'a few steps' : Math.round(dist / 10) * 10 + ' m'} ${dir}`;
+}
+// the next painting in the order of the dock, after the spot last stood on: the harbour after the cathedral, the Orangerie after the harbour, the pond after that
+function nextLine() { const n = (lastSpot + 1) % 8, pl = places[n]; return `Next · ${pl.name} · ${whereIs(pl.view.p)} · key ${n + 1}`; }
+// standing still on a painting's spot, the way to the next one is said once; leaving the spot by eight metres arms it again. The spot one
+// starts on (the pond) is not announced over the opening hint
+function announceSpot() {
+  if (travel || STILL) return; let best = -1, bd = 1e9;
+  for (let i = 0; i < 8; i++) { const p = places[i].view.p, d = Math.hypot(p.x - camera.position.x, p.z - camera.position.z); if (d < bd) { bd = d; best = i; } }
+  if (bd > 8) spotSaid = -1; else if (bd < 2.5 && best !== spotSaid && (drifting ? driftS === driftTarget : velocity.lengthSq() < .25)) { spotSaid = lastSpot = best; say(nextLine(), 6); }
+}
 function say(text, secs = 5) { const h = $('#hint'); h.textContent = text; h.classList.add('show'); sayTimer = realTime + secs; }
 const ALLEE = { name: 'The Grande Allée', place: 'Giverny, the flower garden', year: '' };
 let zoneKey = null;
@@ -2713,7 +2750,7 @@ function update(dt) {
   updateZone();
   if (locationTimer && realTime > locationTimer) { $('#location').classList.remove('show'); locationTimer = 0; }
   if (sayTimer && realTime > sayTimer) { $('#hint').classList.remove('show'); sayTimer = 0; }
-  applyHour(dt);
+  applyHour(dt); announceSpot();
   U.uTime.value = simTime; updateBoats(); updateDragonflies(); updateAudio(dt);
   const fs = 1 + clamp((camera.position.y - 8) / 30, 0, 1) * 3.6 + clamp((camera.position.y - 40) / 150, 0, 1) * 9; U.uFogNear.value = hourFog.near * fs; U.uFogFar.value = hourFog.far * fs;
   // the reveal: east of the square the fog stays thick until the last stretch of the quay, so the harbour and the sun resolve on arrival
@@ -2741,11 +2778,11 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm20-argenteuil-bridge', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm21-the-edge', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
-  at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, walkHeight(q.x, q.z) + EYE, q.z); update(0); },
+  at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, eyeHeight(q.x, q.z), q.z); update(0); },
   U, hourFog, get projMs() { return projMs; },
 };
 
@@ -2756,7 +2793,7 @@ function start() {
   const v = parseInt(params.get('view'));
   applyViewNow(v >= 1 && v <= places.length && places[v - 1].view ? v - 1 : 0);
   if (params.has('hour')) setHour(hourT);
-  if (params.has('s')) { engageDrift(); recover = null; driftS = driftTarget = clamp(parseFloat(params.get('s')) || 0, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, walkHeight(q.x, q.z) + EYE, q.z); if (params.has('yaw')) monet.look(parseFloat(params.get('yaw')), parseFloat(params.get('pitch')) || 0); updateZone(); }
+  if (params.has('s')) { engageDrift(); recover = null; driftS = driftTarget = clamp(parseFloat(params.get('s')) || 0, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, eyeHeight(q.x, q.z), q.z); if (params.has('yaw')) monet.look(parseFloat(params.get('yaw')), parseFloat(params.get('pitch')) || 0); updateZone(); }
   if (params.has('cam')) { const [x, y, z, yw, pt] = params.get('cam').split(',').map(Number); camera.position.set(x, y, z); fly = true; syncFly(); monet.look(yw || 0, pt || 0); update(0); }
   if (params.has('photo')) photo(true);
   if (params.has('fly')) { const [a, b, t] = params.get('fly').split(',').map(Number); applyViewNow(a - 1); goView(b - 1); if (travel) { travel.t = travel.dur * (t || .5); updateTravel(0); update(0); } }

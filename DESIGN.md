@@ -113,7 +113,7 @@ river as the spine. Read north-to-south as a walk of about four minutes.
           two stacks, stubble     |         a curve of tall trees
                                   |         along the bank
    ~~~~~~~~~~~~~~~~~~~ the Seine ~+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      [3] Sailboats at Argenteuil |
+     [3] The Bridge at Argenteuil |
           the bridge, moored      |
           boats, reflections      |
                                   |
@@ -130,7 +130,7 @@ river as the spine. Read north-to-south as a walk of about four minutes.
 |---|---|---|---|---|
 | 1 | The Water-Lily Pond (Japanese Bridge) | 1899 | Giverny, the water garden | morning green · afternoon · evening violet |
 | 2 | Woman with a Parasol | 1875 | a hilltop meadow, wind | late morning, big cumulus |
-| 3 | Regatta / Sailboats at Argenteuil | 1872–74 | the Seine, boats, the road bridge | midday · calm evening |
+| 3 | The Bridge at Argenteuil | 1874 | the Seine, the road bridge, boats | midday · calm evening |
 | 4 | Poplars on the Epte | 1891 | riverbank, a curve of trees | wind, afternoon · pink sunset · autumn |
 | 5 | Haystacks | 1890–91 | stubble field, two stacks | end of summer · sunset · snow effect · morning frost |
 | 6 | Rouen Cathedral | 1892–94 | the square, the west facade | morning (blue) · full sun · harmony in brown, dusk |

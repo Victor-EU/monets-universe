@@ -1250,3 +1250,41 @@ bench at DPR 2, three runs, argenteuil 9.8 / 9.3 / 12.7 ms, pond 11.4 / 11.5 / 1
 **Still visible.** The arches are rounder than Monet's flat segmental ones. The figures at the rail are two strokes each. The
 toll house reads as a brick-red tower up close; at the spot's distance it is the canvas's coral note. DESIGN.md still lists the
 place as "Regatta / Sailboats at Argenteuil".
+
+### Progress · M21 — the edge of the world, felt; the way to the next painting; the eye at the painting's height (fix: "In the fly mode, i couldn't advance beyond the cathedral scene")
+
+**What was wrong.** From the cathedral spot the gaze is up at the facade; F and W fly along it, over the cathedral, and 19 m past the
+apse the walkable box (x −110..150, z 96..−540) refused every step, silently, while the eye went on climbing along the gaze. The ground
+runs on to the horizon past that line, so it read as being stuck; and the two places not yet seen were not ahead anyway (the harbour is
+east of the square, the Orangerie at the far north end). Every input path was sound: W and the wheel in flight, keys 7 and 8, and the
+promenade drift all reach the harbour and the Orangerie (headless Chrome driven over the DevTools protocol, keys held for real:
+`scratchpad/cdp.mjs`). Two things seen on the way: flight passed through the cathedral and the houses (a frame of wall, which also reads
+as a block); and within a second of arriving at a spot the walk pulled the eye to ground + 1.45 m, so Rouen was seen from 2 m instead of
+5 and the harbour from 2 m instead of 4.6, the near boat's hull showing below the picture. The still frames used for verification never
+ran the walk, so never showed it. (The hill and the poplars were already at ground height, their spots snapped to it at build.)
+
+**What changed.**
+- *The edge, felt.* A refused step at the box sets `edgeHit`: the velocity is turned back (−.35, a soft push), the gaze's climb and the
+  wheel's glide stop there, and the top line says `The world ends here · Next · Impression, Sunrise · 110 m behind you to your right · key 7`
+  (at most once in eight seconds).
+- *The way to the next painting.* `whereIs(p)` gives distance and direction against the gaze (eight sectors: ahead, ahead to your right, …);
+  `nextLine()` names the painting after the spot last stood on (`lastSpot`, in the dock's order, the pond after the Orangerie) with its key.
+  `announceSpot()` says it once when one comes to rest within 2.5 m of a spot (flight arrival, key, drift at rest, on foot), re-armed
+  eight metres away; the spot one starts on is not announced over the opening hint; nothing is said in `?still`.
+- *Solids.* `SOLIDS` and `solidTop(x, z)`: the town's houses (each house pushes its footprint and ridge height) and the cathedral (the
+  bounds of the west front, the body and the spire). `tryMove` refuses a step into a solid below its top, walking or flying, unless one is
+  already inside it, so nothing traps. A flyer with the gaze up is held at the facade and climbs it until clear of the top, then goes on.
+- *The eye.* `eyeHeight(x, z)`: the walker's height, plus the spot's own lift (its `view.p.y` less ground + 1.45) blended in over the
+  last six metres, never below .6 m over the ground; used by the walk, the drift, `monet.at` and `?s=`. Rouen holds 5 m, the harbour
+  4.6, the pond 1.15; the others were at ground height already.
+- DESIGN.md: the river place is *The Bridge at Argenteuil*, 1874 (left over from M20). Build `m21-the-edge`.
+
+**Verified.** Headless, keys held: flight from the cathedral spot is held at the facade at z −439, climbs to 68 m, crosses, and stops at
+z −540 with the line above, no further climb; walking west from the spot stops at x −73.5 against the square's west row; key 7 arrives at
+(14, 4.6, −440) and says `Next · Les Nymphéas · 500 m to your right · key 8`; the drift's end says the same; standing eye heights at the
+eight spots 1.15 · 6.34 · 2.04 · 1.87 · 2 · 5 · 4.6 · 2.45. Live frames at Rouen and the harbour now match the still frames
+(`m21-sheet.jpg`). Bench, DPR 2, three runs: pond 12.2–13.7 · argenteuil 9.6–9.8 · rouen 9.5–10.0 · sunrise 5.7–6.5 ms, the usual noise.
+
+**Still visible.** Argenteuil's toll house and houses, the poplars' and haystacks' farms are not solids; flight passes through them.
+The next-line names the dock's order, not the promenade's (the Orangerie comes last, though it is where the promenade starts).
+The push back at the edge is a nudge, not a wall one can see.
