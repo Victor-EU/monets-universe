@@ -1182,3 +1182,35 @@ spot itself every surface wears the canvas, so the dragonflies, like every world
 spot they show in the picture's key as small pale-winged marks with a dark centre.
 
 **Still visible.** They are small; end-on they read as a pale fleck. Whether they should be larger, or fewer, is a matter of taste.
+
+### Progress · M19 — the square opened
+
+**What was wrong.** The canvas (the National Gallery's *West Façade, Sunlight*, 1894) is the facade alone, edge to edge, a strip of
+pavement and three tiny figures at the bottom left; Monet painted it from a first-floor window across the open Place de la Cathédrale.
+The world's spot stood in the street, 39 m short of the square, with the last houses ahead of it on both sides: in the widescreen
+frame the portrait canvas covered only the middle, and the street's house fronts filled the two sides in the picture's key, so the
+frame read as a cathedral seen down an alley; from behind the spot and from the air the houses ran up to the square's edge and the
+facade rose behind a row of them. The code's own comment said the view was "from a first-floor window across the square"; the spot
+had never been moved across it.
+
+**What changed.** The square now runs from 4 m behind the spot to the portals, 70 m deep and 60 m wide (`inSquare`), cobbled over
+its whole extent (the cobble scatter's bounds and count follow). The street keeps three houses a side, from the fields' edge at
+z −336 to z −370, ending just behind the spot, which stands at first-floor height over the street's mouth; the hedge and the
+tree at the mouth moved north with it (z −332, −339), the town's flat extended (`TOWN` z −440, hz 92), the town's ground plane and
+the field scatter reach to z −325. The other houses moved to the square's sides: a row along each (`ring`), facing across it, 30 m
+from the axis, four on the west and three on the east, the east row stopping short so the promenade's way out to the quay passes
+between it and the big corner house; the two big corner houses are where they were. Nothing stands between the spot and the facade.
+The spot's distance and look are unchanged: the facade fits the canvas at 66 m. Build `m19-open-square`.
+
+**Verified.** Headless frames at the spot (projected, world colours, and at the dusk stop), down the street from the fields, from the
+square's west side with the projector on, lifted 9 m over the spot, over the square from the air, in the square at eye height, and
+from the Haystacks spot. At the spot the canvas sits in the middle of an open cobbled square; the rows enter the frame only at its
+far edges, where the widescreen is wider than the canvas's throw (its half-width is .27 of the distance, the frame's .74), and the
+projector never touches them. From the fields the street is three houses a side opening onto the square with the facade beyond.
+From the Haystacks spot the town's first houses are now at ~85 m instead of ~110, still low on the horizon behind the trees, the
+spires beyond. Patches 260 584 → 261 982. Bench at DPR 2 (two runs): rouen 9.4 / 10.6 ms against 10.4 before, within the noise;
+haystacks 10.7 / 12.7 against 12.0.
+
+**Still visible.** The spot hangs over the street's mouth with no house behind it; the draper's window Monet sat in has no
+building. The square's rows are the same half-timber blocks as the street's, seen end-on across 60 m of cobbles. DESIGN.md still
+says "one street of half-timber houses fading to haze"; it is now a short street and a ringed square.

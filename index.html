@@ -939,8 +939,9 @@ function epteSDFRaw(x, z) { if (z > -194 || z < -348) return 30; const N = bankX
 const POPLAR_ROW = [[19, 15, 24], [23, 18, 23], [28, 22, 22], [33, 27, 21], [38, 33, 20], [42, 40, 20], [45, 48, 19], [47, 57, 19], [48, 67, 18], [49, 78, 18], [50, 90, 17], [51, 104, 17]].map(([b, d, h]) => [36 + d * Math.cos(b * Math.PI / 180), -252 - d * Math.sin(b * Math.PI / 180), h]);
 // the hills of the Seine valley, a haze band along the west edge behind the fields
 function westHills(x, z) { return (11 + 5 * Math.sin(z * .045) + 3 * Math.sin(z * .11 + 1)) * sstep(-x, 92, 124) * sstep(-z, 195, 225); }
-// Rouen: the town sits on flattened land at the end of the road; the street runs from the fields to the square, the cathedral's facade closes it
-const TOWN = { x: -44, z: -452, hx: 44, hz: 75, y: .55 }, CATH = { x: -44, zf: -442 };
+// Rouen: the town sits on flattened land at the end of the road; a short street runs from the fields to the square, which is open from
+// its near edge (Monet's window) to the cathedral's facade, houses along its two sides
+const TOWN = { x: -44, z: -440, hx: 44, hz: 92, y: .55 }, CATH = { x: -44, zf: -442 };
 function streetX(z) { return -45 - (z + 417) * (7 / 60); }
 function townFlat(x, z) { const dx = Math.max(Math.abs(x - TOWN.x) - TOWN.hx, 0), dz = Math.max(Math.abs(z - TOWN.z) - TOWN.hz, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 22); }
 // Le Havre: the harbour basin east of the town; the quay follows its edge
@@ -1763,9 +1764,9 @@ function buildRouen(D) {
   const n = V(), p = V();
   const kAt = q => clamp(Math.min(q.distanceTo(viewP), pathDist(q.x, q.z) * 2.2 + 6) / 13, 1, 2.6);
   const ZF = CATH.zf, CX = CATH.x;
-  const inSquare = (x, z) => z < -415 && z > ZF && Math.abs(x - CX) < 28;
+  const inSquare = (x, z) => z < -372 && z > ZF && Math.abs(x - CX) < 30; // the square: 70 m from Monet's window to the portals, 60 m wide
   // --- ground: the town sits on flattened land; the street and the square are cobbled
-  const gg = new THREE.PlaneGeometry(160, 200, 80, 100); gg.rotateX(-Math.PI / 2); gg.translate(-24, 0, -445);
+  const gg = new THREE.PlaneGeometry(160, 220, 80, 110); gg.rotateX(-Math.PI / 2); gg.translate(-24, 0, -435);
   const gp = gg.getAttribute('position');
   for (let i = 0; i < gp.count; i++) gp.setY(i, groundHeight(gp.getX(i), gp.getZ(i)) - .01);
   gg.computeVertexNormals();
@@ -1779,21 +1780,21 @@ function buildRouen(D) {
     const k = kAt(p), road = Math.abs(off) < 2.4, r = rand();
     ground.lay(p, n, rand() * TAU, rr(.35, .7) * k, rr(.16, .3) * k, road ? (r < .55 ? 10 : r < .85 ? 12 : 4) : (r < .6 ? 9 : r < .8 ? 10 : 7), 0, 0);
   }
-  for (let i = 0; i < Math.floor(2600 * D); i++) {
-    const x = CX + (rand() - .5) * 56, z = rr(ZF + .5, -415.5); const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
+  for (let i = 0; i < Math.floor(6200 * D); i++) {
+    const x = CX + (rand() - .5) * 60, z = rr(ZF + .5, -372.5); const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
     const k = kAt(p), r = rand();
     ground.lay(p, n, rand() * TAU, rr(.5, 1.0) * k, rr(.2, .36) * k, r < .55 ? 12 : r < .8 ? 10 : r < .93 ? 4 : 14, 0, 0);
   }
   for (let i = 0; i < Math.floor(1200 * D); i++) {
-    const x = rr(-104, 2), z = rr(-535, -346); if (inSquare(x, z) || pathDist(x, z) < 3) continue; const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
+    const x = rr(-104, 2), z = rr(-535, -326); if (inSquare(x, z) || pathDist(x, z) < 3) continue; const y = groundHeight(x, z); p.set(x, y + .02, z); groundNormal(x, z, n);
     const k = clamp(p.distanceTo(viewP) / 13, 1.4, 3.4), r = rand();
     ground.lay(p, n, rand() * TAU, rr(.5, .9) * k, rr(.2, .36) * k, r < .55 ? 9 : r < .8 ? 7 : 10, 0, 0);
   }
   placeGroup.add(ground.mesh(MAT.patch));
   // --- the hedge at the fields' edge, and a few trees at the mouth of the street
   const fol = new Patches(); const { bush, tree, trunks } = foliageTools(fol, D, kAt);
-  for (let x = -92; x <= -20; x += 4.6) { if (Math.abs(x - streetX(-357)) < 5) continue; const z = -357 + gauss() * .6; bush(x, groundHeight(x, z) + .9, z, 2.6, 1.1, 1.8, Math.floor(46 * D), .15, .04); }
-  for (const [x, z] of [[-73, -411], [-15, -412], [-64, -364]]) tree(x, z, rr(8, 11), rr(3, 4), .12);
+  for (let x = -92; x <= -20; x += 4.6) { if (Math.abs(x - streetX(-332)) < 5) continue; const z = -332 + gauss() * .6; bush(x, groundHeight(x, z) + .9, z, 2.6, 1.1, 1.8, Math.floor(46 * D), .15, .04); }
+  for (const [x, z] of [[-73, -411], [-15, -412], [-64, -339]]) tree(x, z, rr(8, 11), rr(3, 4), .12);
   if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
   placeGroup.add(fol.mesh(MAT.patch));
   // --- the houses: half-timber blocks, jettied upper storeys, steep slate roofs; each house its own plaster, timber as dark vertical strokes
@@ -1817,9 +1818,16 @@ function buildRouen(D) {
     });
     scatterOn(roof, Math.floor(w * d * 5 * D / k), (q, m) => { if (m.y < .1) return; const r = rand(); town.lay(q, m, gauss() * .25, rr(.8, 1.4) * k, rr(.3, .5) * k, r < .3 ? 12 : r < .45 ? 14 : r < .7 ? 4 : r < .85 ? 15 : 17, 0, 0); });
   }
-  const along = (side, list) => { let z = -360; for (const [w, d, h, style] of list) { const zc = z - w / 2, x = streetX(zc) + side * (6.2 + d / 2); house(x, zc, w, d, h, sAng + (side < 0 ? 0 : Math.PI), style); z -= w + rr(.5, 1.4); } };
-  along(-1, [[11, 8, 11, 0], [9, 7, 9.5, 2], [12, 8, 12, 1], [10, 7, 10, 0], [11, 8, 11.5, 2]]);
-  along(1, [[10, 7, 10, 1], [11, 8, 12, 0], [9, 7, 9, 2], [12, 8, 11, 0], [11, 8, 10.5, 2]]);
+  // the street: three houses a side, from the fields' edge to the square's near edge, ending just behind Monet's window (the spot, at
+  // first-floor height over the street's mouth); nothing stands between it and the facade, as nothing does in the canvas
+  const along = (side, list) => { let z = -336; for (const [w, d, h, style] of list) { const zc = z - w / 2, x = streetX(zc) + side * (6.2 + d / 2); house(x, zc, w, d, h, sAng + (side < 0 ? 0 : Math.PI), style); z -= w + rr(.5, 1.4); } };
+  along(-1, [[11, 8, 11, 0], [9, 7, 9.5, 2], [12, 8, 12, 1]]);
+  along(1, [[10, 7, 10, 1], [11, 8, 12, 0], [9, 7, 9, 2]]);
+  // the square's sides: a row of houses along each, facing across it, 30 m from the axis, so the widescreen frame shows them at its edges
+  // and the canvas's throw never reaches them; the two big ones at the far corners; the east row stops short, the way out to the quay passes there
+  const ring = (side, list) => { let z = -375; for (const [w, d, h, style] of list) { const zc = z - w / 2; house(CX + side * (30 + d / 2), zc, w, d, h, Math.PI / 2, style); z -= w + rr(.8, 1.6); } };
+  ring(-1, [[11, 8, 11, 0], [10, 7, 10, 2], [12, 8, 12, 1], [8, 7, 9, 0]]);
+  ring(1, [[12, 8, 11, 0], [11, 8, 10.5, 2], [10, 7, 10, 1]]);
   for (const [x, z, yaw, st] of [[-75, -428, Math.PI / 2, 0], [-13, -432, -Math.PI / 2, 1]]) house(x, z, 14, 9, 12, yaw, st);
   for (const k in hp) if (hp[k].length) placeGroup.add(baseMesh(mergeParts(hp[k]), +k, MAT.base));
   placeGroup.add(town.mesh(MAT.patch));
@@ -2704,7 +2712,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm18g-dragonflies', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm19-open-square', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
