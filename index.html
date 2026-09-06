@@ -183,6 +183,15 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, .05, 900);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
+// the swimmer's arms in view: two forearms and hands under the eye, at the water's face, doing the breaststroke with the pace's pulse; shown only afloat and swimming, and not in the water's reflection
+const arms = new THREE.Group(); camera.add(arms); arms.visible = false; arms.position.set(0, -.27, -.4);
+const armMat = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false });
+const armGeom = () => { const g = new THREE.BoxGeometry(.075, .06, .3); g.translate(0, 0, -.15); const h = new THREE.BoxGeometry(.085, .025, .16); h.translate(0, .012, -.36); const m = mergeGeometries([g.toNonIndexed(), h.toNonIndexed()]), P = m.getAttribute('position'), N = m.getAttribute('normal'), c = new Float32Array(P.count * 3);
+  for (let i = 0; i < P.count; i++) { const t = .7 + .3 * Math.max(0, N.getY(i)) - .08 * Math.max(0, -N.getX(i)); c[i * 3] = .88 * t; c[i * 3 + 1] = .71 * t; c[i * 3 + 2] = .56 * t; } m.setAttribute('color', new THREE.BufferAttribute(c, 3)); return m; };
+const armL = new THREE.Mesh(armGeom(), armMat), armR = new THREE.Mesh(armGeom(), armMat); arms.add(armL, armR);
+function updateArms(on, ph) { arms.visible = on; if (!on) return; const p = (((ph % TAU) + TAU) % TAU) / TAU; let sp, back, yl; // the stroke: a glide with the arms out ahead, the pull sweeping them out and back, the recovery bringing the hands in under the chin and shooting them forward
+  if (p < .4) { sp = .06; back = 0; yl = 0; } else if (p < .7) { const q = (p - .4) / .3; sp = .06 + .3 * Math.sin(q * Math.PI); back = .22 * q; yl = -.02 * q; } else { const q = (p - .7) / .3; sp = .06 + .1 * (1 - q) * (1 - q); back = .22 * (1 - q); yl = -.02 * (1 - q) + .03 * Math.sin(q * Math.PI); }
+  for (const [m, sg] of [[armL, -1], [armR, 1]]) { m.position.set(sg * sp, yl, back); m.rotation.set(0, sg * (sp - .06) * 1.6, sg * .15); } }
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -969,10 +978,13 @@ function troughAt(x, z, A) { const e = .05, hA = solidH(A, x, z); if (!isFinite(
   const wedge = (a, b) => sb > .05 ? (a * Math.sin(b2) + b * Math.sin(b1)) / sb : Math.max(a, b);
   return { d: [dx, dz], g: -sl, fix: [dh * kx / k2, dh * kz / k2], mu: [wedge(mA[0], mS[0]), wedge(mA[1], mS[1])], wedge: wedge(1, 1) }; }
 // the river's current: downstream is west, along the river's line, at its strength in mid-stream and slack toward the banks and over the shallows; the pond and the harbour have none
-const CURRENT = .55, GUTTER_V = 5;
+const CURRENT = .55, LEVER = 7.1, ARMS = 1.5; // a body going over a lip pivots on it: its centre, .12 over the slates (on its back) and half its length (.85) behind its feet, must rise the lip's height times that lever (.85 / .12); a bare rim is caught only by the arms, under 1.5 m/s
 let PIERS = null; const piersZ = () => PIERS || (PIERS = (() => { const spans = 5, pier = 1.9, span = (ABRIDGE.z1 - ABRIDGE.z0 - pier * (spans - 1)) / spans, r = []; for (let i = 1; i < spans; i++) r.push(ABRIDGE.z0 + i * (span + pier) - pier / 2); return r; })()); // the road bridge's four piers in the stream (read once, after the bridge is declared)
 function currentAt(x, z) { const d = -riverSDF(x, z); if (d <= 0) return [0, 0]; const k = CURRENT * sstep(d, 0, 7) * sstep(WATER_Y - groundHeight(x, z), .2, 1.4); if (k <= 0) return [0, 0]; const t = 4 * .017 * Math.cos(x * .017 + .8), n = Math.hypot(1, t); let cx = -k / n, cz = -k * t / n;
   const R = 1.4; for (const pz of piersZ()) { const dx = x - ABRIDGE.x, dz = z - pz, r2 = dx * dx + dz * dz; if (r2 < R * R) return [0, 0]; if (r2 > 400) continue; const ux = cx, uz = cz, dot = (ux * dx + uz * dz) / r2, f = R * R / r2; cx += f * (ux - 2 * dot * dx); cz += f * (uz - 2 * dot * dz); } // the stream parts round each pier as a flow round a cylinder: slack before and behind it, quick past its sides
+  for (const pz of piersZ()) { const dx = x - ABRIDGE.x, dz = z - pz, sd = -dx / R; if (sd <= .6 || sd > 14 || Math.abs(dz) > 4) continue; // downstream of the pier (the stream sets west): its wake, a deficit of the stream widening and fading with the distance, and close behind it a pair of eddies turning the water back on itself
+    const w = R * (.55 + .12 * sd); cx += k * .85 * Math.exp(-dz * dz / (2 * w * w)) / Math.sqrt(sd);
+    if (sd < 4) for (const sg of [-1, 1]) { const ex = x - (ABRIDGE.x - R - 1.0), ez = z - (pz + sg * .75), r2 = Math.max(ex * ex + ez * ez, .2), G = sg * k * 1.6 * (1 - sd / 4) / (TAU * r2); cx += -G * ez; cz += G * ex; } }
   return [cx, cz]; }
 const waterLine = (x, z) => riverSDF(x, z) < 6 ? 'In the river · the current sets west · swim for a bank, or F to fly' : 'In the water · wade out at a bank, or F to fly';
 let floorS = null, roofMu = 'slate'; // the solid whose surface floorAt last found, and the friction of the surface roofAt last found (slate .45, stone .6, iron .3, the Orangerie's zinc .5, a deck's wood .6, a road .8)
@@ -982,10 +994,11 @@ function ceilAt(x, z, y) { let c = Infinity; for (const S of SOLIDS) { const h =
 function streetX(z) { return -45 - (z + 417) * (7 / 60); }
 function townFlat(x, z) { const dx = Math.max(Math.abs(x - TOWN.x) - TOWN.hx, 0), dz = Math.max(Math.abs(z - TOWN.z) - TOWN.hz, 0); return 1 - sstep(Math.hypot(dx, dz), 0, 22); }
 // Le Havre: the harbour basin east of the town; the quay follows its edge
-const QUAY = { z: -408, half: 16, x: 22.4, y: 1.3, slip: -408, slipHalf: 1.6, slipLen: 6.4 }; // a stretch of built quay: a straight stone wall on a grid line (the terrain's cliff is one cell wide, from the wall's top at the grid line down to the bed a cell east; the wall's face stands .3 out over the cliff's brow), a slipway down through it
+const QUAY = { z: -408, half: 16, y: 1.3, face: .5, slip: -408, slipHalf: 1.6, slipLen: 6.4 }, MOLE = { z: -398, hz: 1.7, len: 16 }; // a stretch of built quay on the quay's own curve: a stone wall from the bed to a top 1.3 over the water, its face .5 out from the quay's line; a slipway down through it; a mole running out from it into the harbour. Under the walker the cliff is exact (groundHeight), the terrain grid's one-cell ramp lying inside the stone
 function quayWall(z) { return 1 - sstep(Math.abs(z - QUAY.z), QUAY.half - 4, QUAY.half); }
-function quayX(z) { return lerp(20 + 3 * Math.sin(z * .05), QUAY.x, quayWall(z)); }
-function slipway(x, z, h) { const u = x - (QUAY.x - 1); if (Math.abs(z - QUAY.slip) > QUAY.slipHalf || u < 0 || u > QUAY.slipLen) return h; return lerp(QUAY.y, -1.5, u / QUAY.slipLen); } // the slipway: from the quay's top down into the water at one in two and a quarter
+function quayX(z) { return 20 + 3 * Math.sin(z * .05); }
+function moleAt(x, z, m = 0) { return Math.abs(z - MOLE.z) < MOLE.hz + m && x > quayX(z) - 1.5 && x < quayX(MOLE.z) + MOLE.len + m; }
+function slipway(x, z, h) { const u = x - (quayX(z) - 1); if (Math.abs(z - QUAY.slip) > QUAY.slipHalf || u < 0 || u > QUAY.slipLen) return h; return lerp(QUAY.y, -1.5, u / QUAY.slipLen); } // the slipway: from the quay's top down into the water at one in two and a quarter
 function harbourSDFRaw(x, z) { return Math.max(quayX(z) - x, z + 372); }
 // the road bridge at Argenteuil and the embankments that carry the road up to it
 const ABRIDGE = { x: 24, half: 2.6, z0: -195, z1: -149, y: 4.3 };
@@ -1012,7 +1025,7 @@ function terrainHeight(x, z) {
   const e = epteSDFRaw(x, z); if (e <= 3) { const t = sstep(e, -3, 3); h = lerp(-1.6, h, t * t * (3 - 2 * t)); }
   h = lerp(h, TOWN.y, townFlat(x, z));
   const hb = harbourSDFRaw(x, z); if (hb <= 7) { const w = quayWall(z); h = lerp(h, Math.max(h, QUAY.y), w * (1 - sstep(hb, 3, 7))); if (hb <= 3) { const t0 = sstep(hb, -3, 3), t = lerp(t0 * t0 * (3 - 2 * t0), hb > -.01 ? 1 : 0, w); h = lerp(-2.5, h, t); } } // the quay's edge slopes into the harbour, but along the built wall it stands 1.3 over the water and drops as a cliff
-  h = slipway(x, z, h);
+  h = slipway(x, z, h); if (moleAt(x, z, -.8)) h = QUAY.y; // the mole's top in the grid, a cell short of its stone
   h = lerp(h, ORANG.y, orangFlat(x, z));
   h = bridgeAbutment(x, z, h);
   return lerp(h, .12, promontory(x, z));
@@ -1028,7 +1041,7 @@ function sampleGrid(g, x, z) {
   const i = Math.floor(fx), j = Math.floor(fz), u = fx - i, v = fz - j, N = HG.nx, b = j * N + i;
   return (g[b] * (1 - u) + g[b + 1] * u) * (1 - v) + (g[b + N] * (1 - u) + g[b + N + 1] * u) * v;
 }
-function groundHeight(x, z) { return sampleGrid(HG.h, x, z); }
+function groundHeight(x, z) { const g = sampleGrid(HG.h, x, z); if (z > QUAY.z + QUAY.half - 4 || z < QUAY.z - QUAY.half + 4 || Math.abs(z - QUAY.slip) <= QUAY.slipHalf) return g; if (moleAt(x, z)) return QUAY.y; const hb = quayX(z) + QUAY.face - x; if (hb > 0) return hb > 3 ? g : Math.max(g, QUAY.y); return moleAt(x, z, 1.2) || hb > -3 ? -2.5 : g; } // along the built quay the ground is the stone's own edge: the wall's top to its face, the harbour's bed beyond it, the mole's top and the bed round it
 function pondSDF(x, z) { return sampleGrid(HG.s, x, z); }
 function riverSDF(x, z) { return sampleGrid(HG.r, x, z); }
 function deckY(x) { return .5 + 2.0 * (1 - (x / BRIDGE_HALF) ** 2); }
@@ -1712,7 +1725,7 @@ function buildRiver(D) {
   // what the current carries: leaves and twigs adrift, borne west, parting round the piers, set in again upstream when they leave the world
   { const N = 28, pos = new Float32Array(N * 12), base = [], g = new THREE.BufferGeometry(), idx = [];
     for (let i = 0; i < N; i++) { const leaf = rand() < .7, w = leaf ? rr(.16, .26) : rr(.4, .7), d = leaf ? w * .55 : .05, a = rand() * TAU, x = rr(-70, 70), z = riverCenter(x) + rr(-11, 11);
-      base.push({ w, d, a, x, z, spin: rr(-.3, .3), ph: rand() * TAU }); idx.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4, i * 4 + 3, i * 4 + 2); }
+      base.push({ w, d, a, x, z, spin: rr(-.3, .3), ph: rand() * TAU, life: rr(60, 300), sink: 0, stuck: 0 }); idx.push(i * 4, i * 4 + 2, i * 4 + 1, i * 4, i * 4 + 3, i * 4 + 2); }
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(Array.from({ length: N * 4 }, () => [0, 1, 0]).flat(), 3)); g.setIndex(idx);
     const m = baseMesh(g, 16, MAT.base), ap = g.getAttribute('aPal'); base.forEach((b, i) => { if (b.w > .3) for (let k = 0; k < 4; k++) ap.setX(i * 4 + k, 13); }); m.frustumCulled = false; placeGroup.add(m); flotsam.push({ base, pos: g.getAttribute('position') }); } // leaves in the sand's colour, twigs in the dark
   timings.river = 1;
@@ -1728,9 +1741,14 @@ function updateDragonflies() {
   }
 }
 function updateFlotsam(dt) {
-  for (const F of flotsam) { const P = F.pos; F.base.forEach((b, i) => { const c = currentAt(b.x, b.z); b.x += c[0] * dt; b.z += c[1] * dt + Math.sin(simTime * .7 + b.ph) * .03 * dt; b.a += b.spin * dt;
-    if (b.x < -75 || b.x > 75 || (c[0] === 0 && c[1] === 0 && rand() < .002)) { b.x = rr(40, 72); b.z = riverCenter(b.x) + rr(-9, 9); } // out of the world, or stranded: set in again upstream
-    const y = WATER_Y + .03 + Math.sin(simTime * 1.3 + b.ph) * .015, cx = Math.cos(b.a) * b.w / 2, sx = Math.sin(b.a) * b.w / 2, cz = -Math.sin(b.a) * b.d / 2, sz = Math.cos(b.a) * b.d / 2;
+  const again = b => { b.x = rr(40, 72); b.z = riverCenter(b.x) + rr(-9, 9); b.life = rr(60, 300); b.sink = 0; b.stuck = 0; }; // set in again upstream
+  for (const F of flotsam) { const P = F.pos; F.base.forEach((b, i) => { let dy = 0;
+    if (b.sink > 0) { b.sink -= dt; dy = -(3 - b.sink) * .3; if (b.sink <= 0) again(b); } // waterlogged, it goes down over three seconds
+    else if (b.stuck > 0) { b.stuck -= dt; b.a += Math.sin(simTime * 2.1 + b.ph) * .4 * dt; if (b.stuck <= 0) { if (b.at === 'bank') again(b); else b.z += (b.z > b.pz ? 1 : -1) * .5; } } // held against a pier's nose or a bank, quivering; then let go round the pier, or gone from the bank
+    else { const c = currentAt(b.x, b.z); b.x += c[0] * dt; b.z += c[1] * dt + Math.sin(simTime * .7 + b.ph) * .03 * dt; b.a += b.spin * dt; b.life -= dt; if (b.life <= 0) b.sink = 3;
+      if (b.x < -75 || b.x > 75) again(b); else if (c[0] === 0 && c[1] === 0) { b.stuck = rr(10, 40); b.at = 'bank'; }
+      else for (const pz of piersZ()) { const dx = b.x - ABRIDGE.x, dz = b.z - pz; if (dx > 0 && dx < 1.4 + .3 && Math.abs(dz) < 1.1) { b.stuck = rr(6, 30); b.at = 'pier'; b.pz = pz; b.x = ABRIDGE.x + 1.5; break; } } }
+    const y = WATER_Y + .03 + dy + Math.sin(simTime * 1.3 + b.ph) * .015, cx = Math.cos(b.a) * b.w / 2, sx = Math.sin(b.a) * b.w / 2, cz = -Math.sin(b.a) * b.d / 2, sz = Math.cos(b.a) * b.d / 2;
     P.setXYZ(i * 4, b.x - cx - cz, y, b.z - sx - sz); P.setXYZ(i * 4 + 1, b.x + cx - cz, y, b.z + sx - sz); P.setXYZ(i * 4 + 2, b.x + cx + cz, y, b.z + sx + sz); P.setXYZ(i * 4 + 3, b.x - cx + cz, y, b.z - sx + sz); }); P.needsUpdate = true; }
 }
 function updateBoats() {
@@ -1981,7 +1999,8 @@ function buildRouen(D) {
             for (const side of [-1, 1]) { const cu = side < 0 ? u0 + pitch : u0, t0 = side < 0 ? Math.PI : 0, stp = -side * Math.PI / 3 / na; // the left arc's centre is the right springing and it climbs from 180° to 120°; the right arc's the left, 0° to 60°
               for (let j = 0; j < na; j++) { const tm = t0 + (j + .5) * stp, ch = 2 * ra * Math.sin(Math.PI / 6 / na);
                 const b = new THREE.BoxGeometry(.05, ch, dpt * .6); b.rotateZ(tm); put(b, cu + ra * Math.cos(tm), ys + ra * Math.sin(tm)); } // a bar along the chord: its length turned to the arc's tangent
-              const tc = t0 + 2 * stp, c = new THREE.BoxGeometry(.05, .16, dpt * .6); c.rotateZ(tc - Math.PI / 2); put(c, cu + (ra - .1) * Math.cos(tc), ys + (ra - .1) * Math.sin(tc)); } } } };
+              for (const q of i % 2 ? [1.3, 2.7] : [2]) { const tc = t0 + q * stp, c = new THREE.BoxGeometry(.05, i % 2 ? .12 : .17, dpt * .6 + .07); c.rotateZ(tc - Math.PI / 2); put(c, cu + (ra - .08) * Math.cos(tc), ys + (ra - .08) * Math.sin(tc)); } } // the cusps, standing proud of the bars on both faces: one to each arc in the even bays (trefoiled), two smaller in the odd (cinquefoiled)
+            if (i % 2 === 0 && i < n - 1) { const ring = new THREE.CylinderGeometry(.09, .09, .05, 6); put(ring, u0 + pitch, h + .12 + bh * .5); } } } }; // a shaft ring on every other colonnette
       for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * TAU, r = w * .38; balustrade(a, r * Math.cos(Math.PI / 8), 2 * r * Math.sin(Math.PI / 8) - .9, 1.1, .22, true); }
       for (let i = 0; i < 4; i++) balustrade(i / 4 * TAU, w / 2 - .18, w - 1.4, 1.0, .3, false);
       const cap = new THREE.CylinderGeometry(w * .38, w * .36, .9, 8); cap.translate(x, h + 11.4, zc); cat.push(cap); misc.push(cap);
@@ -2021,8 +2040,8 @@ function buildRouen(D) {
   const flyerS = (x, z, yaw) => S(x, z, 3.75, .55, lx => 28.6 - lx * 9 / 7, yaw, lx => 24.4 - lx * 9 / 7, 'stone'); // the flyer's top and underside, sloping down and out from the clerestory (lx outward); the arch under it is open
   const vessel = (z0, z1) => { // the tall vessel and the aisles leaning on it, from z0 (west) to z1 (east)
     const L = z0 - z1, zm = (z0 + z1) / 2;
-    S(CX, zm, NW + .6, L / 2, lx => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lx) / (NW + .6))).gutter = true;
-    for (const sx of [-1, 1]) S(CX + sx * (NW + 3.75), zm, 3.75, L / 2, lx => AISLE + 5.5 * clamp(1 - (3.75 + sx * lx) / 7.5, 0, 1));
+    S(CX, zm, NW + .6, L / 2, lx => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lx) / (NW + .6))).gutter = .16;
+    for (const sx of [-1, 1]) S(CX + sx * (NW + 3.75), zm, 3.75, L / 2, lx => AISLE + 5.5 * clamp(1 - (3.75 + sx * lx) / 7.5, 0, 1)).gutter = .16; // the aisles' eaves are guttered too
     for (let z = z0 - BAY / 2; z > z1 + 1; z -= BAY) for (const sx of [-1, 1]) { pierS(CX + sx * (AW + .8), z, 0); flyerS(CX + sx * (AW + NW) / 2, z, sx < 0 ? Math.PI : 0); }
     box(catBack, NW * 2, WALL, L, CX, -.5, zm); const r = prism(L + .6, NW * 2 + 1.2, RIDGE - WALL).rotateY(Math.PI / 2); r.translate(CX, WALL, zm); catRoof.push(r);
     for (const sx of [-1, 1]) { box(catBack, AW - NW, AISLE, L, CX + sx * (NW + AW) / 2, -.5, zm); const a = prism(L + .6, (AW - NW) * 2 + 1, 5.5).rotateY(Math.PI / 2); a.translate(CX + sx * NW, AISLE, zm); catRoof.push(a); }
@@ -2034,7 +2053,7 @@ function buildRouen(D) {
   // the crossing: the nave's roof carried across the transept at the same ridge, so the two roofs meet in valleys running from the ridge down to
   // the eaves' corners (the transept's slope steeper than the nave's), not in the choir's gable end standing out of the transept's slope
   { const cr = prism(ZT0 - ZT1 + .6, NW * 2 + 1.2, RIDGE - WALL).rotateY(Math.PI / 2); cr.translate(CX, WALL, ZTM); catRoof.push(cr);
-    S(CX, ZTM, NW + .6, (ZT0 - ZT1) / 2 + .3, lx => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lx) / (NW + .6))).gutter = true;
+    S(CX, ZTM, NW + .6, (ZT0 - ZT1) / 2 + .3, lx => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lx) / (NW + .6))).gutter = .16;
     // the valleys' lead: a strip laid in each roof's plane along the line where the two meet, from the lantern's foot down to the eaves' corner
     const lead = [], hd = (ZT0 - ZT1) / 2 + .6, hw = NW + .6, rise = RIDGE - WALL;
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const pt = t => V(CX + sx * hw * t, RIDGE - rise * t, ZTM + sz * hd * t), p0 = pt(7 / hw + .02), p1 = pt(1.02), dir = p1.clone().sub(p0).normalize();
@@ -2045,10 +2064,11 @@ function buildRouen(D) {
     // the eaves' gutters, lead troughs hung at the nave's and the choir's eaves (outside the transept) and the transept's, meeting at the valleys' corners
     const gut = (x0, z0, x1, z1) => { const len = Math.hypot(x1 - x0, z1 - z0), g = new THREE.BoxGeometry(len + .3, .16, .3); g.rotateY(Math.atan2(-(z1 - z0), x1 - x0)); g.translate((x0 + x1) / 2, WALL - .08, (z0 + z1) / 2); lead.push(g); };
     for (const sx of [-1, 1]) { const x = CX + sx * (hw + .12); gut(x, ZN, x, ZTM + hd); gut(x, ZTM - hd, x, ZC); for (const sz of [-1, 1]) { const z = ZTM + sz * (hd + .12); gut(CX + sx * hw, z, CX + sx * 25.5, z); } }
+    for (const sx of [-1, 1]) { const x = CX + sx * (NW + 7.5 + .12); for (const [z0, z1] of [[ZN, ZTM + hd], [ZTM - hd, ZC]]) { const g = new THREE.BoxGeometry(.3, .16, Math.abs(z1 - z0) + .3); g.translate(x, AISLE - .08, (z0 + z1) / 2); lead.push(g); } } // and along the aisles' eaves
     placeGroup.add(baseMesh(mergeParts(lead), 10, MAT.base)); }
   // the transept: the wide arm across, a gable at either end with its rose and portal, turrets at the corners
   box(catBack, 50, WALL, ZT0 - ZT1, CX, -.5, ZTM); const tr = prism(51, ZT0 - ZT1 + 1.2, RIDGE - WALL); tr.translate(CX, WALL, ZTM); catRoof.push(tr);
-  S(CX, ZTM, 25.5, (ZT0 - ZT1) / 2 + .6, (lx, lz) => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lz) / ((ZT0 - ZT1) / 2 + .6))).gutter = true;
+  S(CX, ZTM, 25.5, (ZT0 - ZT1) / 2 + .6, (lx, lz) => WALL + (RIDGE - WALL) * Math.max(0, 1 - Math.abs(lz) / ((ZT0 - ZT1) / 2 + .6))).gutter = .16;
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) S(CX + sx * 24.2, ZTM + sz * ((ZT0 - ZT1) / 2 - 1.1), 1.3, 1.3, pinnacle(43.5, 1.7, 7, hex), 0, undefined, 'stone');
   S(CX, ZTM, 7, 7, (lx, lz) => WALL - 1 + 25 + 7 * Math.max(0, 1 - pent(Math.abs(lx) - 6.2, Math.abs(lz) - 6.2) / 1.1), 0, undefined, 'stone');
   { const sp = lathe(WALL - 1 + 25, [[6, 0], [4.7, 9], [3.4, 22], [2.1, 38], [1.0, 54], [.3, 67], [0, 72]]), tu = lathe(WALL - 1 + 25 + 1, [[1.5, 0], [1.0, 4], [.45, 9], [0, 13]]);
@@ -2136,10 +2156,11 @@ function buildHavre(D) {
   const kAt = q => clamp(Math.hypot(q.x - viewP.x, q.z - viewP.z) / 12, 1, 3.4);
   // --- the quay: a parapet along the water's edge, bollards, cobbles
   const qp = [];
-  for (let z = -380; z > -520; z -= 6) { const zc = z - 3, x0 = quayX(z), x1 = quayX(z - 6), ang = Math.atan2(x1 - x0, -6); if (Math.abs(zc - QUAY.slip) < 3.2) continue; const b = new THREE.BoxGeometry(.5, .6, 6.4); b.rotateY(-ang); b.translate((x0 + x1) / 2 - .4, groundHeight((x0 + x1) / 2 - 1, zc) + .3, zc); qp.push(b); }
+  for (let z = -380; z > -520; z -= 6) { const zc = z - 3, x0 = quayX(z), x1 = quayX(z - 6), ang = Math.atan2(x1 - x0, -6); if (Math.abs(zc - QUAY.slip) < 3.2 || Math.abs(zc - MOLE.z) < MOLE.hz + 2) continue; const b = new THREE.BoxGeometry(.5, .6, 6.4); b.rotateY(-ang); b.translate((x0 + x1) / 2 - .4, groundHeight((x0 + x1) / 2 - 1, zc) + .3, zc); qp.push(b); }
   for (let z = -384; z > -516; z -= 11) { if (Math.abs(z - QUAY.slip) < 2.6) continue; const b = new THREE.CylinderGeometry(.16, .2, .8, 6); b.translate(quayX(z) - 1.4, groundHeight(quayX(z) - 1.4, z) + .4, z); qp.push(b); }
   // the built quay: a stone wall from the harbour's bed to the quay's top along the straight stretch, its face .05 off the cliff's edge, open at the slipway (which is ground, not stone)
-  for (let z = QUAY.z + QUAY.half - 1; z > QUAY.z - QUAY.half; z -= 2) { if (Math.abs(z - QUAY.slip) < QUAY.slipHalf + 1) continue; const b = new THREE.BoxGeometry(1.1, QUAY.y + 2.72, 2.02); b.translate(QUAY.x + .3 - 1.1 / 2, (QUAY.y + .02 - 2.7) / 2, z); qp.push(b); }
+  for (let z = QUAY.z + QUAY.half; z > QUAY.z - QUAY.half; z -= 2) { if (Math.abs(z - 1 - QUAY.slip) < QUAY.slipHalf + 1) continue; const x0 = quayX(z), x1 = quayX(z - 2), ang = Math.atan2(x1 - x0, -2), b = new THREE.BoxGeometry(1.6, QUAY.y + 2.72, 2.05); b.rotateY(-ang); b.translate((x0 + x1) / 2 + QUAY.face - .8, (QUAY.y + .02 - 2.7) / 2, z - 1); qp.push(b); }
+  { const x0 = quayX(MOLE.z) - 1.5, x1 = quayX(MOLE.z) + MOLE.len, b = new THREE.BoxGeometry(x1 - x0, QUAY.y + 2.72, MOLE.hz * 2); b.translate((x0 + x1) / 2, (QUAY.y + .02 - 2.7) / 2, MOLE.z); qp.push(b); const bol = new THREE.CylinderGeometry(.16, .2, .8, 6); bol.translate(x1 - .8, QUAY.y + .4, MOLE.z); qp.push(bol); } // the mole, and a bollard at its head
   const quayGeom = mergeParts(qp); placeGroup.add(baseMesh(quayGeom, 4, MAT.base));
   const ground = new Patches();
   scatterOn(quayGeom, Math.floor(700 * D), (q, m) => { if (m.y < -.5) return; const k = kAt(q); ground.lay(q, m, m.y > .5 ? rand() * TAU : Math.PI / 2 + gauss() * .2, rr(.3, .6) * k, rr(.14, .26) * k, rand() < .6 ? 4 : rand() < .5 ? 3 : 5, 0, 0); });
@@ -2402,7 +2423,7 @@ function renderReflection() {
   _clip.multiplyScalar(2 / _clip.dot(_q));
   pm.elements[2] = _clip.x; pm.elements[6] = _clip.y; pm.elements[10] = _clip.z + 1 - .003; pm.elements[14] = _clip.w;
   waterGroup.visible = false;
-  renderer.setRenderTarget(reflTarget); renderer.render(scene, reflCam); renderer.setRenderTarget(null);
+  const armsOn = arms.visible; arms.visible = false; renderer.setRenderTarget(reflTarget); renderer.render(scene, reflCam); renderer.setRenderTarget(null); arms.visible = armsOn;
   waterGroup.visible = true;
 }
 
@@ -2469,7 +2490,7 @@ function stepStop(dir) { const n = currentStops().length; if (n < 2) return; con
 
 // ============================================================ movement
 let yaw = 0, pitch = 0, fly = false, photoMode = false, travel = null;
-let lift = 0, glide = 0, landed = false, falling = false, fallV = 0, slideV = 0; const slideDir = [0, 0]; let swimPh = 0, stamina = 1, weary = false; // the stroke's phase; the swimmer's wind, spent in a minute of swimming (a third of that sprinting), got back on land or standing in the shallows // metres still owed to the flyer: the button's rise, the wheel's glide along the gaze; standing on a roof, falling off it, slipping down it
+let lift = 0, glide = 0, landed = false, falling = false, fallV = 0, slideV = 0; const slideDir = [0, 0]; let swimPh = 0, breath = 1, strength = 1, winded = false, weary = false; // the stroke's phase; the swimmer's breath (spent in twelve seconds' sprint, back in fifteen of rest) and strength (spent in a minute's swimming, twenty-five sprinting, back in half a minute on land) // metres still owed to the flyer: the button's rise, the wheel's glide along the gaze; standing on a roof, falling off it, slipping down it
 // the edge of the world, seen: a bank of the hour's fog stands a metre beyond the box along the whole of the side one is nearest, and
 // thickens over the last eighteen metres of the approach, thickest where a step is refused. It thins with distance from the eye, into
 // the ordinary fog, and is dabbed in the world's own strokes (the paint field read in world space, sized to the eye, as the sky and the
@@ -2556,10 +2577,13 @@ function updateWalk(dt) {
   if (touchMove.active) { _move.addScaledVector(_fwd, -touchMove.y); _move.addScaledVector(_right, touchMove.x); }
   if (fly) { if (keys.has('KeyE') || keys.has('Space')) _move.y += 1; if (keys.has('KeyQ')) _move.y -= 1; }
   const pos = camera.position, wet = inWater(pos.x, pos.z, pos.y), afloat = wet && !fly && groundHeight(pos.x, pos.z) < WATER_Y - 1.1; // in water over one's depth one swims
-  const sprint = keys.has('ShiftLeft') || keys.has('ShiftRight'), swimming = afloat && _move.lengthSq() > 0;
-  if (swimming) { swimPh += dt * TAU / (sprint && !weary ? 1.0 : 1.5); stamina = Math.max(0, stamina - dt / 60 * (sprint && !weary ? 3 : 1)); if (stamina <= 0 && !weary) { weary = true; say('Tiring · swim for a bank, or F to fly', 5); } }
-  else stamina = Math.min(1, stamina + dt / (afloat ? 90 : 30)); if (weary && stamina > .35) weary = false; // breaststroke: a kick and a glide every second and a half (a second, sprinting), the pace pulsing with it; spent, one paddles at half the pace and cannot sprint
-  const speed = (fly ? 9 + Math.max(0, pos.y - 6) * .22 : afloat ? (weary ? .5 : .9) * (1 + .45 * Math.sin(swimPh)) : wet ? 1.3 : 3.2) * (sprint && !(afloat && weary) ? 2.2 : 1); // wading is slow, swimming slower
+  const sprint = (keys.has('ShiftLeft') || keys.has('ShiftRight')) && !(afloat && (winded || weary)), swimming = afloat && _move.lengthSq() > 0;
+  if (swimming) { swimPh += dt * TAU / (sprint ? 1.0 : 1.5); strength = Math.max(0, strength - dt / (sprint ? 25 : 60)); breath = clamp(breath + (sprint ? -dt / 12 : dt / 40), 0, 1); }
+  else { breath = Math.min(1, breath + dt / 15); strength = Math.min(1, strength + dt / (afloat ? 90 : 30)); } // breaststroke: a kick and a glide every second and a half (a second, sprinting), the pace pulsing with it
+  if (breath <= 0 && !winded) { winded = true; say('Winded · no sprint till the breath is back', 4); } if (winded && breath > .5) winded = false; // winded, one swims on panting (the pace down by a quarter) and cannot sprint till half the breath is back
+  if (strength <= 0 && !weary) { weary = true; say('Tiring · swim for a bank, or F to fly', 5); } if (weary && strength > .35) weary = false; // spent, one paddles at half the pace and cannot sprint
+  const speed = (fly ? 9 + Math.max(0, pos.y - 6) * .22 : afloat ? (weary ? .5 : .9) * (.75 + .25 * breath) * (1 + .45 * Math.sin(swimPh)) : wet ? 1.3 : 3.2) * (sprint ? 2.2 : 1); // wading is slow, swimming slower
+  updateArms(swimming, swimPh);
   if (_move.lengthSq() > 1) _move.normalize();
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt);
@@ -2597,9 +2621,10 @@ function updateWalk(dt) {
       if (g > mu || slideV > 0) { // until it stops; a flat roof's edge stops it (a gutter, a parapet would), a steep eave lets it off
         if (tr ? tr.g > .01 : g > .01) { slideDir[0] = tr ? tr.d[0] : -gx / g; slideDir[1] = tr ? tr.d[1] : -gz / g; } const n = Math.hypot(1, g); slideV = Math.max(0, slideV + 9.8 * (g / n - muK / n) * dt); const d = slideV * dt; // a level line (the eaves' at the valley's end) leaves the slide its direction: it carries on, slowing
         if (tr && d > 0) { const f = Math.hypot(tr.fix[0], tr.fix[1]), k = f > .05 ? .05 / f : 1; move(tr.fix[0] * k, tr.fix[1] * k); } // drawn to the valley's bottom as it goes
-        const off = d > 0 && !(roofAt(pos.x + slideDir[0] * (d + .3), pos.z + slideDir[1] * (d + .3), pos.y) >= h0 - 1); // the roof ends within this frame's slide and a step (nothing ahead, or a drop of a metre and more, the aisle under the nave's eave): a flat roof's rim or a guttered eave (the valleys' corners, the nave's and the transept's eaves) catches a body arriving under 5 m/s; a faster one vaults the rim or the lip; a steep bare eave lets it off
+        const off = d > 0 && !(roofAt(pos.x + slideDir[0] * (d + .3), pos.z + slideDir[1] * (d + .3), pos.y) >= h0 - 1); // the roof ends within this frame's slide and a step (nothing ahead, or a drop of a metre and more, the aisle under the nave's eave): a guttered eave (the valleys' corners, the nave's and the transept's eaves) catches a body whose momentum will not carry it over the lip, a flat rim one the arms can hold; a steep bare eave lets it off
         if (monet.slideDbg) monet.slideDbg.push([+g.toFixed(2), +mu.toFixed(2), off, +slideV.toFixed(2), !!(fs && fs.gutter), !!tr, +pos.x.toFixed(2), +pos.z.toFixed(2)]);
-        if (off && slideV < GUTTER_V && (g <= mu || (fs && fs.gutter))) slideV = 0; else if (d > 0 && !move(slideDir[0] * d, slideDir[1] * d)) slideV = 0; } } // a body arriving at an edge under 5 m/s is caught by a flat roof's rim or a guttered eave's lip; faster it goes over either (the lantern's rim at the spire's foot); a steep bare eave lets it off at any speed
+        const caught = fs && fs.gutter ? slideV * slideV < 2 * 9.8 * fs.gutter * LEVER : g <= mu && slideV < ARMS; // a guttered eave's lip (.16: under 4.7 m/s) or, on a flat rim, the arms
+        if (off && caught) slideV = 0; else if (d > 0 && !move(slideDir[0] * d, slideDir[1] * d)) slideV = 0; } } // faster, the body goes over the lip or the rim (the lantern's, at the spire's foot); a steep bare eave lets it off at any speed
     else slideV = 0;
     // a flyer over a roof (a house, the cathedral, the Orangerie, a bridge) may skim it, .3 over the slates; coming down onto it from above, on Q or in a
     // fall, one lands on one's feet and stands, the eye its own height over them, following the slopes up and down; off the roof's edge one falls, to
@@ -3012,11 +3037,11 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, landed, falling, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm32-the-lip', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm33-the-welt', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
-  get solids() { return SOLIDS; }, get cam() { return camera.position.toArray(); }, trough(x, z, y) { floorAt(x, z, y); return floorS ? troughAt(x, z, floorS) : null; }, current: currentAt, get swim() { return { stamina: +stamina.toFixed(3), weary, ph: +swimPh.toFixed(2) }; }, set stamina(v) { stamina = v; }, get flotsam() { return flotsam.length ? flotsam[0].base.slice(0, 4).map(b => [+b.x.toFixed(2), +b.z.toFixed(2)]) : []; }, flank(x, z) { return SOLIDS.filter(S => isFinite(solidH(S, x, z)) && flankS(S, x, z)).map(S => [S.x, S.z, +solidH(S, x, z).toFixed(2)]); }, top(x, z) { return [solidTop(x, z), orangRoof(x, z), orangCeil(x, z)]; }, over(x, z, y) { return SOLIDS.filter(S => solidOver(S, x, z, y) > y).map(S => [S.x, S.z, S.hw, S.hd, +solidOver(S, x, z, y).toFixed(2)]); }, roof(x, z, y) { return roofAt(x, z, y); },
+  get solids() { return SOLIDS; }, get cam() { return camera.position.toArray(); }, trough(x, z, y) { floorAt(x, z, y); return floorS ? troughAt(x, z, floorS) : null; }, current: currentAt, get swim() { return { breath: +breath.toFixed(3), strength: +strength.toFixed(3), winded, weary, ph: +swimPh.toFixed(2), arms: arms.visible }; }, set breath(v) { breath = v; }, set strength(v) { strength = v; }, get flotsam() { if (!flotsam.length) return null; const B = flotsam[0].base; return { sinking: B.filter(b => b.sink > 0).length, stuck: B.filter(b => b.stuck > 0).map(b => b.at), first: B.slice(0, 4).map(b => [+b.x.toFixed(2), +b.z.toFixed(2)]) }; }, age(sec) { for (const F of flotsam) for (const b of F.base) b.life -= sec; }, put(i, x, z) { const b = flotsam[0].base[i]; b.x = x; b.z = z; b.stuck = 0; b.sink = 0; }, flank(x, z) { return SOLIDS.filter(S => isFinite(solidH(S, x, z)) && flankS(S, x, z)).map(S => [S.x, S.z, +solidH(S, x, z).toFixed(2)]); }, top(x, z) { return [solidTop(x, z), orangRoof(x, z), orangCeil(x, z)]; }, over(x, z, y) { return SOLIDS.filter(S => solidOver(S, x, z, y) > y).map(S => [S.x, S.z, S.hw, S.hd, +solidOver(S, x, z, y).toFixed(2)]); }, roof(x, z, y) { return roofAt(x, z, y); },
   set(x, y, z, yw = 0, pt = 0) { camera.position.set(x, y, z); fly = true; syncFly(); velocity.set(0, 0, 0); lift = glide = 0; landed = falling = false; fallV = slideV = 0; this.look(yw, pt); update(0); }, // the flyer put somewhere, still, as ?cam= does
   at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, eyeHeight(q.x, q.z), q.z); update(0); },
   U, hourFog, get projMs() { return projMs; },

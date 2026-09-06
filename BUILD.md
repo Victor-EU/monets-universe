@@ -1824,3 +1824,65 @@ never sinks, catches on a pier or gathers at a bank; the boats sit still in the 
 of the head, with no arms in view and no sound. The wind is one number, spent and got back at fixed rates. The quay wall is the
 one cliff in the world, straight and 1.3 high, the cliff one cell wide under it (a shelf at the wall's foot ankle-deep); the slipway
 is a plain ramp. The tracery is bars and cusps in one plane, the same bay repeated.
+
+### Progress · M33 — the welt: the lip's height against the body's momentum, and the aisles guttered; wake and eddies behind the piers, flotsam that sinks and strands; the arms in view, breath and strength; the quay wall on the quay's own curve with the cliff exact under the walker, and a mole; the tracery's bays varied and its cusps proud (what M32 left visible)
+
+**What was wrong.** The catch at an edge was one speed, 5 m/s, for a flat rim and a guttered eave alike. The piers parted the stream
+with no wake or eddy, and the flotsam never sank or stranded. The stroke showed no arms and the swimmer's wind was one number. The
+quay wall was straight (its line pulled onto a grid line so the terrain's cliff would be one cell wide), with that cell's ramp
+leaving a shelf ankle-deep at the wall's foot, and it was the world's one cliff. The tracery was bars and cusps in one plane, one bay
+repeated.
+
+**What changed.**
+- The catch: a body sliding into a lip pivots on it; to go over, its centre (.12 over the slates on its back, half its length .85
+  behind its feet) must rise the lip's height times that lever, 7.1: caught if v² < 2 g H · 7.1 (H .16: under 4.7 m/s). A bare
+  rim is caught only by the arms, under `ARMS` 1.5. Solids' `gutter` is now the lip's height; the aisles' eaves are guttered too
+  (lead troughs along them at 16), so the aisle's slip is caught as before.
+- `currentAt`, downstream of each pier: a wake, a deficit of .85 of the stream on the axis, widening (.55 + .12 per radius) and
+  fading (1/√s) with the distance in radii, and within four radii a pair of eddies (vortices of 1.6 · stream, .75 either side of the
+  axis, fading to nothing at four) turning the water back on itself close behind the pier.
+- Flotsam: each piece has a life (60–300 s) after which it goes down over three seconds and is set in again upstream; one carried
+  onto a pier's nose (within .3 of it, 1.1 either side of the axis) is held there quivering 6–30 s, then let go round the pier; one
+  reaching slack water at a bank lies 10–40 s and is gone.
+- The arms: two forearms and hands (boxes, skin-coloured by vertex, `MeshBasicMaterial`) hung from the camera under the eye at the
+  water's face, shown only afloat and swimming, hidden from the reflection pass; `updateArms` sets them by the stroke's phase: the
+  glide with the arms out ahead (.4 of the cycle), the pull sweeping them out .3 and back .22 (.3), the recovery bringing the hands
+  in under the chin and shooting them forward (.3).
+- Breath and strength: breath is spent in twelve seconds' sprint and comes back in fifteen of rest (forty, swimming easy); at nil
+  one is winded, "Winded · no sprint till the breath is back", panting (the pace × (.75 + .25 · breath)) and cannot sprint till half
+  of it is back. Strength is spent in a minute's swimming (twenty-five seconds sprinting), back in half a minute on land; at nil
+  one is weary as before. Sprinting, the stroke's cycle is 1 s.
+- The quay: `quayX` keeps its curve; the wall's face is .5 out from it, the stone 1.6 thick in 2 m segments turned to the curve;
+  `groundHeight` along the wall is the stone's own edge (the wall's top to its face, the bed −2.5 beyond it), the terrain grid's
+  ramp lying inside the stone, so there is no shelf: a swimmer floats at the face and is refused there (`trace`: bank 1.30 1.30).
+  A mole (`MOLE`: at z −398, 3.4 wide, 16 long from the quay, a bollard at its head) runs out into the harbour, its top 1.3 and its
+  sides cliffs the same way, the parapet gapped at its root: a second cliff, and a third with the wall's own return.
+- The tracery: the cusps stand proud of the bars on both faces (.07 deeper); even bays trefoiled (one cusp to each arc), odd bays
+  cinquefoiled (two smaller); a shaft ring on every other colonnette.
+- Debug: `monet.swim` (breath, strength, winded, weary, ph, arms), `monet.breath =`, `monet.strength =`, `monet.flotsam` (sinking,
+  stuck, first four), `monet.age(s)`, `monet.put(i, x, z)`. Build `m33-the-welt`.
+
+**Verified.** Headless, keys held. Q onto the valley 2 m from the corner: caught at it (34.45), standing; 4.5 m from it the slide
+arrives at 8.55 m/s and goes over the lip, the aisle, the ground. Q onto the aisle near its eave: caught at 17.56; from its ridge
+the slide reaches the eave at 4.56 m/s and is caught (the eave band as before). Behind the second pier (z −176.8) on the axis:
+2 radii (+.05, −.02), the stream turned back; 4 radii (−.29); 8 radii (−.37); close behind and .3 off the axis (+.21, −.07), 1.6 off
+(−.47, −.13); beside it (−.59); open water (−.55). Flotsam aged 400 s: 27 of 28 sinking a second later, all set in again upstream
+four seconds on; one put on the pier's nose is held there. Sprinting west 14 s: 2.4 m/s (2.2 × .9 + .55), the breath .044 and
+"Winded" said at 14 s; easy after it 1.2 m/s (panting), the breath .19 six seconds on, the arms shown. The quay at z −400, −412,
+−420: 1.3 to the face (17.76, 17.55, 17.99), −2.5 a hand beyond it; swimming west at −400 and −420 one is refused at the face
+(`trace`: bank 1.30 1.30), the eye .32–.38, afloat; at the mole's north side (z −396.3) likewise; walking out along the mole (2.75)
+one drops off its head into the harbour (.32). M28's walkers, M30's flyers, M31's and M32's water as before. 120 solids. Frames in
+`m33-sheet.jpg`.
+Bench, DPR 2, one run (a first run overlapped the last one's Chrome and was thrown out): pond 13.8 · parasol 11.2 · argenteuil 12.9 ·
+poplars 9.7 · haystacks 10.5 · rouen 8.2 · sunrise 5.0 · orangerie 9.7 · aerial 4.9 ms (M32: 13.0 / 7.9 / 8.4 / 9.2 / 10.8 / 7.9 / 5.1 /
+8.1 / 5.3): the river up 4.5 ms and the parasol 3.3, the rest within the spread; the flotsam's stream is read 28 times a frame with the
+wake and the eddies of four piers, the one new per-frame cost, though the parasol has none of it. The mole and the wall's 16 segments
+are in the harbour's merged stone, the cusps and rings some 300 boxes more in the cathedral's; the arms are one small mesh.
+
+**Still visible.** The lever is a rule of thumb for a body on its back; a body sliding feet first or head first, or tumbling, is not
+told apart, and the arms' catch is a speed. The wake and the eddies are a sketch (a Gaussian deficit and two vortices fading in
+four radii), steady, with no shedding; the piers are still round to the stream. The flotsam strands only on a pier's nose or in
+slack water, never against the abutments or the boats, and the boats do not feel the current. The arms are two boxes each and do
+not enter the water; the legs kick unseen. Breath and strength are two numbers with fixed rates; nothing is felt in the sound. The
+quay's cliff is exact under the walker but the terrain mesh's one-cell ramp still lies inside the stone; the harbour's other banks
+slope as before. The tracery's bays alternate between two patterns; there is no moulding on the bars.
