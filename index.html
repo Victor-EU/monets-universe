@@ -1099,6 +1099,10 @@ function pathDist(x, z) { // exact below 6 m, which is all anyone asks of it
   for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const c = promCells.get(`${cx + i},${cz + j}`); if (!c) continue; for (const q of c) { const dx = q.x - x, dz = q.z - z, e = dx * dx + dz * dz; if (e < d) d = e; } }
   return Math.sqrt(d);
 }
+// the paintings in the promenade's order, by where their spots fall along it: the Orangerie, the pond, the hill, the bridge, the poplars,
+// the haystacks, the cathedral, the harbour
+let PROM_ORDER = null;
+function promOrder() { return PROM_ORDER || (PROM_ORDER = [0, 1, 2, 3, 4, 5, 6, 7].sort((a, b) => nearestS(places[a].view.p.x, places[a].view.p.z) - nearestS(places[b].view.p.x, places[b].view.p.z))); }
 function nearestS(x, z) { let d = 1e9, best = 0; for (let i = 0; i < promSamples.length; i++) { const q = promSamples[i], e = (q.x - x) ** 2 + (q.z - z) ** 2; if (e < d) { d = e; best = i; } } return best / (promSamples.length - 1) * PROM_LEN; }
 const _pp = V();
 function promPoint(s, out = _pp) { return promenade.getPointAt(clamp(s / PROM_LEN, 0, 1), out); }
@@ -1551,6 +1555,7 @@ function buildRiver(D) {
     const roof = prism(w + .5, d + .5, rh); roof.translate(0, h, 0);
     const chimney = new THREE.BoxGeometry(.5, rh + .9, .5); chimney.translate(w * .3, h + rh * .35, 0);
     const parts = [walls, roof, chimney]; for (const gq of parts) { gq.rotateY(yaw); gq.translate(x, y, z); hp.push(gq); }
+    SOLIDS.push({ x, z, hw: w / 2 + .5, hd: d / 2 + .5, top: y + h + rh, yaw });
     const k = sizeAt(V(x, y, z)), shade = Math.cos(yaw) * .7 - Math.sin(yaw) * .5;
     scatterOn(walls, Math.floor(w * h * 2.6 * D), (q, m) => { const dark = m.x * shade < -.3; town.lay(q, m, gauss() * .2, rr(.5, .9) * k, rr(.22, .4) * k, dark ? 15 : warm ? 16 : 18, 0, 0); });
     scatterOn(roof, Math.floor(w * d * 1.5 * D), (q, m) => { const r = rand(); town.lay(q, m, gauss() * .25, rr(.5, .9) * k, rr(.2, .36) * k, r < .78 ? 17 : r < .95 ? 12 : 14, 0, 0); });
@@ -1595,7 +1600,7 @@ function buildRiver(D) {
   { const tx = AB.x - AB.half - 1.3, tz = AB.z0 - 1.6, ty = .6, tw = 3.8, th = 8.4, tp = new Patches(), tk = sizeAt(V(tx, ty + 4, tz));
     const walls = new THREE.BoxGeometry(tw, th, tw); walls.translate(tx, ty + th / 2, tz);
     const roof = new THREE.ConeGeometry((tw + .6) / Math.SQRT2, 1.7, 4); roof.rotateY(Math.PI / 4); roof.translate(tx, ty + th + .85, tz);
-    placeGroup.add(baseMesh(walls, 14, MAT.base)); placeGroup.add(baseMesh(roof, 17, MAT.base));
+    placeGroup.add(baseMesh(walls, 14, MAT.base)); placeGroup.add(baseMesh(roof, 17, MAT.base)); SOLIDS.push({ x: tx, z: tz, hw: tw / 2 + .5, hd: tw / 2 + .5, top: ty + th + 1.7, yaw: 0 });
     scatterOn(walls, Math.floor(520 * D), (q, m) => { const r = rand(), edge = Math.max(Math.abs(q.x - tx), Math.abs(q.z - tz)) > tw / 2 - .35; tp.lay(q, m, gauss() * .2, rr(.4, .7) * tk, rr(.18, .3) * tk, edge ? (r < .8 ? 12 : 16) : r < .78 ? 14 : r < .9 ? 16 : 12, 0, 0); });
     scatterOn(roof, Math.floor(160 * D), (q, m) => { if (m.y < .2) return; tp.lay(q, m, gauss() * .3, rr(.4, .7) * tk, rr(.18, .3) * tk, rand() < .8 ? 17 : 12, 0, 0); });
     for (const [dx, dz, fx, fz] of [[-tw / 2 - .02, 0, -1, 0], [0, tw / 2 + .02, 0, 1]]) for (const y of [2.4, 5.2, 7.4]) { p.set(tx + dx, ty + y, tz + dz); f.set(fx, 0, fz); tp.stand(p, f, .7, .95, 3, 0, 0); }
@@ -2333,6 +2338,40 @@ function stepStop(dir) { const n = currentStops().length; if (n < 2) return; con
 // ============================================================ movement
 let yaw = 0, pitch = 0, fly = false, photoMode = false, travel = null;
 let lift = 0, glide = 0; // metres still owed to the flyer: the button's rise, the wheel's glide along the gaze
+// the edge of the world, seen: a bank of the hour's fog stands a metre beyond the box on the side one is nearest, and thickens over the
+// last eighteen metres of the approach, thickest where a step is refused; a soft patch round the point met, dabbed like the fog itself,
+// with the sky above and the ground below still faintly through it. The bank stands on the ground: its foot fades out over the last
+// two metres above the terrain along the edge (sampled every five metres, 1 m outside the box), so where the plane meets a hillside there
+// is no cut line. It comes in a third of a second at the edge and goes in two
+const EDGE_BOX = { x0: -110, x1: 150, z0: -540, z1: 96 }, EDGE_G = [];
+function outOfBox(x, z) { const B = EDGE_BOX; return Math.max(B.x0 - x, x - B.x1, B.z0 - z, z - B.z1, 0); } // how far outside the box, 0 inside
+function edgeGround(side) { // the surface height along one side of the box, 128 samples, built when first needed
+  if (!EDGE_G[side]) { const B = EDGE_BOX, a = new Float32Array(128), x = side < 2 ? [B.x0 - 1, B.x1 + 1][side] : 0, z = side < 2 ? 0 : [B.z0 - 1, B.z1 + 1][side - 2];
+    for (let i = 0; i < 128; i++) { const t = i / 127; a[i] = Math.max(side < 2 ? walkHeight(x, B.z0 + t * (B.z1 - B.z0)) : walkHeight(B.x0 + t * (B.x1 - B.x0), z), WATER_Y); } EDGE_G[side] = a; }
+  return EDGE_G[side]; }
+const edgeVeil = new THREE.Mesh(new THREE.PlaneGeometry(400, 260), new THREE.ShaderMaterial({
+  uniforms: { uFogCol: U.uFogCol, uTime: U.uTime, uAmt: { value: 0 }, uG: { value: new Float32Array(128) }, uAlong: { value: new THREE.Vector3() } },
+  vertexShader: /* glsl */`varying vec2 vL; varying vec3 vW; void main(){ vL = position.xy; vW = (modelMatrix * vec4(position, 1.)).xyz; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+  fragmentShader: /* glsl */`uniform vec3 uFogCol; uniform float uAmt, uTime; uniform float uG[128]; uniform vec3 uAlong; varying vec2 vL; varying vec3 vW;
+${PAINT_GLSL}
+void main(){
+  float r = length(vL / vec2(60., 32.)), a = uAmt * (1. - smoothstep(.1, 1., r));
+  float t = clamp((mix(vW.x, vW.z, uAlong.z) - uAlong.x) * uAlong.y, 0., 1.) * 127.; int i = int(t); float gy = mix(uG[i], uG[min(i + 1, 127)], fract(t));
+  a *= smoothstep(gy - .3, gy + 1.8, vW.y);
+  float dab = vn(vL * .25 + uTime * .05) * .4 + vn(vL * 2.5 - uTime * .12) * .35 + vn(vL * 8. + uTime * .2) * .25; a *= .45 + .9 * dab;
+  gl_FragColor = vec4(tone(uFogCol * 1.1), clamp(a, 0., .72)); }`,
+  transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+edgeVeil.visible = false; edgeVeil.frustumCulled = false; edgeVeil.renderOrder = 5; scene.add(edgeVeil);
+let edgeAmt = 0;
+function updateEdgeVeil(dt) {
+  const hit = edgeHit && !travel && !drifting, p = camera.position, B = EDGE_BOX;
+  const [dist, side] = [[p.x - B.x0, 0], [B.x1 - p.x, 1], [p.z - B.z0, 2], [B.z1 - p.z, 3]].sort((u, v) => u[0] - v[0])[0];
+  const want = hit ? 1 : dist < 0 ? 0 : 1 - sstep(dist, 1.5, 18); // none from outside the box (the aerial view looks in from beyond its north side)
+  edgeAmt += (want - edgeAmt) * (1 - Math.pow(want > edgeAmt ? .002 : .3, dt));
+  edgeVeil.visible = edgeAmt > .01; if (!edgeVeil.visible) return;
+  edgeVeil.position.set(side === 0 ? B.x0 - 1 : side === 1 ? B.x1 + 1 : p.x, p.y, side === 2 ? B.z0 - 1 : side === 3 ? B.z1 + 1 : p.z); edgeVeil.rotation.set(0, side < 2 ? Math.PI / 2 : 0, 0);
+  const M = edgeVeil.material.uniforms; M.uAmt.value = edgeAmt; M.uG.value = edgeGround(side); M.uAlong.value.set(side < 2 ? B.z0 : B.x0, 1 / (side < 2 ? B.z1 - B.z0 : B.x1 - B.x0), side < 2 ? 1 : 0);
+}
 let edgeHit = false, edgeWas = false, edgeSaid = -99, spotSaid = 0, lastSpot = 0; // the world's edge met this frame, and last; when it was last said; the spot last announced; the spot last stood on
 let drifting = false, driftS = 0, driftTarget = 0, recover = null;
 const velocity = V(), keys = new Set(), EYE = 1.45;
@@ -2386,9 +2425,9 @@ function updateWalk(dt) {
   const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
   const wet = isWater(pos.x, pos.z);
   // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking), or into a solid below its top; a step
-  // out of a solid one is already inside is always allowed, so nothing can trap
+  // out of a solid one is already inside, or back toward the box from outside it (the aerial view starts beyond its north side), is always allowed, so nothing can trap
   edgeHit = false;
-  const tryMove = (dx, dz) => { const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; if (nx < -110 || nx > 150 || nz > 96 || nz < -540) { edgeHit = true; return false; } if (!fly && orangBlocks(nx, nz)) return false; if (pos.y < solidTop(nx, nz) && pos.y >= solidTop(pos.x, pos.z)) return false; pos.x = nx; pos.z = nz; return true; };
+  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz; if (!fly && !wet && isWater(nx, nz)) return false; const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return false; } if (!fly && orangBlocks(nx, nz)) return false; if (pos.y < solidTop(nx, nz) && pos.y >= solidTop(pos.x, pos.z)) return false; pos.x = nx; pos.z = nz; return true; };
   if (!tryMove(step.x, step.z)) { if (!tryMove(step.x, 0)) tryMove(0, step.z); }
   // the edge of the world, felt: the step back a little, no climbing along the gaze there, and a line saying where the next painting lies
   if (edgeHit) { step.y = 0; glide = 0; if (!edgeWas) { velocity.multiplyScalar(-.35); if (realTime > edgeSaid + 8) { edgeSaid = realTime; say('The world ends here · ' + nextLine(), 6); } } }
@@ -2518,8 +2557,9 @@ function whereIs(p) {
   const dir = ['ahead', 'ahead to your right', 'to your right', 'behind you to your right', 'behind you', 'behind you to your left', 'to your left', 'ahead to your left'][(k + 8) % 8];
   return `${dist < 15 ? 'a few steps' : Math.round(dist / 10) * 10 + ' m'} ${dir}`;
 }
-// the next painting in the order of the dock, after the spot last stood on: the harbour after the cathedral, the Orangerie after the harbour, the pond after that
-function nextLine() { const n = (lastSpot + 1) % 8, pl = places[n]; return `Next · ${pl.name} · ${whereIs(pl.view.p)} · key ${n + 1}`; }
+// the next painting in the promenade's order, after the spot last stood on: the pond after the Orangerie, the harbour after the cathedral;
+// at the promenade's end, the whole universe from the air. The key is the dock's
+function nextLine() { const o = promOrder(), k = o.indexOf(lastSpot), n = k < 7 ? o[k + 1] : 8, pl = places[n]; return `Next · ${pl.name} · ${n < 8 ? whereIs(pl.view.p) + ' · ' : ''}key ${n + 1}`; }
 // standing still on a painting's spot, the way to the next one is said once; leaving the spot by eight metres arms it again. The spot one
 // starts on (the pond) is not announced over the opening hint
 function announceSpot() {
@@ -2747,7 +2787,7 @@ function update(dt) {
   realTime += dt;
   if (drifting && MOVE_KEYS.some(k => keys.has(k))) { drifting = false; recover = null; }
   if (travel) updateTravel(dt); else if (drifting) updateDrift(dt); else updateWalk(dt);
-  updateZone();
+  updateEdgeVeil(dt); updateZone();
   if (locationTimer && realTime > locationTimer) { $('#location').classList.remove('show'); locationTimer = 0; }
   if (sayTimer && realTime > sayTimer) { $('#hint').classList.remove('show'); sayTimer = 0; }
   applyHour(dt); announceSpot();
@@ -2778,7 +2818,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm21-the-edge', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm22-the-edge-seen', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },

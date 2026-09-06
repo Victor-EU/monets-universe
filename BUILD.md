@@ -1288,3 +1288,44 @@ eight spots 1.15 · 6.34 · 2.04 · 1.87 · 2 · 5 · 4.6 · 2.45. Live frames a
 **Still visible.** Argenteuil's toll house and houses, the poplars' and haystacks' farms are not solids; flight passes through them.
 The next-line names the dock's order, not the promenade's (the Orangerie comes last, though it is where the promenade starts).
 The push back at the edge is a nudge, not a wall one can see.
+
+### Progress · M22 — the edge of the world, seen; the promenade's order; Argenteuil's houses solid (what M21 left visible)
+
+**What was wrong.** M21 left three things: flight passed through Argenteuil's far-bank houses and the toll house (not solids); the
+next-painting line followed the dock's order, so it named the Orangerie last though the promenade begins there; and the world's edge was
+a nudge back and a line of text, nothing one could see. (M21's note also said the poplars' and haystacks' farms were not solids; there
+are no farm buildings at either — the claim was wrong.)
+
+**What changed.**
+- *Solids.* Argenteuil's `house()` pushes its footprint and ridge height into `SOLIDS` like Rouen's; the toll house pushes its own
+  (3.8 m square, to the top of its pyramid roof). Walking or flying below their tops stops at their sides; the escape rule stands.
+- *The promenade's order.* `promOrder()` sorts the eight spots by where they fall along the promenade (`nearestS`), once, when first
+  asked: the Orangerie, the pond, the hill, the bridge, the poplars, the haystacks, the cathedral, the harbour. `nextLine()` names the
+  painting after the spot last stood on in that order, with its dock key; after the harbour, the promenade's end, it names
+  *The whole universe · key 9* (no distance: it is the air).
+- *The edge, seen.* `edgeVeil`: a 400 × 260 m plane of the hour's fog colour (toned like everything else), standing a metre outside the
+  box on the side one is nearest, facing in. Its opacity (`edgeAmt`) rises over the last 18 m of the approach and to full where a step
+  is refused (in a third of a second; away in two); a soft patch 60 × 32 m round the point met, broken by three octaves of value noise
+  drifting slowly, at most .72 opaque, so the sky, the ground and the harbour's sun still show through. Its foot stands on the terrain:
+  the surface height along each side, 128 samples 1 m outside the box (`edgeGround`, water at 0), is a uniform array, and the veil
+  fades out over the two metres above it, so where the plane meets a hillside there is no cut line. Not shown during a flight or a
+  drift, and none from outside the box.
+- *The aerial view, found on the way.* Its camera (0, 250, 200) stands 104 m beyond the box's north side, and `tryMove` refused every
+  step from there, a zero step included: the view arrived saying *The world ends here* (since M21) and could not be flown out of
+  (since M8). A step is now refused only if it leaves one further outside than before (`outOfBox`), and a zero step is not a step;
+  the veil is not shown from outside, so the overview is not fogged. Build `m22-the-edge-seen`.
+
+**Verified.** Headless, keys held: walking south into the far-bank house at (−14, −212) from the field stops at z −215.5 (its
+footprint + .5); flying north at 4 m into the toll house stops at z −194.1. The next-lines, after flights: the harbour says
+`Next · The whole universe · key 9`; the Orangerie `The Water-Lily Pond · 50 m to your right · key 1`; the cathedral
+`Impression, Sunrise · 90 m ahead to your right · key 7`; the pond `Woman with a Parasol · 100 m ahead · key 2`; the bridge the poplars,
+the haystacks the cathedral. The veil (`m22-sheet.jpg`): the bank ahead from 12 m out; the frame filled at the south edge from 30 m up
+and at the west edge on foot behind the haystacks' hills; three steps back it is going, its foot on the hillside without a cut line
+(the first version, a metre from the eye with no foot, was a flat grey wash and cut the hill in a hard band); at the east edge over the
+harbour the sun shows through it. The aerial view arrives with the opening hint, and W flies it in to (0, 168, 68); from the harbour
+spot flying east meets x 150 with `The world ends here · Next · The whole universe · key 9`, and S backs out of it. Bench, DPR 2, three runs: pond 11.6–13.9 · argenteuil 10.3–11.1 · rouen 8.7–8.9 · sunrise 5.2–5.5 · aerial 5.5–5.9 ms, the usual
+noise (the veil is one quad, drawn only near an edge).
+
+**Still visible.** The veil's breakup is soft blotches rather than dabs; it is one plane, so pressing along a wall it slides with you
+rather than standing in the world. The bridge at Argenteuil is not a solid (its deck is reached by no walker; a flyer passes through
+its piers). The next-line does not say the promenade's own way there, only the straight-line distance and direction.
