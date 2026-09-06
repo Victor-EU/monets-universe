@@ -1496,3 +1496,47 @@ cannot be skimmed lower than 1.45 over it, and a flyer arriving at a deck's own 
 stepped over as a walker's are. The fall ends at .6 over the ground, still in flight, not on foot. The Butter Tower's ring of small
 spires is a ring, not eight; the road bridge's pilasters are within the deck's margin, not their own faces. A flyer standing still at a
 roof's edge cannot slip; only a step takes one over.
+
+### Progress · M27 — on foot: landing as an act, skimming otherwise; walls by the feet; the slip; the fall's end on foot; the Butter Tower's eight spires (what M26 left visible)
+
+**What was wrong.** Landing was by height alone: any surface at or below the eye within its footprint set one standing on it, so a roof
+could not be skimmed lower than 1.45 over it, and a flyer arriving at a deck's own height was set on the deck and walked over its rails
+(lower than the eye) as a walker does. The fall ended hovering .6 over the ground, still in flight. The Butter Tower's ring of small
+spires was a ring. A flyer standing still at a roof's edge could not slip.
+
+**What changed.**
+- *Landing is an act.* A flyer over a roof skims it, .3 over the slates. Coming down onto it from above one's own height (Q held, or a
+  fall) one touches down and stands, the eye 1.45 over the slates (`landed`); a step up onto a surface within a shoulder lands one too.
+  Lifting ends it. Standing, what a surface must clear is the feet, not the eye: a rail (1.25) or a parapet (.9) is a wall to one
+  standing, a slope's rise a step; skimming, it is the eye, so a flyer at a deck's own height meets its rail as a wall.
+- *The slip.* Standing still on a slope over 30° (the slope read from the steeper side over 10 cm, a step up of more than .4 ignored as
+  a wall) one slides down it, gathering speed (9.8·(sin θ − .45 cos θ)), carrying on over a gentler stretch or a roof's lip until it
+  stops, and off the edge falls. A movement key held is a scramble and holds. The Orangerie's roof (10°) and the bridges' decks do not slip.
+- *The fall ends on foot.* Falling to the ground one lands walking (fly off), the eye rising to its walking height; on water, hovering.
+- *The Butter Tower's crown* carries its eight small spires each its own (as built: at (i + ½)·45°, radius .37 w, 5 sides), on the cap.
+- *Steps are taken 10 cm at a time* (`move`), with the climb a fixed .8, so a long frame cannot carry one through a rail or up a wall.
+  The road bridge's deck is at the road's height with its parapets along its edges (it was the parapet's height throughout).
+- Found on the way: standing exactly on a surface, the feet were a rounding below it, so the rule that lets one already inside a solid
+  leave it fired and waved a step past the rail; the rule now needs .05 m of depth. Debug: `monet.state.landed/falling`,
+  `monet.over(x, z, y)`, `monet.roof(x, z, y)`. Build `m27-on-foot`.
+
+**Verified.** Headless, keys held. The Butter Tower reads 72.8 on a small spire's axis and 67.85 between two and on the cap. Skimming
+the aisle roof at .6 over its slates one stays at 19.2, not landed; Q from above lands at 20.02, standing. Standing still there one
+slips west (−61.3 → −62.1 → −63.6, gathering speed), goes off the eave at −64.66, falls (17.2 → 14.8 → 9.9 → 2.6) and lands on foot:
+flying off, the eye rising to 2.0, and W walks on at walking pace. W held from the nave's west slope scrambles over the ridge (45.6),
+down (37.0), onto the aisle and off it. On the road bridge Q lands at 5.75 (the road walker's eye), W walks the deck, D into the
+parapet holds at x 26.24. On the pond's bridge, arriving at the deck's own height one skims at 2.8 and the rail is a wall (z −.77);
+landed on the deck (3.81), A toward the rail holds at z 1.22, W along the deck stands as the deck rises (3.82 → 3.94) and off its west
+end lands on foot on the bank. The Orangerie's roof, landed on, does not slip. Walkers unchanged: the road over the bridge at 5.75, the
+far bank's house at z −215.5. Frames in `m27-sheet.jpg`.
+Bench, DPR 2: two runs of this build gave pond 25.9 / 24.0 · argenteuil 19.1 / 18.5 · rouen 19.2 / 17.8 · sunrise 13.0 / 12.1 ·
+aerial 11.6 / 11.3 ms, about twice M26's; the M26 build rebenched in the same minutes gave pond 25.4 · argenteuil 19.5 · rouen 17.0 ·
+sunrise 14.9 · aerial 14.2, the same. The machine is slow today (load average 5.4 at the time); nothing here draws, and the stills do
+not move. To be rebenched on a quiet machine.
+
+**Still visible.** Landing needs a descent: a flyer arriving at a roof horizontally, lower than one's own height over it, skims and never
+stands until Q is pressed. The skim clearance is .3, so on a steep slope the eye sees into the roof uphill. The slip has one friction
+(.45) for slates, lead, stone and iron alike, and carries over a flat lip by momentum, so a flat roof's edge reached sliding is passed.
+Standing, anything under .8 m is stepped over (a .9 parapet and a 1.25 rail hold; a .7 kerb would not); walking, walls are still by the
+eye, so a walker steps over a rail and is kept from the water's edge by the water rule alone. The fall's end on water hovers. The Butter
+Tower's crown is a solid drum to a flyer, its ring of tall openings closed.
