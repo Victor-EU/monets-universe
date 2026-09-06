@@ -1886,3 +1886,66 @@ slack water, never against the abutments or the boats, and the boats do not feel
 not enter the water; the legs kick unseen. Breath and strength are two numbers with fixed rates; nothing is felt in the sound. The
 quay's cliff is exact under the walker but the terrain mesh's one-cell ramp still lies inside the stone; the harbour's other banks
 slope as before. The tracery's bays alternate between two patterns; there is no moulding on the bars.
+
+### Progress · M34 — the street: the catch by how the body arrives (feet first, head first, tumbling) and the arms' grip; a street of eddies shed from the piers; flotsam against the boats and the boats in the stream; upper arms, the hands into the water; the effort and the cold, the breath heard; the whole harbour quayed, the cliff in the mesh; three patterns of tracery, the bars moulded (what M33 left visible)
+
+**What was wrong.** The lever was a rule for a body on its back whatever way it arrived, and the arms' catch was a bare speed. The
+wake and its eddies were steady, with no shedding. Flotsam stranded only on a pier's nose or in slack water; the boats sat still in
+the stream. The arms were two boxes each, at the surface throughout. Breath and strength drained at fixed rates whatever the water
+and the stream did, and nothing of it was heard. The terrain mesh's ramp lay inside the quay's stone, the harbour's other banks
+sloped, and the quay wall was one stretch. The tracery alternated two patterns, its bars plain. Under all of it, a standing flyer
+whose floor dropped away (the eave over the aisle, the lantern's rim) was set down on the lower roof in a frame instead of falling.
+
+**What changed.**
+- `slideHow`, set as the body lands: from a fall of over 4 m/s it tumbles; landed by contact moving up the slope (the roof rising into
+  a level flyer, or a step up onto one) it comes down feet uphill and slides head first; otherwise on its back, feet first. At an
+  edge: feet first, the lip takes the feet and the body must be tipped over it (the lever, .16 under 4.7 m/s); tumbling, it need
+  only be lifted the lip's height (1.8); head first, the hands take the lip and the arms' grip is all the catch, as on a bare rim;
+  a tumbling body has no arms to it. The arms' grip is what they can brake: `GRIP` .4 of the body's weight over `REACH` half a metre,
+  v² < 2 g · .5 · .4 (1.98 m/s).
+- A standing flyer follows the roof only while it is within a step below; where it drops by more (an eave over a lower roof, the
+  lantern's rim) one falls, and lands as a fall does.
+- `currentAt`: behind each pier the pair of eddies is a street: four vortices shed from the sides in turn (St .2: one every 25 s),
+  borne down at .8 of the stream 11 m apart, turning opposite ways .8 either side of the axis, fading over 33 m; the wake's
+  deficit as before.
+- Flotsam drifting within 2.5 of a boat's hull is held against it 5–20 s, then let go past it. The boats feel the stream: a moored
+  one rides .7 · current down its rope and sways ±7° with the pull; one under sail makes leeway of 1.2 · current.
+- The arms: each an upper arm from a shoulder under the eye (±.19, −.34, .02) to an elbow, a forearm to the hand, and the hand
+  (tapered cylinders and a box, skin coloured with a little noise); the elbow bends out and down with the pull; in the pull the hands
+  go .06 under the glide's line, a hair into the water, and the arms lie in it.
+- Breath and strength by the effort and the cold: the effort is one's pace plus what the stream takes back swimming against it,
+  less what it gives with it (up to half), over the pace (against the Seine 1.61, with it .5); the cold is the pond's 1, the river's
+  1.15, the harbour's sea 1.5, wearing the strength. The breath is heard: the same noise through a band at 500–900 Hz let through on
+  each pull, harder and higher the shorter the breath (`gBreath`, `breathF`).
+- The harbour's whole quay is built (`QUAY` z −376..−520 blending over 4 m at the ends): the wall on the quay's curve the whole way,
+  slipways at z −408 and −470, the mole at −398. The cliff is in the ground mesh itself: the vertices either side of the wall's face
+  (and the mole's sides and head) are drawn to a line .3 inside the stone, the land's at the top and the water's at the bed, so the
+  mesh has a cliff there and no ramp, hidden in the wall.
+- The tracery: three patterns by bay, trefoiled, cinquefoiled, and a mullion with two lancets under the arch; every bar carries a
+  roll along it proud of both faces.
+- Debug: `monet.swim` adds effort, cold, how, hands; `monet.boats`. Build `m34-the-street`.
+
+**Verified.** Headless, keys held. Q onto the valley near the corner: feet first, caught. Flying level east up the aisle's slope, the
+roof rising into one: landed head first (22.38 at the top); left still, the slide back down reaches the eave at 6.63 m/s and goes
+over (the arms cannot hold it). Q onto the valley 4.5 m from the corner: off the corner at 5.58 m/s, a fall (34.08, 26.49), landed
+on the aisle tumbling (21.89), the slide to its eave at 6.47 and over it, the ground. The aisle from its ridge, feet first at 4.56:
+caught (17.56) as before. Behind the second pier, .8 off the axis, 6 m down, every 5 s: the across-stream part −.07, −.18, +.06,
++.01, +.02, +.02 — an eddy passing. Flotsam put on a moored boat is held (`stuck`: boat); the moored boats lie at their moorings
+offset down the stream, the sailing ones with leeway. Swimming against the stream the effort reads 1.61 and with it .5; in the
+harbour the cold 1.5 (the river 1.15); the hands' height over a cycle −.23 to −.33 (the water's face at −.35). The quay at z −390,
+−440, −500: 1.3 to the face (18.68, 20.53, 20.9), −2.5 a hand beyond; swimming west at −440 one is refused at the face (`trace`:
+bank 1.30 1.30) afloat; at the second slipway (−470) the swim walks up onto the quay (2.69). Saint-Romain's slip and the spire's now
+fall where they leave a roof (55.6 falling to the nave's 42.34; the lantern's rim to the transept's 42.26) and end as before; M28's
+walkers, M30's flyers, M31–M33's water as before. 120 solids. Frames in `m34-sheet.jpg`.
+Bench, DPR 2, one run: pond 12.0 · parasol 8.6 · argenteuil 8.6 · poplars 10.0 · haystacks 13.2 · rouen 9.6 · sunrise 5.9 ·
+orangerie 11.3 · aerial 5.4 ms (M33: 13.8 / 11.2 / 12.9 / 9.7 / 10.5 / 8.2 / 5.0 / 9.7 / 4.9): within the runs' spread; M33's river
+and parasol were the run's noise. The street is four more vortex terms per pier per reading; the quay's wall the whole way is 72
+segments in the harbour's merged stone, the rolls 670 boxes more in the cathedral's; the arms are six small meshes.
+
+**Still visible.** The three ways of arriving are told by the landing alone; a body does not turn over on the slope, and the grip is
+a fraction of the weight with no hold to grip. The street is four vortices of a set strength on a set spacing, the same for every
+pier and every stream. Flotsam held by a boat does not move with it; the moored boats do not swing to face the stream (the
+paintings' compositions hold them). The arms are tapered cylinders with no elbow or hand joint modelled, and the legs kick unseen.
+The cold is three numbers; the breath is a filtered noise. The quay's cliff is in the mesh but the mesh's face is hidden .3 inside
+the stone, not the stone's own face; the town behind the quay rises 1.3 over 4 m. The tracery repeats its three bays in turn; the
+rolls are boxes.
