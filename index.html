@@ -957,6 +957,8 @@ function solidTop(x, z) { let top = -Infinity; for (const S of SOLIDS) { const h
 // a solid stands in the way at (x, z, y) when its surface is over the eye and the eye is not beneath it: its surface then, else -Infinity
 function solidOver(S, x, z, y) { const h = solidH(S, x, z); return h > y && y >= solidUnder(S) ? h : -Infinity; }
 // the highest surface at or below the eye at (x, z): the roof a flyer comes to rest on; and the lowest over it: the underside a flyer rising meets
+const FLANK = 2.75; // tan 70°: a surface steeper than this is a flank (the spire's iron, a pyramid, a pinnacle, a turret), met from the side it is a wall, not a floor; the transept's 63° is still a roof
+function flankS(S, x, z) { const e = .05, h0 = solidH(S, x, z); let g = 0; for (const [ex, ez] of [[e, 0], [0, e]]) { let gm = 0; for (const k of [1, -1]) { const h = solidH(S, x + k * ex, z + k * ez); if (!isFinite(h)) continue; const d = h - h0; if (d <= 0 || d > 1) continue; gm = Math.max(gm, d / e); } g += gm * gm; } return g > FLANK * FLANK; } // its slope at a point: what rises beside it, the steeper side of each axis; a rail's or a parapet's face (a metre and more up in 5 cm) is not its slope, and what falls away beside it (its edge, a notch in the ground before an abutment) is no flank, one can always step down
 let floorS = null, roofMu = .45; // the solid whose surface floorAt last found, and the friction of the surface roofAt last found (slate .45, stone .6, iron .3, the Orangerie's zinc .5, a deck's wood .6, a road .8)
 function floorAt(x, z, y) { let top = -Infinity; floorS = null; for (const S of SOLIDS) { const h = solidH(S, x, z); if (h <= y && h > top) { top = h; floorS = S; } } return top; }
 function roofAt(x, z, y) { const r = orangRoof(x, z), f = floorAt(x, z, y); if (r <= y && r > f) { roofMu = .5; return r; } roofMu = floorS && floorS.mu !== undefined ? floorS.mu : .45; return f; } // the surface a flyer stands on
@@ -1014,9 +1016,10 @@ function onBridge(x, z) { return Math.abs(z - BRIDGE_Z) < 1.0 && Math.abs(x) < B
 function onABridge(x, z) { return Math.abs(x - ABRIDGE.x) < ABRIDGE.half && z > ABRIDGE.z0 && z < ABRIDGE.z1; }
 function walkHeight(x, z) { const g = groundHeight(x, z); return onBridge(x, z) ? Math.max(g, deckY(x)) : onABridge(x, z) ? Math.max(g, ABRIDGE.y) : g; }
 // where the eye is over a point: the walker's height over the ground; but at a painting's spot the painting's own eye height (Rouen's is 5 m,
-// a first-floor window; the harbour's 4.6), blended in over the last six metres, never below .6 m over the ground
+// a first-floor window; the harbour's 4.6), blended in over the last six metres, never below .6 m over the ground. In water one stands on the bed
+// where it is shallow, and floats where it is not, the chin at the surface (the eye .35 over it)
 function eyeHeight(x, z) {
-  const g = walkHeight(x, z); let e = g + EYE;
+  const g = isWater(x, z) ? Math.max(walkHeight(x, z), WATER_Y - 1.1) : walkHeight(x, z); let e = g + EYE;
   for (let i = 0; i < places.length; i++) { const pl = places[i]; if (!pl.view || pl.aerial) continue; const p = pl.view.p, d = Math.hypot(p.x - x, p.z - z); if (d > 6) continue;
     if (pl.lift === undefined) pl.lift = p.y - (walkHeight(p.x, p.z) + EYE); e += pl.lift * (1 - sstep(d, 1.5, 6)); }
   return Math.max(e, g + .6);
@@ -1930,6 +1933,8 @@ function buildRouen(D) {
     } else { // the Tour de Beurre: four corner pinnacles and the open octagonal crown, a ring of tall openings under a ring of small spires
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const pin = new THREE.ConeGeometry(1.0, 7, 5); pin.translate(x + sx * (w / 2 - .9), h + 3.5, zc + sz * (w / 2 - .9)); cat.push(pin); misc.push(pin); }
       for (let i = 0; i < 8; i++) { const t = i / 8 * TAU, pr = new THREE.BoxGeometry(.9, 11, .9); pr.rotateY(t); pr.translate(x + Math.sin(t) * w * .38, h + 5.5, zc + Math.cos(t) * w * .38); cat.push(pr); misc.push(pr); } // the crown's eight piers, the tall openings between them
+      for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * TAU, r = w * .38, bal = new THREE.BoxGeometry(2 * r * Math.sin(Math.PI / 8) - .9, 1.1, .3); bal.rotateY(a); bal.translate(x + Math.sin(a) * r * Math.cos(Math.PI / 8), h + .55, zc + Math.cos(a) * r * Math.cos(Math.PI / 8)); cat.push(bal); misc.push(bal); } // a balustrade between the piers
+      for (let i = 0; i < 4; i++) { const a = i / 4 * TAU, par = new THREE.BoxGeometry(w - 1.4, 1.0, .35); par.rotateY(a); par.translate(x + Math.sin(a) * (w / 2 - .18), h + .5, zc + Math.cos(a) * (w / 2 - .18)); cat.push(par); misc.push(par); } // a parapet round the top, between the corner pinnacles
       const cap = new THREE.CylinderGeometry(w * .38, w * .36, .9, 8); cap.translate(x, h + 11.4, zc); cat.push(cap); misc.push(cap);
       for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * TAU, pin = new THREE.ConeGeometry(.7, 5, 5); pin.translate(x + Math.cos(a) * w * .37, h + 11.8 + 2.5, zc + Math.sin(a) * w * .37); cat.push(pin); misc.push(pin); }
     }
@@ -1959,7 +1964,9 @@ function buildRouen(D) {
   { const T = TOW[1], hw = T.w / 2 + .4, pc = T.w / 2 - .9, ring = []; for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * TAU; ring.push([Math.cos(a) * T.w * .37, Math.sin(a) * T.w * .37]); } // the crown's cap, and on it the ring of eight small spires (as built: cos for x, sin for z), each read by its own facets
     S(T.x, T.zf - T.w / 2, hw, hw, (lx, lz) => T.h + 7 * Math.max(0, 1 - pent(Math.abs(lx) - pc, Math.abs(lz) - pc)), 0, undefined, .6); // the tower's top, its corner pinnacles: the floor of the open crown
     S(T.x, T.zf - T.w / 2, T.w * .4 + .4, T.w * .4 + .4, (lx, lz) => { if (Math.hypot(lx, lz) >= T.w * .4 + .4) return -Infinity; let h = T.h + 11.85; for (const [px, pz] of ring) { const d = pent(lx - px, lz - pz); if (d < .7) h = Math.max(h, T.h + 11.8 + 5 * (1 - d / .7)); } return h; }, 0, T.h + 10.95, .6); // the cap with its spires, the air of the crown under it
-    for (let i = 0; i < 8; i++) { const t = i / 8 * TAU; S(T.x + Math.sin(t) * T.w * .38, T.zf - T.w / 2 + Math.cos(t) * T.w * .38, .45, .45, () => T.h + 11, t, undefined, .6); } } // its eight piers
+    for (let i = 0; i < 8; i++) { const t = i / 8 * TAU; S(T.x + Math.sin(t) * T.w * .38, T.zf - T.w / 2 + Math.cos(t) * T.w * .38, .45, .45, () => T.h + 11, t, undefined, .6); } // its eight piers
+    for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * TAU, r = T.w * .38; S(T.x + Math.sin(a) * r * Math.cos(Math.PI / 8), T.zf - T.w / 2 + Math.cos(a) * r * Math.cos(Math.PI / 8), r * Math.sin(Math.PI / 8) - .45, .15, () => T.h + 1.1, a, undefined, .6); } // the balustrade between them, hip-high: a wall to one standing on the tower's top
+    for (let i = 0; i < 4; i++) { const a = i / 4 * TAU; S(T.x + Math.sin(a) * (T.w / 2 - .18), T.zf - T.w / 2 + Math.cos(a) * (T.w / 2 - .18), T.w / 2 - .7, .18, () => T.h + 1.0, a, undefined, .6); } } // and the parapet round the top
   S(CX, ZF - .6, 6, 1.9, (lx, lz) => 46 + 7 * Math.max(0, 1 - Math.max(Math.abs(lx), Math.abs(lz + .3) / .15) / 6), 0, undefined, .6);
   const pierS = (x, z, yaw) => S(x, z, 1.3, 1.3, (lx, lz) => Math.abs(lx) < 1 && Math.abs(lz) < 1.1 ? 22.5 + 6 * Math.max(0, 1 - pent(lx, lz) / 1.1) : 11.5, yaw, undefined, .6); // the stepped pier, its pinnacle
   const flyerS = (x, z, yaw) => S(x, z, 3.75, .55, lx => 28.6 - lx * 9 / 7, yaw, lx => 24.4 - lx * 9 / 7, .6); // the flyer's top and underside, sloping down and out from the clerestory (lx outward); the arch under it is open
@@ -2482,24 +2489,24 @@ function updateWalk(dt) {
   if (keys.has('KeyA') || keys.has('ArrowLeft')) _move.sub(_right);
   if (touchMove.active) { _move.addScaledVector(_fwd, -touchMove.y); _move.addScaledVector(_right, touchMove.x); }
   if (fly) { if (keys.has('KeyE') || keys.has('Space')) _move.y += 1; if (keys.has('KeyQ')) _move.y -= 1; }
-  const speed = (fly ? 9 + Math.max(0, camera.position.y - 6) * .22 : 3.2) * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 2.2 : 1);
+  const pos = camera.position, wet = isWater(pos.x, pos.z);
+  const speed = (fly ? 9 + Math.max(0, pos.y - 6) * .22 : wet ? 1.3 : 3.2) * (keys.has('ShiftLeft') || keys.has('ShiftRight') ? 2.2 : 1); // wading is slow
   if (_move.lengthSq() > 1) _move.normalize();
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
-  const step = velocity.clone().multiplyScalar(dt), pos = camera.position;
-  const wet = isWater(pos.x, pos.z);
+  const step = velocity.clone().multiplyScalar(dt);
   // a step is refused into water (walking), past the world's edge, into the Orangerie's walls (walking, or flying below its roof; its doors are open to both, up to their heads),
   // or under a solid's surface: unless, flying, the surface is no more than a shoulder above the eye or the step's rise up a roof's slope, when the flyer is lifted onto it
   // (a roof is a floor one walks up; a wall or a spire's flank is not). A step out of a solid one is already inside, or back toward the box from outside it (the aerial
   // view starts beyond its north side), is always allowed, so nothing can trap. A flyer standing on a roof (landed) follows its slopes, up and down, and
   // what a surface must clear is then the feet, not the eye: a rail or a parapet is a wall to one standing, a slope's rise is a step
   edgeHit = false;
-  const feet = fly && !landed ? pos.y : pos.y - EYE; // a walker's or a standing flyer's feet; a flyer in the air is judged by the eye
-  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz, y = pos.y, yr = y - ORANG.y; if (!fly && !wet && isWater(nx, nz)) return false;
-    const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return false; }
-    const climb = fly && !landed ? .8 : .5; let rise = 0; // in the air one pulls oneself up a shoulder-high edge; on foot one steps up to the knee
-    if (orangBlocks(nx, nz, yr)) { const h = orangRoof(nx, nz) - y; if (h > 0 && !(orangBlocks(pos.x, pos.z, yr) && orangRoof(pos.x, pos.z) > y)) { if (h > climb) return false; rise = h; } }
-    for (const S of SOLIDS) { const h = solidOver(S, nx, nz, feet) - feet; if (h <= 0 || solidOver(S, pos.x, pos.z, feet + .05) > feet + .05) continue; if (h > climb) return false; if (h > rise) rise = h; } // already inside one (by more than a rounding's worth: one standing on a surface is not inside it) may leave it
-    pos.x = nx; pos.z = nz; if (rise && fly && !landed) { pos.y += rise + EYE; landed = true; falling = false; fallV = 0; } return true; }; // a step up onto a surface lands a flyer on it (a walker's step is the ground's)
+  // a walker's or a standing flyer's feet; a flyer in the air is judged by the eye, less the skim's .3 (a surface within it is met: the touch below lands one on it)
+  const tryMove = (dx, dz) => { if (!dx && !dz) return true; const nx = pos.x + dx, nz = pos.z + dz, y = pos.y, yr = y - ORANG.y; const no = r => { if (monet.trace) monet.trace.push(r + ' ' + nx.toFixed(3) + ',' + nz.toFixed(3)); return false; }; if (!fly && !wet && isWater(nx, nz)) return no('water');
+    const o = outOfBox(nx, nz); if (o > 0 && o >= outOfBox(pos.x, pos.z)) { edgeHit = true; return no('edge'); }
+    const air = fly && !landed, feet = air ? pos.y - .3 : pos.y - EYE, climb = air ? .8 : .5; let onto = -Infinity; // in the air one pulls oneself up a shoulder-high edge; on foot one steps up to the knee
+    if (orangBlocks(nx, nz, yr)) { const h = orangRoof(nx, nz) - y; if (h > 0 && !(orangBlocks(pos.x, pos.z, yr) && orangRoof(pos.x, pos.z) > y)) { if (h > climb) return no('orang'); onto = orangRoof(nx, nz); } }
+    for (const S of SOLIDS) { const h = solidOver(S, nx, nz, feet); if (h <= feet || solidOver(S, pos.x, pos.z, feet + .05) > feet + .05) continue; if (h - (air ? pos.y : feet) > climb) return no('wall ' + h.toFixed(3) + ' feet ' + feet.toFixed(3)); if (flankS(S, nx, nz)) return no('flank ' + h.toFixed(3)); if (h > onto) onto = h; } // already inside one (by more than a rounding's worth: one standing on a surface is not inside it) may leave it; a flank (over 70°) is a wall however little it rises
+    pos.x = nx; pos.z = nz; if (onto > -Infinity && air) { pos.y = onto + EYE; landed = true; falling = false; fallV = 0; } return true; }; // a step up onto a surface lands a flyer on it (a walker's step is the ground's)
   // a step is taken 10 cm at a time, so a long frame cannot carry one through a rail or up a wall the shoulder-height climb would refuse
   const move = (dx, dz) => { const n = Math.ceil(Math.hypot(dx, dz) / .1) || 1; for (let i = 0; i < n; i++) if (!tryMove(dx / n, dz / n)) return false; return true; };
   if (!move(step.x, step.z)) { if (!move(step.x, 0)) move(0, step.z); }
@@ -2514,27 +2521,29 @@ function updateWalk(dt) {
     if (landed && !moving) { const e = .1, h0 = roofAt(pos.x, pos.z, pos.y); // the slope from the steeper side, so a roof's flat margin, or its edge, does not read as level; a step up (a rail, a wall) is no slope
       const gr = (a, b) => { const sa = isFinite(a) && a - h0 < .4 ? (a - h0) / e : 0, sb = isFinite(b) && b - h0 < .4 ? (h0 - b) / e : 0; return Math.abs(sa) > Math.abs(sb) ? sa : sb; };
       const gx = gr(roofAt(pos.x + e, pos.z, pos.y), roofAt(pos.x - e, pos.z, pos.y)), gz = gr(roofAt(pos.x, pos.z + e, pos.y), roofAt(pos.x, pos.z - e, pos.y)), g = Math.hypot(gx, gz);
-      const mu = roofMu; // the material's: the slip starts where the slope is steeper than the friction holds (slate 24°, stone 31°, iron 17°), and carries on (slowing) over a gentler stretch
+      const mu = roofMu, muK = mu * .75; // the material's: shoes hold on a slope until it is steeper than the static friction (slate 24°, stone 31°, iron 17°); sliding, on one's back, the friction is the kinetic, three quarters of it (slate 18.6°): a slide once started carries on over a slope shoes would hold on, and slows only on a gentler stretch
       if (g > mu || slideV > 0) { // until it stops; a flat roof's edge stops it (a gutter, a parapet would), a steep eave lets it off
-        if (g > .01) { slideDir[0] = -gx / g; slideDir[1] = -gz / g; } const n = Math.hypot(1, g); slideV = Math.max(0, slideV + 9.8 * (g / n - mu / n) * dt); const d = slideV * dt;
+        if (g > .01) { slideDir[0] = -gx / g; slideDir[1] = -gz / g; } const n = Math.hypot(1, g); slideV = Math.max(0, slideV + 9.8 * (g / n - muK / n) * dt); const d = slideV * dt;
         if (d > 0 && g <= mu && !isFinite(roofAt(pos.x + slideDir[0] * .3, pos.z + slideDir[1] * .3, pos.y))) slideV = 0; else if (d > 0 && !move(slideDir[0] * d, slideDir[1] * d)) slideV = 0; } }
     else slideV = 0;
     // a flyer over a roof (a house, the cathedral, the Orangerie, a bridge) may skim it, .3 over the slates; coming down onto it from above, on Q or in a
     // fall, one lands on one's feet and stands, the eye its own height over them, following the slopes up and down; off the roof's edge one falls, to
-    // the next surface, or to the ground, where the fall ends on foot (walking again; on water it ends hovering). Lifting ends standing and falling both.
+    // the next surface, or to the ground, where the fall ends on foot (walking again), or to water, where it ends afloat (wading out). Lifting ends standing and falling both.
     // One under a bridge's deck has the water for a floor (not the deck, the road's ground) and stops beneath the deck or an arch's soffit when rising;
-    // one inside the Orangerie, below its roof, has the ceiling of the space it is in, the cove's curve included
-    const cl = ceilAt(pos.x, pos.z, pos.y), wh = walkHeight(pos.x, pos.z); let lo = (cl <= wh ? Math.max(groundHeight(pos.x, pos.z), WATER_Y) : wh) + .6, hi = Math.min(300, cl - .2); const oR = orangRoof(pos.x, pos.z), st = roofAt(pos.x, pos.z, pos.y);
+    // one inside the Orangerie, below its roof, has the ceiling of the space it is in, the cove's curve included. Over water the floor is the water's face, never the bed
+    const cl = ceilAt(pos.x, pos.z, pos.y), wh = walkHeight(pos.x, pos.z), oR = orangRoof(pos.x, pos.z), st = roofAt(pos.x, pos.z, pos.y); let lo = Math.max(cl <= wh || st >= wh - 1e-6 ? groundHeight(pos.x, pos.z) : wh, WATER_Y) + .6, hi = Math.min(300, cl - .2); // a deck is the walker's ground but the flyer's surface: the touch below meets it, not the .6 hover
     const lifting = step.y + dl > 0; if (lifting) { falling = false; fallV = 0; landed = false; }
     if (landed) { if (st > -Infinity) pos.y = st + EYE; else { landed = false; falling = true; } }
     if (falling) { fallV += 9.8 * dt; step.y -= fallV * dt; }
     // touching down: the roof met, whether one comes down onto it or it rises into one flying level (the intended height within the skim's .3 of the slates)
-    const touch = !landed && st > -Infinity && pos.y + step.y + dl < st + .3 + 1e-6 && !lifting;
+    // a flank (over 70°) is not touched down on from level flight (one hovers at it, held off by the skim's .3); coming down onto it one lands, for the moment the slip takes to carry one off
+    const stFlank = st > -Infinity && floorS && solidH(floorS, pos.x, pos.z) === st && flankS(floorS, pos.x, pos.z);
+    const touch = !landed && st > -Infinity && pos.y + step.y + dl < st + .3 + 1e-6 && !lifting && (step.y + dl < -1e-9 || !stFlank);
     if (st > -Infinity) lo = Math.max(lo, landed || touch ? st + EYE : st + .3);
     if (oR > pos.y && Math.abs(pos.x - ORANG.x) < ORANG.hx && orangWalkable(pos.x, pos.z)) hi = Math.min(hi, orangCeil(pos.x, pos.z) - .3); // within the walls
     const ny = clamp(pos.y + step.y + dl, lo, Math.max(hi, lo));
     if (touch) { landed = true; falling = false; fallV = 0; }
-    else if (falling && ny <= lo) { falling = false; fallV = 0; if (!isWater(pos.x, pos.z)) { fly = false; syncFly(); } } // the fall's end on the ground: on foot
+    else if (falling && ny <= lo) { falling = false; fallV = 0; fly = false; syncFly(); if (isWater(pos.x, pos.z)) say('Into the water · wade to the bank', 5); } // the fall's end: on foot, on the ground, or in the water, afloat
     pos.y = ny; }
   else { const target = eyeHeight(pos.x, pos.z); pos.y = lerp(pos.y, target, 1 - Math.pow(.0005, dt)); }
   camera.rotation.set(pitch, yaw, 0);
@@ -2928,11 +2937,11 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, landed, falling, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm28-on-contact', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm29-the-flank', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
-  get solids() { return SOLIDS; }, top(x, z) { return [solidTop(x, z), orangRoof(x, z), orangCeil(x, z)]; }, over(x, z, y) { return SOLIDS.filter(S => solidOver(S, x, z, y) > y).map(S => [S.x, S.z, S.hw, S.hd, +solidOver(S, x, z, y).toFixed(2)]); }, roof(x, z, y) { return roofAt(x, z, y); },
+  get solids() { return SOLIDS; }, get cam() { return camera.position.toArray(); }, flank(x, z) { return SOLIDS.filter(S => isFinite(solidH(S, x, z)) && flankS(S, x, z)).map(S => [S.x, S.z, +solidH(S, x, z).toFixed(2)]); }, top(x, z) { return [solidTop(x, z), orangRoof(x, z), orangCeil(x, z)]; }, over(x, z, y) { return SOLIDS.filter(S => solidOver(S, x, z, y) > y).map(S => [S.x, S.z, S.hw, S.hd, +solidOver(S, x, z, y).toFixed(2)]); }, roof(x, z, y) { return roofAt(x, z, y); },
   set(x, y, z, yw = 0, pt = 0) { camera.position.set(x, y, z); fly = true; syncFly(); velocity.set(0, 0, 0); lift = glide = 0; landed = falling = false; fallV = slideV = 0; this.look(yw, pt); update(0); }, // the flyer put somewhere, still, as ?cam= does
   at(s) { engageDrift(); recover = null; driftS = driftTarget = clamp(s, 0, PROM_LEN); const q = promPoint(driftS); camera.position.set(q.x, eyeHeight(q.x, q.z), q.z); update(0); },
   U, hourFog, get projMs() { return projMs; },

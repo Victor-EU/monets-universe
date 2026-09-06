@@ -1586,3 +1586,66 @@ its slope, but the slide's own friction is the same number whether one is on one
 walker (a fall's end on water hovers). Walkers' feet are the eye less its height while the eye is still settling after a landing, a
 few centimetres off for half a second. The crown's piers are boxes at the vertices; the drum's cap has no rim or rail, so a flyer
 standing on the tower's top between the piers is held only by them.
+
+### Progress · M29 — the flank: no floor from the side; friction on one's feet and on one's back; the fall's end in water; the crown's balustrade (what M28 left visible)
+
+**What was wrong.** Contact was judged by height alone, so a near-vertical flank met at eye height, the spire's iron foot (82°) or
+Saint-Romain's slate pyramid (73°), was "landed on" for a moment before the slip took one off it, and a shoulder-high rise of such a
+flank was climbed as if it were a step. The slide's friction was the slip's threshold, the same number on one's feet and on one's
+back. Water was no floor for a walker: a fall ending on water hovered in flight, .6 over it, and a flyer descending over water could
+go to .6 over the bed, under the surface. The Butter Tower's crown had no rim, so a flyer standing on the tower's top between the
+piers was held by nothing but them. Found on the way: a flyer descending onto either bridge's deck could not land on it at 60 fps,
+held .6 over it by the walker's ground rule (the deck counts as ground) before the touch's .3 could be met.
+
+**What changed.**
+- A flank. A solid's surface steeper than 70° (`FLANK`, tan 70° = 2.75; the spire's iron, the pyramid, the pinnacles and turrets, the
+  crown's small spires; the transept's 63° is still a roof) is a wall from the side however little it rises: `flankS(S, x, z)` reads
+  the slope at the point from what rises beside it (the steeper side of each axis, 5 cm out; a rail's or a parapet's face, a metre and
+  more up in 5 cm, is not a slope, and what falls away beside the point, its edge or the ground's notch before an abutment, is no flank,
+  one can always step down). A step refused as a flank holds a flyer in the air, hovering at the flank held off by the skim's .3, and
+  holds a standing flyer or a walker where they are (a flank is no stair: W up the pyramid from a landing on it does nothing). The
+  touch does not land on a flank from level flight; coming down onto one (Q, a fall) lands, for the moment the slip takes.
+- In the air the step's judge is the eye less the skim's .3, so a surface within the skim is "met" mid-step and landed on there, where
+  before the frame's end found it; the feet are read live in each sub-step (a landing mid-frame moves them).
+- Two frictions. The material's (`mu`) is the static one, shoes on a slope: the slip starts where the slope is steeper than it holds.
+  Sliding, one is on one's back and the friction is the kinetic, three quarters of it (slate .34, 18.6°; stone .45; iron .22): a slide
+  once started carries on over a slope shoes would hold on, and slows only on a gentler stretch. A flat roof's edge still stops it.
+- The fall's end in water is on foot, afloat: `eyeHeight` in water stands one on the bed where it is shallower than 1.1 and floats one
+  otherwise, the chin at the surface (the eye .35 over it); one wades at 1.3 m/s (the water rule still keeps a walker from stepping
+  in from a bank; out of the water onto a bank is a step like any). A line says so. A flyer's floor over water is the water's face + .6,
+  never the bed.
+- A flyer over a deck: the walker's ground rule gives way to the deck's own surface when that surface is the deck, so the touch meets
+  it (landing on the road bridge at 5.75, on the Japanese bridge at 3.81).
+- The Butter Tower's crown, built and read: a balustrade between the eight piers (1.1 high, .3 thick, at the piers' radius) and a
+  parapet round the tower's top between the corner pinnacles (1.0 high), as geometry (the cathedral's stone) and as solids (stone,
+  mu .6): hip-high walls to one standing on the tower's top, ledges to one arriving level at their height.
+- Debug: `monet.cam` (the camera unrounded), `monet.flank(x, z)` (the solids whose surface at a point is a flank), `monet.trace = []`
+  collects each refused sub-step's reason (`water`, `edge`, `orang`, `wall h feet`, `flank h`).
+- Build `m29-the-flank`.
+
+**Verified.** Headless, keys held, live time. Level west at 100, 107 and 114 m into the spire: held at x −45.99, −45.46, −45.02
+(the octagon's flat at each height plus the skim), not landed, still there after 3 s; level at 70 m into Saint-Romain's pyramid: held
+at x −57.57, not landed. Level south at 40 m at x −22 into the transept's north slope (63°): landed at the ridge (46.6), W carries
+over and off the south eave, the fall. Q onto the spire's flank at r 3.5: landed at 81.07 for the moment, then the slide down the
+iron to the valley where the transept's south slope meets the choir's roof (35.93) and a stop there. Landed on the pyramid, W held:
+no movement (a flank is no stair). Level at 40 m into the nave's east slope still lands at 46.1. The aisle's slip (slate, 36°) runs
+to the eave's gutter band in 1.5 s and stops there; the lantern's flat top, standing at its edge, no slip. Landed on the road
+bridge's west parapet (6.65), W west off it: the fall to the Seine, its end at .38 then afloat at .35 on foot; W south wades at
+1.04 m/s (the lerp's mean) to the bank at z −139.8 (2.48). A flyer descending over the pond stops at .6. Landed on the tower's top
+inside the crown, W toward a gap: held at r 3.9 (57.45); outside the drum, W east: held at x −26.52 by the parapet; arriving level
+at 57 m: onto the parapet's ledge, down onto the top, held by the balustrade; through the crown at 60 m between two piers still
+passes (in at z −445.2, out at −483.6), the pier at 0° still holds at z −441.17. Q onto the road bridge's deck lands at 5.75 and D
+into the parapet holds at x 26.24; Q onto the Japanese bridge lands at 3.81 and A into the rail holds at z 1.22. The M28 walkers'
+set as before: the rail for a walker at z 1.22, across and onto the Japanese bridge, the road over the bridge both ways with its
+ramps (the south ramp's abutment held a walker at z −195.26 until the flank rule learned to ignore a drop), the far bank's house,
+the Orangerie's west door. Frames in `m29-sheet.jpg`.
+Bench, DPR 2, one run, the machine quiet again: pond 12.1 · parasol 8.6 · argenteuil 9.0 · poplars 9.3 · haystacks 12.1 · rouen 8.4 ·
+sunrise 5.5 · orangerie 11.7 · aerial 6.6 ms (M25: 12.8 / 9.4 / 8.3 / 5.6 / 5.3): M27's and M28's doubled times were the machine's,
+as noted then. The crown's balustrade and parapet add twelve boxes to the cathedral's stone (27 draw calls, as before but one).
+
+**Still visible.** A flank is judged at the point stepped onto, 5 cm each way, so a surface steeper than 86° (a metre and more in
+5 cm) is read as a step's face, not a slope, and its slice within the skim's .3 can be landed on by chance; nothing in the model is
+that steep but rails and walls. The kinetic friction is a fixed three quarters of the static, not the materials' own pairs. Afloat,
+one is a walker whose feet are 1.1 under the surface: a deck or a bank higher than the knee above the water is a wall to the swimmer,
+so one leaves the water only where a bank is low, and one cannot step into water from a bank. The valley between the transept's
+slope and the choir's roof is where two boxes overlap, not a gutter. The crown's balustrade is solid stone, not pierced.
