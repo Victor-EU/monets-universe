@@ -2120,3 +2120,86 @@ Strouhal number are read from the literature, not the wake. The boats' ropes go 
 needs them, not to stakes or buoys anyone placed. The waters' lags, offsets and stirrings are estimates. The breath is still
 noise, through two formants that do not move with the jaw. The courses are strokes on a plane; the stones have no depth, and the
 coping stones no bevelled ends. The tracery's grammar has three productions and its bars are boxes.
+
+### Progress · M37 — the neck: the head on the body, the eye lifting on the pull; the slide choosing by the eave it sees; the pier's own plan and the shedding from its shoulders; stakes and buoys for the ropes; the waters from their depths and a heat balance; the tract as two tubes moved by the jaw; the wall as blocks and the coping's ends bevelled; the tracery upright, from bays of their own widths, six productions, moulded bars (what M36 left visible)
+
+**What was wrong.** The look turned freely through the body and the eye neither lifted nor rolled with the stroke. The slide's
+steering was a controller with a fixed wanted rate. The pier was a Rankine oval, its Strouhal number and eddy viscosity read
+from tables. The ropes went to points in the water. The waters' lags, offsets and stirrings were guesses. The formants were two
+numbers. The stones were strokes on a plane and the coping's ends square. The tracery had three productions and its bars were
+boxes; and, found on the way, its arches had hung upside down from their springing since M33: the arcs' angle step ran the wrong
+way, so the circles and forks stood upright over arcs that dropped, and neighbouring arcs crossed at the plinth.
+
+**What changed.**
+- The neck (`NECK`): the head turns on the body 80° a side, lifts 40° and drops 75°. Afloat, the eye's frame is built as a
+  chain: the body's line, the stroke's lift about the body's own lateral axis, the head's turn on the neck, then its pitch within
+  the neck's range (`setHead`). So a head turned to the side and lifted rolls the horizon, as a neck does (9° at the pull with the
+  head 60° round). The head lifts through the pull, 20° at most, and the eye rises with it by the pivot's geometry (.10 ahead of
+  the pivot swung up: 2 cm), instead of the old sine bob. Still in the water and asked to look past the neck's end, the look waits
+  there while the body comes round under it at a body's rate; swimming, the stroke's line holds the body (the swim goes where one
+  looks, and the body follows in .6 s). The arms' group carries a third of the lift.
+- The slide looks ahead: each frame it scans the roof along its line for the roof's end (a drop of a metre and more from the
+  slope's line, to 24 m), reckons when it will get there and how fast, and chooses how to arrive (`slideAim`): feet first where
+  the lip will take the feet, head first where only the hands' grip on the hold would catch it, and feet first to land on them
+  where nothing will. The turn wanted is then the angle still to go over the time left (less a hand's reach of .4 s), up to
+  2.5 rad/s. The hands and the foot press by the shortfall as before.
+- The pier for the stream is its own plan: 6.1 long, 2.3 wide, a cutwater 1.6 long at each end. By the slender body's rule (the
+  source strength is the stream times the width's growth) it is a line of sources over the bow cutwater and sinks over the
+  stern's, each 2h/lc per unit length, whose velocity is in closed form (`pierFlow`: a log along the run and the angle it
+  subtends across). The flow is masked inside the plan's hexagon. The shedding is no longer a table's number for a shape: the
+  stream at the stern cutwater's shoulders is read from the pier's own flow (1.23 of the free stream), the wake is as wide as that
+  stream over the free stream makes it, and the period follows from Roshko's wake number on the two. The eddies' cores grow by the
+  wake's own eddy viscosity, .037 of the local deficit by the local half-width (Townsend's plane wake), summed along the eddy's
+  drift (`core` tables per pier): smaller cores than the constant .02 U D gave, so a stronger street.
+- The ropes go to things a boatman set: a red mooring buoy laid up the stream a quarter of the boat's length off the bow, and for
+  the stern a stake driven at the water's edge on the side the stream pushes the stern from, found by looking for the edge within
+  60° of that side and 14 m, else a second buoy half a length out. Each rope's length is what just reaches at the painted place.
+  The buoys bob; the stakes stand in the bank; the ropes are drawn from bow and stern each frame.
+- Each water by what it is (`WATER_BODY`): its mixed depth (the Channel tidally stirred to its bed at 30 m, the Seine 4, the Epte
+  1, the pond 1.5), its exchange with the air by its exposure (38, 25, 22, 20 W/m²K), the share of its flow that is spring water
+  (a chalk stream's baseflow, .7 for the Epte), and its stirring (the tide, the Seine's own `CURRENT`, the Epte's flow, a pond's
+  drift under a light breeze at 3% of 1 m/s). Its lag is its heat capacity to that depth over the exchange (the sea 38 days, the
+  Seine 7.7, the pond 3.6, the Epte 2.2) and its standing above the air's mean is the year's mean sun less the sky's loss over
+  the same exchange (the sea 1.3°, the pond 2.5°).
+- The tract (`TRACT`): a pharynx 9 cm and a mouth 8.5 cm, 3 cm² at the pharynx; the two tubes' resonances are where the closed
+  pharynx and the open mouth cancel at the junction, tan(k l1)·tan(k l2) = A2/A1, found each frame by a scan and bisection with
+  the poles skipped (`formants`; a uniform tube gives 500 and 1500 Hz). The jaw drops with the breath's pull and the gasp of a
+  short breath, the mouth opening from 2 to 10 cm², and the formants follow it (436/1563 Hz closed, 681/1320 open).
+- Each stone is a block: its face .03 proud of the wall's plane, .06 deep, .02 joints as gaps to the plane, its own tone (most
+  the mid stone, a fifth pale, a twelfth dark; the wet band grey), its strokes on its face; the blocks merged in one mesh with the
+  tone per block. The coping stones' ends are bevelled 20 mm on every arris.
+- The tracery: the bays are of their own widths (.75 to 1.45) fitted to the run, each bay's springing set so its arch meets the
+  rail (narrower bays, taller lights). Six productions: three lights and a circle under a wide arch (1.35 and over); two lights
+  under the arch with the tangent circle foiled, or a dagger there instead; Y-tracery; two cusped lights; two ogee lights (the
+  arcs climb 40° then reverse in a curve tangent to them and to the vertical at the apex); a cusped narrow arch. Every bar is a
+  moulding: a fillet with hollow chamfers and a roll proud of both faces, extruded along the bar (`moulded`). The arcs climb.
+- Debug: `monet.swim` adds head, lift, camRot, aim, eave; `monet.pier`, `monet.pierFlow`, `monet.formants`, `monet.tract`;
+  `monet.piers` adds Us and core; `monet.boats` adds stake; `monet.temp` adds tau and off. Build `m37-the-neck`.
+
+**Verified.** Headless, keys held. Swimming west with the look turned 1.0 off: the body comes round to it (the swim goes where
+one looks); the lift through the pull 0 to .24 rad, the eye .35 to .37, the roll to −.15 with the head turned. Still, the look
+2.2 off the body is held within the neck (the body at −.57, the head at .63). Head first onto the aisle: the eave is seen at 7 m,
+2.0 s off at 6.6 m/s; the aim is the feet (the lip would take them under 4.7); the body turns 1 rad/s by 1.7 s and is 28° short
+of feet first at the eave (was 43°), over feet first. The corner catch and M33's aisle slides as before (34.45 feet; 2.54 and
+4.56 caught at 17.56). The pier: .05, .15 and .5 m ahead of the point the stream is .22, .30, .42 against .63 free (the thin
+body's log, not a stagnation); at the shoulder 1.08 of it (.68), at the flank 1.13 (.71); inside nil; just astern .19 back up the
+stream (the sinks and the deficit: a base bubble). Separation .676 for .55, T 25.5 s, λ 11.2; the core integral .18 m² at a
+quarter of the street and .90 at its end. The street 4.4 m astern, in a row, over 20 s: −.09, −.15, −.01, +.09, +.05, +.01.
+The boats: two found the bank for their stern stakes (2.8 and 7.8 m of rope), two got a second buoy; headings over 30 s .40,
+.21–.27, −.03 against the painted .35, .2, 0, the harbour's −.4 held; 8 rope lines, 6 buoys, 2 stakes in the scene. The Seine
+20.8° (lag 7.7 d, offset 2), the pond 23.2° (3.6 d, 2.5°), the Epte 14.4° at its poplars (2.2 d), the harbour at its own dawn
+11.7° (38 d, 1.3°; was 15.1 with one exchange for all). Formants for 3, 5 and 10 cm² mouths: 500/1500, 580/1420, 681/1320;
+swimming with sound on, the jaw 0 to .19 and the formants 436/1563 to 524/1476, no errors. The quay's edge, apron, wall and
+slipway as before. 120 solids. Triangles 296,656 to 375,572 (the moulded bars and the blocks); draw calls 26 to 42 (the ropes,
+buoys and stakes). Frames in `m37-sheet.jpg`.
+Bench, DPR 2, load average 2: pond 11.7 · parasol 9.6 · argenteuil 8.8 · poplars 10.4 · haystacks 12.4 · rouen 8.8 ·
+sunrise 5.2 · orangerie 8.0 · aerial 5.6 ms (M36: 15.8 / 8.3 / 11.3 / 11.5 / 10.5 / 8.4 / 4.9 / 8.1 / 5.3; M35: 13.7 / 8.5 /
+9.2 / 10.9 / 12.7 / 8.8 / 5.3 / 9.2 / 6.0): within the spread; M36's Argenteuil was the load. 265,869 patches.
+
+**Still visible.** The neck is a chain of three turns; the head has no weight and the look never lags the neck's own speed.
+The slide's choice is a rule over two catches, and the body never chooses to stop turning short. The pier's point is a log
+singularity, not a stagnation, and Roshko's wake number and Townsend's .037 are still constants read, not measured. The stakes
+and buoys appear where the rule puts them, not where a boatman would have chosen the ground. The exposures, the baseflow index
+and the light breeze are still estimates. The tract is two straight tubes; the jaw moves only the mouth's area. The blocks are
+boxes with flat faces and no tooling; the wall's plane shows in the joints. The tracery's six productions are still a table,
+and the mouldings one profile for every bar.
