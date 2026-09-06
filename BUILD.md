@@ -1759,3 +1759,68 @@ The climb out is judged against the water's face even in the shallows, so a bank
 down; no bank in the world is a cliff (the harbour's quay slopes one in one), so the bank rule is exercised only by the piers, the
 decks and the abutments. At a deck's end a knee over the water the eye rises through the deck's end onto it. The parapet's heads are
 two leaning bars, not cusped tracery, and the balusters are one profile all round the crown.
+
+### Progress · M32 — the lip: the valleys' lead with its welt and the eaves' gutters, a body caught at the corner or vaulting it; the trough's wedged friction; the current parting round the piers and carrying leaves; strokes and wind; a quay wall and a slipway in the harbour; cusped tracery on the parapet (what M31 left visible)
+
+**What was wrong.** The lead was a flat strip in each roof's plane with no lip, and there was no gutter at the eaves, so a body
+sliding down the valley shot off the corner at any speed; and the slide's "edge" was where no solid lay ahead at all, so the aisle
+under the nave's eave made the eave read as roof going on, and the lantern's flat rim likewise let a slide over because the transept's
+roof lay below it. The trough's friction was the rougher material's, the wedging between two faces not counted. The current was one
+field along the river's line, straight past the piers, and carried nothing. Swimming was a steady pace, no stroke, no tiring. No bank
+in the world was a cliff, so the swimmer's bank rule was exercised only by piers, decks and abutments. The parapet's heads were two
+leaning bars.
+
+**What changed.**
+- The lead's welt: along each strip's outer edge a second quad standing .07 off the slates (the lip). Eaves' gutters: lead troughs
+  (.3 × .16) hung at the nave's and the choir's eaves outside the transept and along the transept's eaves, meeting at the four
+  corners where the valleys' leads come down. Solids carry `gutter` (the two vessels, the crossing, the transept); `S` returns its
+  solid.
+- The slide's edge: the roof ends where the surface a frame's slide and .3 ahead is a metre and more below (nothing there, or the
+  aisle under the eave). At an edge a body arriving under `GUTTER_V` 5 m/s is caught by a flat roof's rim or a guttered eave's lip;
+  faster it vaults either; a steep bare eave lets it off at any speed.
+- `troughAt` reads each face's pitch across the line (β from the gradients' components along their difference) and the wedge:
+  (μA sin β2 + μS sin β1) / sin(β1 + β2), applied to both the static and the kinetic pair (the crossing's valleys: 1.265 × slate).
+- `currentAt`: the stream past each of the road bridge's four piers (`piersZ`, lazily) as potential flow round a cylinder of 1.4:
+  slack before and behind, quick past the sides, nil within. Flotsam: 28 leaves and twigs (one merged geometry, its positions moved
+  each frame in `updateFlotsam`) borne west at the current, parting round the piers, set in again upstream when they leave the world
+  or strand.
+- Swimming: breaststroke, the pace pulsing ±45% over a cycle of 1.5 s (1 s sprinting), the head lifting .04 with the kick. Wind
+  (`stamina`) spent in a minute's swimming, a third of that sprinting, back on land in half a minute; spent, one is weary — half
+  the pace, no sprint, "Tiring · swim for a bank, or F to fly" — until a third of it is back.
+- The harbour's built quay (`QUAY`): along z −392..−424 the quay's line straightens to x 22.4 (a grid line) and the ground stands
+  1.3 over the water, dropping as a cliff one cell wide (the terrain's `hb > −.01 ? 1 : 0` under `quayWall`), a stone wall from the bed
+  to the top standing .3 out over the cliff's brow; a slipway at z −408 (3.2 wide, 6.4 long, one in two and a quarter) down through
+  it, the parapet and a bollard gapped there. The swimmer's bank rule looks a body's length ahead too: the step's own ground no more
+  than a knee over the water's face and the ground .6 further on no more than a hip (`trace`: bank h1 h2).
+- The parapet's heads: an equilateral pointed arch per bay (two arcs of the bay's span from the opposite springings, four bars each)
+  with a cusp on each arc pointing into the light, trefoiled.
+- Debug: `monet.swim`, `monet.stamina =`, `monet.flotsam`, `monet.slideDbg` (an array to fill). Build `m32-the-lip`.
+
+**Verified.** Headless, keys held. `trough` on the valley's line: direction (.90, .44), fall .86, wedge 1.265, the pair [.57, .43].
+Q onto the valley 3 m from the corner: the slide runs to the corner and is caught at (lx 13.68, lz 6.62, 34.45), standing. Q at
+t .6: the slide vaults the corner (6.2 m/s), the nave's aisle (22.36), off its eave, the ground (2.0). Q onto the spire's west flank
+from (−47.5, 110): the slide vaults the lantern's rim, the transept's south slope (44.64), the valley to the corner, the choir's aisle
+(17.45), the ground: M31's path. Frame-by-frame (`slideDbg`) the corner is seen .37 ahead with the transept's margin under it and
+the aisle 13 m below, the edge by the new rule. `current` at the second pier (z −176.8): 3 m upstream (−.45, −.01), 3 m downstream
+(−.45, −.02), 2.2 beside (−.82, −.01), within (0, 0); a swimmer under the arch at z −170 is set 1 m aside passing between two
+piers. Flotsam: four leaves 2.2 m further west after 4 s. Swimming west with the current, positions every .25 s: the pace pulses
+1.1–1.8 m/s (.5–1.3 own, plus .55), the eye .32–.38; wind .933 after 4 s; set to .03 and swimming on: weary in 2 s, the pace
+1.0–1.1 (.5 plus the current), the line said. The quay: the ground 1.3 at x 22.4 and −2.5 at 23.2; from the harbour swimming west at
+z −400 one is refused at x 22.68 (`trace`: bank −.03 1.30), standing ankle-deep at the wall's face (the eye 1.31), the camera
+outside the stone; at the slipway (z −408) the same swim walks up onto the quay (the eye 2.74, then 1.95 on the town's ground);
+walking east off the quay's top one drops into the harbour and floats (.32). M28's walkers, M30's flyers and M31's water as before:
+the rails, the road, the house, the door; the spire's flank at 100 m (−45.99), the pyramid, contact on the nave (46.37), the deck
+and the parapet, the aisle's and Saint-Romain's slips, the lantern's edge, the crossing walk; the river's line at the step in, the
+pond bridge passed under, the pier a wall (5.2), the arch passed under. 120 solids. Frames in `m32-sheet.jpg`.
+Bench, DPR 2, one run: pond 13.0 · parasol 7.9 · argenteuil 8.4 · poplars 9.2 · haystacks 10.8 · rouen 7.9 · sunrise 5.1 ·
+orangerie 8.1 · aerial 5.3 ms (M31: 11.3 / 8.8 / 9.2 / 10.4 / 12.8 / 8.2 / 4.9 / 8.7 / 4.8): within the runs' spread; the flotsam is
+one more draw call at the river (its 28 quads moved each frame), the quay wall 18 boxes in the harbour's merged stone, the tracery
+some 800 small boxes in the cathedral's.
+
+**Still visible.** The catch is a speed, 5 m/s, not the lip's height against the body's momentum; a flat rim and a guttered eave
+catch alike. The wedge counts the two faces' normal forces but not the body's turning in the trough. The piers part the stream as
+cylinders in a potential flow, so there is no wake and no eddy behind them, and the piers are not round. The flotsam is carried but
+never sinks, catches on a pier or gathers at a bank; the boats sit still in the stream. The stroke is a pulse of the pace and a lift
+of the head, with no arms in view and no sound. The wind is one number, spent and got back at fixed rates. The quay wall is the
+one cliff in the world, straight and 1.3 high, the cliff one cell wide under it (a shelf at the wall's foot ankle-deep); the slipway
+is a plain ramp. The tracery is bars and cusps in one plane, the same bay repeated.
