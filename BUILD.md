@@ -1949,3 +1949,75 @@ paintings' compositions hold them). The arms are tapered cylinders with no elbow
 The cold is three numbers; the breath is a filtered noise. The quay's cliff is in the mesh but the mesh's face is hidden .3 inside
 the stone, not the stone's own face; the town behind the quay rises 1.3 over 4 m. The tracery repeats its three bays in turn; the
 rolls are boxes.
+
+### Progress · M35 — the roll: the body turning and rolling on the slope, the hands' hold; each pier's own street; flotsam with its boat, the moored boats on their ropes; the joints, the legs and the kick in the pace; the cold from the water's temperature, the breath in and out; the wall's face the mesh's own, the quay level behind it; each face of the parapet its own scheme (what M34 left visible)
+
+**What was wrong.** How the body arrived was the whole story of the slide: it never turned over on the slope, and the arms' grip
+held with nothing to hold. The street was four vortices of one strength and spacing for every pier. Flotsam held by a boat stayed
+where it was caught; the moored boats sat on their painted lines whatever the stream did. The arms had no joints, the legs kicked
+unseen and the pace's pulse was a sine. The cold was three numbers by place and the breath one band of noise on the pull. The
+terrain mesh's cliff was drawn .3 inside the wall, the stone hiding it, and the land behind the quay fell 1.3 to the town's level
+over 4 m. The tracery's three bays repeated in turn on every face.
+
+**What changed.**
+- The body on the slope: `bodyAng` (its long axis from the slide's line: 0 feet first, π head first, ±π/2 across) and `bodySpin`.
+  Head first, the hands drag unevenly (`handBias`, up to .3 of the grip, set by where the body landed) and turn it at the shoulders'
+  lever on the body's inertia (`HAND_YAW`, 1.6 rad/s² per unit); past 60° off the line it is across (`side`). Across, it rolls as a
+  log: driven by the slope over the limbs' radius (`ROLL_R` .35) at a fifth, checked by the limbs at 2.5 rad/s², never faster than
+  it slides over that radius; over .8 rad/s it is `tumble`, and a tumble that the slope cannot keep rolling comes to rest across.
+  From a fall it arrives rolling at the fall's speed over the body's half-thickness, scaled to the limbs' radius. Feet first it
+  keeps its line, the feet leading.
+- The hold: what the hands have at an edge is the welt (the whole grip), a flat rim under flat hands (the grip times the rim's own
+  friction), or a bare eave's arris hooked by the fingers (half). The catch: feet first, the lip's lever with the hands by the hips
+  reaching half a grip; head first, the hands' grip on the hold alone; across, the body lifted over the lip whole and one arm's
+  grip; rolling, the lip alone.
+- `piersZ()` gives each pier its own stream at its flanks (slacker near the banks) and from it its shedding: T = D / (St · U),
+  λ = .8 D / St, each eddy's strength .3 of the shear layer's roll-up over a half-period (½ U² T), the two rows .281 λ apart
+  (Kármán's ratio), as many eddies as fill three wavelengths, at the pier's own phase. The wake is read to that length.
+- Flotsam held against a boat keeps its place on the hull and goes and swings with it; let go, it leaves from where the boat is.
+  A moored boat is moored by the bow where the painting has the bow: its rope streams down the current and the hull weathercocks on
+  it, its heading easing to the stream's line at the hull over 4 s (the eddies swing it); in slack water it hangs at its painted line.
+- The arms have shoulder, elbow and wrist as balls the segments turn on. The legs are built (hip, thigh, knee, shin, ankle, foot)
+  and do the whip kick with the stroke; they are behind the eye. The pace's pulse (`PULSE`) is the pull's impulse (.4) and the
+  kick's (.6) against the water's drag (the pace squared), the glide decaying between, the shape found by running the stroke to a
+  steady cycle and set about a mean of one (.78 to 1.26). The head lifts on the pull, for the breath.
+- `waterTemp`: the Channel in a November dawn 11°, the Seine 17°, the Epte 14°, the pond 21°, the shallows warmed by the sun up to 3°;
+  the cold is the gap to the body's warmth against a 20° pond's (`swimCold` .91 pond, 1.18 river, 1.53 harbour).
+- The breath: in through the mouth on the pull as the head lifts (a sharper band, 1100–2200 Hz by the breath's shortness), out into
+  the water through the kick and the glide (low-passed at 380 Hz, heard through the water) with bubbles, each a short tone rising as
+  it shrinks, a burst of them the harder the exhale.
+- The terrain mesh's cliff is now the wall's face itself: the vertices either side of the face (and the mole's sides and head) are
+  drawn to the face, the mesh made non-indexed so the face's own triangles are painted in the stone's colour, with the stone's strokes
+  laid on them down to the water; the wall's stone stands .3 behind under the paving, and a coping course .16 deep overhangs the face
+  .05. Behind the wall the quay's apron lies level for 14 m and eases to the town's level over the next 20.
+- The tracery: each of the tower's four faces its own scheme, read from the centre bay outward and mirrored: a mullioned centre
+  with cinquefoils and trefoils by turns; a mullioned centre among Y-tracery (a fourth pattern: the mullion forking at the
+  springing into two bars meeting the arcs at 40°, each with its roll); a cinquefoil at the centre and every third bay, trefoils
+  between; mullioned and trefoiled by turns.
+- Debug: `monet.swim` adds temp, ang, spin, bias, pulse, feet; `monet.piers`; `monet.boats` adds the mooring; `slideDbg` rows add
+  the angle and spin. Build `m35-the-roll`.
+
+**Verified.** Headless, keys held. Feet first at the valley's corner: caught (34.45) as before. Landed head first on the aisle
+(bias −.19): the body turns from π to 2.41 over the 4 s slide, still head first at the eave at 6.63 m/s, and over (the arris's
+half-hold gives the hands 1 m/s). The vault off the corner lands on the aisle across (spin .47), the slope sets it rolling
+(.84 → 1.61 rad/s), and it goes over the eave rolling at 3.17. M33's aisle slips as before (low: caught at 17.56; from the ridge
+4.56 at the eave, caught), Saint-Romain's (17.56) and the spire's (58.45) as before. The piers: the first, near the bank, has a
+stream of .08 (T 168 s, strength .18), the other three .55 (25.5 s, 1.16), λ 11.2 for all; 7.4 m behind the second pier the
+across-stream part over 20 s: +.04, +.01, −.07, −.10, −.21, +.15; at 30 m the wake's deficit only (−.43), at 40 m the stream
+(−.55). Flotsam put on a sailing boat moves with it (boat +.63, −.13 over 3 s; the leaf +.61, −.13); the moored boats lie to the
+stream on their ropes (headings −.06 and −.24, from the painted .35 and .2; the moorings kept). The Seine 17° (cold 1.18, effort
+against it 1.61), the harbour 11° (1.53), the pond 21.6° in the sun (.91). The pulse .78–1.26; the feet over a cycle x .10–.45,
+y −.63 to −.47, z .86–1.59 (the heels to the seat and out). The quay at z −390, −440, −500: 1.3 to the face, −2.5 beyond; behind
+it 1.3 at 6 and 12 m, 1.16 at 20, .65 at 30, .55 at 40; swimming west at −440 refused at the face (`trace`: bank 1.30 1.30); the
+second slipway walks up (2.75). Sound on, swimming 4 s: no errors. 120 solids. Frames in `m35-sheet.jpg`.
+Bench, DPR 2, one run: pond 13.7 · parasol 8.5 · argenteuil 9.2 · poplars 10.9 · haystacks 12.7 · rouen 8.8 · sunrise 5.3 ·
+orangerie 9.2 · aerial 6.0 ms (M34: 12.0 / 8.6 / 8.6 / 10.0 / 13.2 / 9.6 / 5.9 / 11.3 / 5.4): within the runs' spread. The
+street is six vortex terms per pier per reading (was four), read to 34 m; the ground mesh is non-indexed (52,800 vertices for
+17,600); 348 strokes more on the wall's face; the legs and joints are eighteen small meshes more.
+
+**Still visible.** The arms and legs hang from the eye and turn with the look; the legs are behind it and never in view. The
+body's turning is a hand's uneven drag by a number set at landing, not a hand deciding. The street's ratio, roll-up and fading are
+constants of the textbook cylinder, and the eddies are point vortices. The moored boats swing on ropes of one length from a
+painted bow, and the compositions have shifted by up to 23°. The water's temperatures are four numbers by place and month. The
+breath is two bands of noise and a tone for a bubble. The wall's coping is a box; the face's strokes are laid on the mesh, not
+cut as courses. The parapet's schemes are four rules.
