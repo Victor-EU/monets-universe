@@ -2021,3 +2021,102 @@ constants of the textbook cylinder, and the eddies are point vortices. The moore
 painted bow, and the compositions have shifted by up to 23°. The water's temperatures are four numbers by place and month. The
 breath is two bands of noise and a tone for a bubble. The wall's coping is a box; the face's strokes are laid on the mesh, not
 cut as courses. The parapet's schemes are four rules.
+
+### Progress · M36 — the body: the swimmer's body its own frame under the head; the hands and a foot steering the slide; the piers as Rankine bodies and the eddies as Lamb–Oseen vortices; the boats moored fore and aft on ropes of their own, as bodies in the stream; the water's temperature from the day and the sun; the breath as a mouth and the bubbles as resonators; the wall cut in courses under coping stones; the tracery grown by subdivision (what M35 left visible)
+
+**What was wrong.** The arms and legs were children of the camera, so they pitched with the look and the legs were always
+behind the eye. The body's turning on a slope was an uneven drag by a number drawn from where it landed. The street's Strouhal
+number, roll-up and fading were a textbook cylinder's, the pier a circle of 1.4 m, and each eddy a point vortex. The moored
+boats hung from a painted bow on a rope of 1 m and swung to the stream's line, up to 23° off the paintings. The water's
+temperatures were four numbers. The breath was two bands of noise and a tone per bubble. The coping was a box; the wall's face
+had strokes scattered on it. The parapet's tracery was four rules.
+
+**What changed.**
+- The body (`arms`, still the group's name) is a child of the scene, placed at the eye every frame and turned to `swimYaw`: the
+  swim's line, come round to over .6 s (a body turns in the water slower than a head); afloat and still, it hangs under the head's
+  line. The head turns on it: looking down brings the arms and shoulders into view; strafing, the body lies across the look;
+  backing, the legs are ahead of the eye. The legs kick under the water's paint; the heels, drawn up to the seat, now come to the
+  water's face (they were below the hips) and break it, and the sweep out begins there.
+- The slide steers. The body wants its feet downhill: the wanted turn is twice the angle still to go, up to 2.5 rad/s, and the
+  hand and the foot on the side that turn it the short way round press by the shortfall (`handBias` in ±1), the right at a dead
+  heading, after a half-second's grasp (`slideT`). What they have (`STEER`, 3.3 rad/s²): the hands' unevenness at .3 of the grip
+  at the shoulders' lever and a foot pressed at .2 of the grip at the body's end. The slates' friction on the turning body's ends
+  checks it, μ g cos θ · ω / v (the friction along the body integrated), and no more than Coulomb's at the ends when the turn
+  outruns the slide. Across the slope the limbs are spread and brace against the roll (the check doubled); rolling faster than .8
+  rad/s the body is a tumble and the limbs have lost it, till the roll dies under .3 and they have it again. A roll brought from a
+  fall, faster than the slide over the limbs' radius, is ground down to it over a half-second instead of being cut to the slide's
+  at once.
+- Each pier is a Rankine body for the stream (`pierShape`): a source and a sink 2a apart of strength πκU, a and κ found once so
+  the body has the pier's length (6.1 m with its pilasters) and width (2.3): still at the cutwaters, quick past the flanks, the
+  stream parting round it and closing behind. The shedding is on the pier's width with St .16 (Okajima's rectangles at 2.6:1),
+  T = D / (St U) (26 s at .55 m/s), λ = .8 U T (11.5 m); the eddies leave the stern. Each eddy is a Lamb–Oseen vortex: a core of
+  .3 of the half-width at the shedding grown by the wake's eddy viscosity (.02 U D) as √(4νt) with its age (a half-period's roll-up,
+  then the drift at .8 U), the swirl Γ/2πr outside the core and dying inside; as the cores grow to the rows' spacing the rows'
+  vorticity cancels and the circulation goes as 1 − exp(−2h²/r_c²). No ad hoc fade.
+- The moored boats are bodies in the stream: mass as the water displaced (half the box of length, beam and draught .06 L), a rod's
+  inertia; the drag along the hull (.02 on the wetted box) and across it (1.2 on the side, taken in six lengths with the hull's
+  turning, so the turn is checked); two ropes, each a spring past its length (a stretch of a quarter metre under the hull's weight,
+  damped), pulling at the bow or the stern and turning the hull; integrated in 40 ms steps. Moored where the painting has the boat:
+  a bow line straight up the stream (a quarter of the length) and a breast line from the stern (half the length) out on the side
+  the stream pushes the stern from, or to the bank when the hull lies along the stream. The hull keeps the painted line to within
+  the ropes' stretch, the eddies work it, and in still water the lines just reach and it lies as painted. Flotsam still goes with it.
+- `stop()` carries `doy`, the day of the year of each painting (the pond, the meadow, the Seine 190–200; the poplars 220, 240, 290;
+  the stacks 250, 262, 340, 25; Rouen 55, 100, 75; Le Havre 317; the Orangerie 200), blended with the light. `sunClock()` reads
+  the hour from where the sun stands (the hour angle from the elevation and the declination at 49.2° N, morning or afternoon by
+  the azimuth) and sunrise from the same. `airTemp`: Rouen's normals, 3.7° in mid-January and 18.7° in late July, the day's swing
+  2° in winter and 5° in summer, warmest at three. Each water (`WATER_BODY`) follows the air as a body with its own lag (the
+  Channel's mixed layer 40 days, the deep slow Seine 10, a pond or a shallow river 3), sits above the air's mean by what the sun puts
+  in (1.5° the sea and the Seine, 2° the still pond), the Epte half spring water at the year's mean, and is stirred at its own rate
+  (a tide's .3 m/s, the Seine's .5, the Epte's .4, a pond's .02); the year's and the day's swings come through the lag smaller and
+  later. The layer over the bed (to the sun's 1.2 m) warms from sunrise toward its balance at its own pace: a clear sky's kilowatt
+  by the sun's height less the face's reflection (most at a grazing sun), the air's warmth or chill on it at 15 W/m²K, and its
+  exchange with the deep water by the stirring (a still pond's 5e-6 m²/s and the current's on top); the night's cooling has mixed
+  it away by morning. `waterTempAt` gives the parts.
+- The breath in is the glottal rush (its noise as the flow's 2.5th power) through the mouth as a tract of two formants (an open
+  vowel's, 650 and 1150 Hz, the first rising 300 Hz as the mouth gapes for a short breath). The breath out is a flow, 2.6 l/s at a
+  calm breath's peak and more when short of it; each bubble leaves the mouth at the size the flow makes it (3.8 mm by the lip
+  against the water's skin, and bigger with the flow), at the rate the flow fills them (to 40 a second), and rings at Minnaert's
+  pitch for its size (3.26 / r, a little higher .3 m down) with a bubble's damping (Q about 22 at 1 kHz, the larger ringing
+  longer), the pitch rising 7% as its neck closes; the big ones louder; the crowd of small ones a low rush through the water.
+- The coping is stones: each cut to a section (from the paving's edge to .05 proud of the face, the outer arris chamfered .05 as a
+  weathering, the top falling .01 to the water), .8 to 1.15 long with 15 mm joints, laid along the face's curve, the mole's sides
+  and round its head, broken at the slipways, with their own strokes. The wall's face is cut as courses: ashlar .36 high from under
+  the coping to the water, stones .7 to 1.1 long in a running bond, each stone its own tone with its strokes laid along the course,
+  the bed joint under it and the head joint at its end as dark lines, the wet band over the water in the water's grey. The mole's
+  three faces the same.
+- The tracery is grown, not chosen (`panel`): an arch .9 m and wider is split by a mullion into two lights, each an arch of half
+  the span whose outer arc is concentric with the parent's, and the figure between them is the circle tangent to both (a quarter of
+  the span across, its centre .559 of the span over the springing), foiled four or three by its size; a middling arch (.45 to .9)
+  forks its mullion into Y-tracery or takes two cusped lights; a narrow one is cusped, trefoiled or cinquefoiled; every light is
+  grown the same way in its turn, the choices by a hash of the face and the bay. The parapet is 1.5 m and its bays a metre wide.
+- Debug: `monet.swim` adds steer, yawV, yaw (the body's) and t (the slide's); `monet.boats` gives m1, m2, r, psi, yaw0, v;
+  `monet.pier`; `monet.temp(x, z)` and `monet.clock()`; `slideDbg` rows add yawV, bias and t. Build `m36-the-body`.
+
+**Verified.** Headless, keys held. Feet first at the valley's corner: caught (34.45), feet. Landed head first on the aisle (36°):
+the grasp takes .5 s, the turn is 1 rad/s at 1 s and 2 at 1.7, and at the eave (2 s, 6.63 m/s) the body is 43° short of feet
+first and the hands already checking the turn (bias −.68); it goes over feet first. The vault off the corner lands rolling at
+2.8 rad/s and the aisle keeps it rolling (4.1 at the eave), over at 6.3. M33's aisle slides as before (2.54 and 4.56 at 17.56,
+caught, feet). The pier: a 2.59, κ .997; the stream .15 m ahead of the bow a quarter of the free stream (−.18 against −.67), at
+the flank 1.12 of it (−.75), inside nil; the piers' streams .083 and .55, T 173 and 26 s, λ 11.5, strengths .18 and 1.19. The
+street 4.4 m astern of the second pier's stern, in its row, over 20 s: across-stream −.10, −.09, +.01, +.05, +.02, −.01 (the cores
+are 1.6 m there); at 30 m the wake's deficit (−.43), at 40 m the stream (−.55). The moored boats over 40 s: headings .41, .23,
+−.02 against the painted .35, .2, 0 (3.5°, 1.7°, 1° off), the harbour's −.40 against −.40, still; a leaf on the first moves with
+it (0, 0 over 3 s, the boat at rest). The body: swimming forward its yaw is the look's (−1.571), strafing right −3.142 (across),
+backing −4.712 (away); its feet at (±.4, −.37, 1.07) break the water's face in the frame. The Seine at 12:50 solar on day 200:
+20.2° (the body's water 19.9, the layer +.3 in the stream; cold .99); the harbour at 8:32 on 13 November (sunrise 7:32): 13.8°
+(cold 1.37); the pond at 13:43: 23.6° (the body's water 20.6, the layer +3.0; cold .79). The quay's edge and apron as before
+(1.3 / −2.5 at the face; 1.3, 1.3, 1.16 at 6, 12, 20 m); swimming west at −440 refused at the face; the slipway walks up (2.75).
+Sound on, swimming 4 s: no errors. 120 solids. Frames in `m36-sheet.jpg`.
+Bench, DPR 2: pond 15.8 · parasol 8.3 · argenteuil 11.3 · poplars 11.5 · haystacks 10.5 · rouen 8.4 · sunrise 4.9 ·
+orangerie 8.1 · aerial 5.3 ms (M35: 13.7 / 8.5 / 9.2 / 10.9 / 12.7 / 8.8 / 5.3 / 9.2 / 6.0). Three more runs came back higher
+everywhere (up to 62 ms at the meadow) with a load average of 28 from a virtual machine running alongside, and are not the
+build's; in the one clean run Argenteuil is 2 ms up, which no new strokes explain (the 1,445 new patches are the harbour's
+courses and coping), and the pond 2 ms up with nothing new in it, so both are within what the runs have wandered. 265,662 patches.
+
+**Still visible.** The body is a frame under the eye, but the head is not on a neck: the look turns freely through the body, and
+the eye does not roll or lift with the stroke. The slide's steering is a controller (a wanted rate and a shortfall), not a body
+choosing. The pier is a Rankine body of the pier's length and width, not its cutwaters' shape, and the eddy viscosity and
+Strouhal number are read from the literature, not the wake. The boats' ropes go to points fixed in the water where the painting
+needs them, not to stakes or buoys anyone placed. The waters' lags, offsets and stirrings are estimates. The breath is still
+noise, through two formants that do not move with the jaw. The courses are strokes on a plane; the stones have no depth, and the
+coping stones no bevelled ends. The tracery's grammar has three productions and its bars are boxes.
