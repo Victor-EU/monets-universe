@@ -2401,3 +2401,79 @@ its Strouhal number (.22) is still a third over the tables' (.16). The stake's h
 declared, and so are the year's winds and the baseflow index; the painting's wind is read by eye. The nose is one tube, the
 rounding one number. The spalls are planes and the margin's tooling is strokes. The compass rule's proportions are three numbers
 and the daggers are still bars; each moulding is drawn once and never varies.
+
+### Progress · M40 — the reflex: three bellies a side with their spindles and a co-contraction; the slide's harm reckoned from the fall it sees, the grasp from the landing's rebound; the wake's cores spreading and its separation found, its circulation tried and refused; the stake's holding by Broms, the flood by each water's regime; the nose a chain with a sinus, the lips with their end correction; the spalls as scallops; the tracery's circle opened by compass trial, daggers of reverse curves, mouldings at each bay's scale (what M39 left visible)
+
+**What was wrong.** The neck had one belly a side under a proportional drive with no reflexes and no co-contraction. The
+slide's harms and its grasp's rate were numbers set. The wake's blobs had fixed cores, its separation was pinned to the stern's
+shoulders, the body carried no circulation. The stake's holding and the flood's height were declared numbers. The nose was one
+tube and the rounding one number. The spalls were planes. The tracery's circle was set by a proportion, the daggers were straight
+bars, and each moulding was drawn once.
+
+**What changed.**
+- The neck (`MUSC`, `neckTurn`): three bellies a side for the turning (a sternomastoid 130 N at 3 cm on 16, a splenius 90 at 2 on
+  12, the trapezius's upper part 60 at 4 on 18), three extensors against two flexors for the nodding (semispinalis 140 at 4.5 on
+  14, splenius, trapezius; a sternomastoid 100 at 3.5, longus 40 at 2), each Hill's as before. Each belly's activation follows the
+  side's one neural command plus its own stretch reflex: the spindle's report of its stretch beyond the commanded length (6 a
+  length) and of its lengthening (.5 at ten lengths a second) through a 30 ms lag; and never under the co-contraction the task
+  asks for (.05 at rest, up to .2 with a far look, the lift and the stroke), both sides held on to stiffen the neck. A push
+  against the head is met by the spindles before the command knows.
+- The slide's harm is reckoned from the fall it sees: the scan records the drop beyond the eave (to the roof or the ground it
+  finds), and every attitude's harm is the landing's deceleration (the drop's speed and a third of the slide's, stopped over what
+  the body has to give in that attitude: the legs' half-metre feet first, the trunk's 12 cm across, the neck's 4 head first) over
+  what that part will stand (15 g the legs, 8 the trunk, 5 the head), 1 the injury. A way that passes across a slope steep enough
+  to roll the braced body costs 3. The grasp after a landing is the time the body's bounces take to die, its limbs giving back .3
+  of each landing's speed: 2 v e / (g (1 − e)), .087 s a m/s, on the standing .2.
+- The wake's blobs' cores spread as Lamb–Oseen's, r² by 4νt at ν = .002 U h. The separation is not pinned: each side sheds from
+  the panel where the flow along the stone is fastest and begins to slow, read a tenth off it (past the bow's point) — on this
+  plan the bow's shoulder, the flanks being flat — at that flow's speed, no more than 1.6 of the stream. Kelvin's condition for
+  the body's circulation (a vortex strength on every panel balancing all vorticity ever shed) was tried and ran away: each shed
+  blob turned the body's bound vortex, which sped the next shedding; guarded by a farther nascent blob, a capped and smoothed
+  shedding speed and a relaxed balance it still would not hold, so the body stays without circulation, and the record says so.
+- The stake's holding is Broms' for a short pile in clay: 9 c_u D over the driven length past 1.5 diameters, taken at the rope's
+  lever .4 m up, a 60 mm stake driven half a metre; the clay's strength by its wetness, 10 kPa saturated at the water's edge to
+  50 kPa dry half a metre up (3.3 kN), .4 of that in a cliff's scree. The flood's risk is by each water's own regime (`FLOOD`):
+  the height a year's rise reaches once in e, the Seine's 1 m at Argenteuil, the Epte's .35, the pond's .05, the tide's 3.5.
+- The tract: the nose is its own chain (`nasalY`), from the velum's port (2 cm, 1.2 cm²) through the cavity (7 cm at 5) to the
+  open nostrils (2 cm, 1), with the maxillary sinus on it as a Helmholtz resonator (15 cm³ behind a 1 cm neck of .1 cm²: 455 Hz),
+  its admittance at the port the shunt on the mouth's chain. The lips rounded close to a fifth and protrude 12 mm, and the mouth's
+  opening radiates as a piston, its end correction .8 of its radius added to the tract (7 mm open, 3 pursed).
+- Each spall is a scallop, rising from where the chisel struck as the distance to the three halves (a conchoid) with a little
+  tilt, the face the lowest of them: bowls meeting at ridges.
+- The tracery's circle is what the arcs allow: for any opening of the compass its centre lies where arcs of the span less the
+  circle, struck from the springings, cross; the mason opens the compass until the circle just touches the lights' heads, by
+  trial, halving the doubt sixteen times; no proportion is set (a quarter of the span over two lights comes out of it). The
+  dagger's sides are reverse curves, convex from the foot's tangent to an inflexion at .55 of the width and .9 up, then concave to
+  the apex at 1.7 tangent to the axis. Each bay's mouldings are at its own scale, by the root of its span over 1.1 m and a
+  twentieth either way as the mason's hand had it; the bar's width by the scale, its depth by half of it.
+
+**Verified** headless, `m40a.js`, `m40b.js`. The neck: the body turned 1.5 rad under a held look (a strafe from a swim along
+the look, the same each time): with the spindles the head's excursion peaks at .38 and .37 rad and settles at .17 to .22; with
+them off (`monet.reflex = false`) .44 and .26. The flick of 1.4 rad reaches 90% at .19 s at 8.6 rad/s and settles at 1.30, the
+co-contraction and the muscles' length leaving it 6° short of the neck's end; at rest every belly holds .09 with the extensor at
+.12 for the head's weight. The slide: head first onto the aisle the scan sees a 15.2 m drop; the harm feet first reads 2.1 (an
+injury at any attitude; head first it would be near 80), the body comes round to 12° short of feet first and holds. The vault
+off the corner lands tumbling from 16.2 m/s with a grasp of 1.61 s (the bounces' time). M33's aisles hold and are caught; the
+corner catch stands. The wake: the separation found at the bow's shoulder (x = −1.2 of the pier's −1.45), the shoulders' stream
+1.27, 7 sign changes, a period of 10.5, the Strouhal number .218 on the width and Roshko's .172 on that stream (read .164: within
+5% now), the Townsend number .093, the deficit .74/√(1 + s/h), the half-width 1.24 + .115 s/h, the integral 1.34 h (a wider
+wake, shed from the bow's shoulders with no reattachment), the rows 1.05 to 2.17 h. At .55 the piers shed every 19.2 s, λ 8.4,
+the cores .5 to 1.9 m²; the street 4.4 m astern reads −.39 ± .01. The boats: the two stakes at 5 and 10 m, .8 m up, in clay at
+50 kPa holding 3.0 kN by Broms against 4 and 9 N, at 313 and 322 s (the Seine's flood at 1 m); headings .368, .201, −.003,
+−.400 against the painted .35, .2, 0, −.4, and after 15 s .366, .195, −.002, −.4. The tract: at rest 491/1485/2539 Hz (the end
+correction lowers the schwa from 516), open 739/1267/2462, pursed 276/1280/2471, the velum open 405/556/1005 (the nose's
+resonances on the chain), half open and half down 420/639/987; swimming, the breath in begins pursed at .79 with 374/1302/2471
+and opens to 600/1398/2509 at the jaw's .35. No errors; 120 solids; draw calls 42. Triangles at Rouen 502,190, at the harbour
+344,516; 284,971 patches; build 820 ms. Frames in `m40-sheet.jpg`.
+Bench, DPR 2, load average 5.2 falling to 2.4 (the machine's other work): pond 11.4 · parasol 9.5 · argenteuil 9.4 · poplars
+10.8 · haystacks 10.4 · rouen 9.3 · sunrise 6.0 · orangerie 10.3 · aerial 12.1 ms (M39, load 3–5: 11.8 / 10.2 / 13.0 / 13.0 /
+11.9 / 10.0 / 6.7 / 10.5 / 9.3; M38: 14.3 / 8.1 / 10.8 / 10.1 / 10.8 / 8.8 / 5.5 / 10.9 / 7.7): no geometry to speak of was
+added this time and the readings sit within the spread; the aerial's 12.1 is the load at the run's start. 284,971 patches.
+
+**Still visible.** The reflex gains, the spindle's lag and the co-contraction's rule are set; the bellies share one command a
+side, and there is no vestibular reflex holding the head in space. The slide's tolerances (15, 8, 5 g) and gives (.5, .12, .04 m)
+and the restitution .3 are numbers set, and the harm is a ratio, not an injury. The wake's viscosity .002 U h is set, the
+separation is the fastest panel with no reattachment, and the body has no circulation. The clay's strengths, the tide's and the
+floods' heights, the year's winds and the baseflow index are declared, and the painting's wind is read by eye. The nose's sections
+and sinus are drawn; the rounding is still one gesture. The scallops are a power law and the margin's tooling is strokes. The
+compass trial's tolerance and the dagger's inflexion are numbers, and the mouldings vary in scale only.
