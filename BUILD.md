@@ -2553,3 +2553,118 @@ rarely fills, and the body has no circulation. The capillary rise .8 m and Wroth
 floods, the winds and the baseflow index are data. The lips' two gestures are two numbers with two clocks. Hertz's angle is
 sampled, and the margin's tooling is strokes. The lead joint's 5 mm and the dagger's 60° are set, and the mouldings are two
 families of three, drawn once each.
+
+### Progress · M42 — the synergy: the neck's gains from its own plant by optimal control, the canals' report through their own cupula and arc, the spindle's gain from the short-range stiffness, each belly's share learned; the slide's criteria on this body, its worths by the injury scale, its dampings from the muscles and the thorax; the wake's circulation by Kelvin on vortex panels, its core from the boundary layer and its spreading from the layer's own ratio; the waters' winds from one wind, the baseflow from the geology, the floods from the banks' own lips, the capillary rise from the grain; the lips and the jaw as muscles; Hertz's cone traced, the margins' tooling in the stone; the joint from the mortar's grain, the dagger's angle from its reach, each bar its own drawing (what M41 left visible)
+
+**What was wrong.** The canals' gain, the spindle's gains, the tolerance and the short-range stiffness were set, and the
+command was one signal a side shared out. The injury criteria were the crash tests' on a body of one size, the worths set,
+the landing's dampings numbers. The wake's shear layer thickness and Prandtl's .014 were read, the reattachment a window
+that rarely filled, the body without circulation. The capillary rise was read; the tide, the floods, the winds and the
+baseflow index were data. The lips' gestures were two numbers with two clocks. Hertz's angle was sampled and the margin's
+tooling was strokes. The lead joint's 5 mm and the dagger's 60° were set, and the mouldings were drawn once each.
+
+**What changed.**
+- The neck's command is planned from its own plant (`neckPlan`): the head's inertia against the muscles' short-range
+  stiffness and damping at the resting tone, driven through the activation's lag, by optimal control — Riccati's equation run
+  backward to its rest for the cost of an error against a full command, an error of one tolerance worth as much as the whole
+  command. The gains come out 5.6 and .26 for the turning, 5.4 and .32 for the nodding (M40 set 3 and .3). The tolerance is
+  what the eyes leave the head: the fovea's 1.7° at the vestibulo-ocular reflex's gain of .9, 8.5°. The canals feel the head's
+  speed in space through their own cupula (the endolymph's 5.7 s high-pass) and their own arc (25 ms), the brain subtracts the
+  head's own share as it predicts it, and the plan's velocity gain falls on the whole — so the reflex has no gain of its own.
+  Each belly's short-range stiffness (`ksr`) is the cross-bridges' yield (a 10 nm stroke on the half-sarcomere's 1.1 µm) in
+  series with its tendon's 3% at full force, over their shares of the belly: 65, 75 and 61 F/L0 for the turners (M41 set 30),
+  205 N·m/rad both sides at unit activation for the turning; the spindle's length gain is that stiffness at the belly's
+  activation (Nichols and Houk: the reflex restores the short-range stiffness past its yield). And each belly has a learned
+  share, a synergy (`neckW`): its weights on the look's demand and on the canals' report, learned by feedback-error
+  (Kawato's) — the weights regress the belly's whole corrected command, which is Kawato's rule wherever the belly acts and
+  stays bounded where it does not — at the pace the loop settles (the projection algorithm, one full step a settling time).
+  The facial muscles have no spindles.
+- The lips and the jaw are muscles (`LIPS`, by the same `neckTurn`): the jaw's opener against the masseter on the mandible's
+  inertia, the lips' aperture and protrusion each the orbicularis oris against the retractors on 15 g of lip, with Hill's
+  force by length and speed and the activation's lag and a tolerance of 2 mm, so each gesture has the clock its muscles give
+  it.
+- The slide's criteria are scaled to this body from the tests' 1.75 m (`BODY`: the walker's stature from the eye's height,
+  1.56 m; the gives by the scale, the forces by its square, the masses by its cube, so the tolerable g's by its inverse and
+  the Head Injury Criterion's by the inverse 1.5 power). The worths are the Injury Severity Score's squares of the
+  Abbreviated Injury Scale (the tibia's fracture AIS 2, the chest's crush 3, the head's 4: 1, 2.25, 4). The landing's damping
+  is derived: the legs' from the muscles themselves (the extensors' 3 kN on Hill's stretched slope against the tendons'
+  spring and the body's mass: 2.7, overdamped — the legs give and do not bounce, the hands hold in .2 s), the trunk's from
+  Lobdell's thorax (26.3 kN/m, 520 Ns/m, 27.2 kg: .31, a rebound of .36).
+- The wake: the body has its circulation — a uniform vortex sheet round the plan, its strength by Kelvin's theorem the
+  opposite of all the vorticity ever shed (M40's and M41's tries had the sheet's sign wrong: checked now against a point
+  vortex's far field, it holds, and swings ±1 m²/s at the shedding's period). The nascent core is the boundary layer's at
+  separation, Blasius's on the cutwater's run at the water's viscosity in the pier's real stream (5.5 mm), and no less than
+  half the sheet's spacing (Krasny's rule, 6 cm here); it grows as the mixing layer's vorticity thickness, Brown and Roshko's
+  .17 of the distance run scaled by Abramovich and Sabin's (1 − r)/(1 + r) for the ratio the layer actually has (read from
+  the model at each shedding, .44). The shear layer reattaches when its core touches the flank.
+- The waters: one wind for the region (4.5 m/s over open country) and each water's from it by its roughness (the log
+  profile matched at 500 m: the sea 5.5, the Seine 4.1, the Epte 3.3, the pond 3.0; M38 declared 7.8, 3.7, 2.8, 2.2). The
+  baseflow index from each catchment's geology (chalk .9, limestone .7, the tertiary .4, the crystalline .3: the Seine .62,
+  the Epte .84), and the share that still shows in the temperature by the springs' distributed ages over the run and the
+  trunk's own share of the basin (the Seine .012, the Epte .48; M38 declared 0 and .7). The capillary rise from the bank's
+  grain by Hazen (the Seine's fine sand .86 m, the Epte's silt 1.9, the pond's 2.2, the harbour's shingle 9 mm), and a
+  shingle bank holds as Broms' sand (a hundred newtons: the harbour moors to buoys). The flood's height is read off the
+  scene's own ground by Leopold's rule — a river builds its banks to its yearly flood, so the year's flood stands at the
+  lower bank's lip: the section across the river at the mooring walked out each way to the first dry ground, the lip the
+  highest ground in the next 10 m (`floodOf`: the Seine .51 at its south plain, the Epte .57, the pond .05 at its outlet);
+  the tide's 3.5 m is kept as the datum it is. (A first try put Manning's flow for the real Seine's median flood through the
+  scene's 40 m channel and got 2.5 m — the scene's river is a painting's, not the Seine's; Leopold's rule reads the scene.)
+- The spalls: Hertz's cone is traced once for the stone (`hertzCone`): the contact's field summed from Boussinesq's point
+  loads over the pressure's disc, the crack run from the ring at the contact's edge normal to the greatest in-plane tension
+  (Frank and Lawn's trajectory), the cone's angle read once the path settles: 31° for a limestone's ν .25 (34° for glass's
+  .22, where Roesler measured 22° — the shortfall is the crack's own field, a known gap). The strikes are in the mason's
+  rows, 9 cm apart each way with his hand's scatter, the face 8 by 4 on the block, the relief to 3 cm, the drafted margin
+  flat. The margin's tooling is in the stone: the boaster's 5 cm strokes as facets tipped 2° the other way from their
+  neighbours', a strip of the margin faceted every 3.5 cm, so the tooling reads in the light as facets do; 20,210 strokes
+  gone.
+- The tracery: the joint is three of the mortar's coarsest grains (1.6 mm sand: 4.8 mm). The dagger's angle is found from
+  the room it has — the apex is to reach the arch over it within a joint, φ = 2 atan(ρ / that height), 25° to 75°. Every
+  bar is drawn afresh from the template as the mason's hand had it (each point off by up to half a millimetre, the depth by
+  up to 2%, by the bar's own place), so no two bars are the one drawing.
+
+**Verified** headless, `m42a.js` (three flights; the last is the record). The neck: the plan's gains 5.57 and .263 for
+the turning (its settling .083 s), 5.38 and .320 for the nodding; `ksr` 65.1, 75.3, 60.9 F/L0; the tolerance .148 rad.
+The flick of 1.4 rad reaches 1.33 at .19 s at 12.4 rad/s, peaks 1.44 at .24 and settles at 1.38. The body turned 1.5 rad
+under a held look: the head's excursion .165 with the canals and the spindles, .180 without the canals, .213 without
+either. Learning on, the same turn four times over: the feedback's integral .263, .211, .182, .209 against .407 unlearned,
+the excursion .156; the weights stay bounded (the pulling side .54 on the demand, .07 on the canals; the lift's, which a
+plain feedback-error rule ran to −60 and +63, at 4.4 and −2.2). The co-contraction at rest .02, swimming .05 (M41 .17, at
+3° and 94). The body: scale .89, 49.5 kg; the legs' damping 2.68, the trunk's .307. Head first onto the aisle over its
+15.2 m drop the injury reads .99 head first, the choice feet from the first frame, the body brought round to 6.08 rad (11°
+short) and held, the grasp .2 s; the vault off the corner lands rolling with a grasp of 2.08 s (M41 5.6, at e .62); M33's
+aisle holds, the corner stands. The wake: the circulation swings −1.04 to +1.33 m²/s over the run's second half, the core
+.061 (the sheet's floor; the layer's 5.5 mm), the layer's ratio .436, 5 blobs reattached, the shoulders' stream 1.197, the
+separation at the bow's shoulder; 4 sign changes, a period of 13.4, the Strouhal number .172 on the width and Roshko's
+.144 on that stream (read .164; M41 read .162 on 7 crossings — the measurement rests on few), the Townsend number .103,
+the deficit .60/√(1 + s/h), the half-width 1.00 + .113 s/h, the rows .74 to 1.85 h. At .55 the piers shed every 24.3 s,
+λ 10.7; the street 4.4 m astern reads −.41 to −.43. The waters: winds 5.53, 4.07, 3.27, 2.95; capillary rises .857, 1.875,
+2.222, .010; the baseflow .62 and .84 by the geology, .012 and .478 showing; the flood: the Seine .509 (the south plain's
+lip .51 at 39 m, the north bank 1.0 at 4 m), the Epte .571, the pond .05; the water at noon of day 200 in air of 23.4°:
+the Seine 20.6, the Epte 16.6, the pond 23.0, the harbour 17.8. The boats: the two stakes at 5 and 10 m, .8 m up, the clay
+at 127 and 124 kPa (a liquidity of .07 at the bank's .86 m rise), holding 7.55 and 7.60 kN by Broms against 4 and 6 N, at
+150 and 159 s; the harbour's boat on buoys (its shingle holds nothing); headings .367, .199, −.011, −.400 against the
+painted .35, .2, 0, −.4, and after 12 s .367, .217, −.017, −.4. The lips: the plan's gains 38.7 for the jaw, 243 for the
+lips (their settling 12 and 35 ms); through the blowing the protrusion reaches .8 of its 12 mm in about 40 ms (.19, .58,
+.78 at 30 ms steps) and falls back over about 90 ms; the aperture .69 at the breath in for a goal of .8, the jaw .26 to .33
+for .30 to .35; the formants unchanged for the same shapes (rest 491/1485/2539, aperture 323/1316/2500, protrusion
+454/1396/2417, both 276/1280/2471, velum 405/556/1005). Hertz's cone 30.9° at ν .25 (the trace 34.1° at .22, 27.4° at .3).
+No errors; 120 solids; draw calls 42. Triangles at Rouen 593,924 (M41 507,828), at the harbour 430,602 (344,522): the
+blocks' faces and their margins' strips; 264,764 patches (M41 284,974: the margins' strokes gone). Frames in
+`m42-sheet.jpg`.
+Bench, DPR 2, twice alone: first with the machine's other work at a load of 2.9 to 4.9 — pond 14.4 · parasol 10.0 · argenteuil
+11.3 · poplars 15.4 · haystacks 16.8 · rouen 9.6 · sunrise 5.7 · orangerie 8.0 · aerial 5.5 ms, the poplars and the haystacks (views
+the quay and the parapet never enter) spiking with the load; then at a load of 2.1 rising to 5.8 — pond 11.9 · parasol 9.2 ·
+argenteuil 8.5 · poplars 9.8 · haystacks 10.6 · rouen 8.8 · sunrise 6.0 · orangerie 8.7 · aerial 7.6 (M41, load 3.7 to 1.4: 11.0 /
+8.9 / 9.3 / 9.5 / 10.6 / 8.7 / 5.7 / 8.8 / 8.6): the harbour's 86,000 more triangles cost it .3 ms; within the spread.
+
+**Still visible.** The plan's cost weighs an error of one tolerance against a full command — a trade stated, not measured
+— and the activation's 15 and 50 ms, the cupula's 5.7 s and the arcs' lengths are read; the spindle's velocity gain (half
+the stretch's speed over the fastest) is still set; the synergy learns two features by one rule at one pace, and the
+antagonist's braking it learns is whatever the turns taught it. The crash tests' criteria scale by similarity alone, the
+Injury Severity Score's squares are a convention, and Lobdell's thorax and the extensors' 3 kN are read. The wake's Brown
+and Roshko .17, the Blasius layer and Krasny's half-spacing are read, the core's floor is the discretisation's and not the
+layer's, and the Strouhal measurement rests on four crossings. Hazen's C, the geology's indices and the trunk's shares are
+read, the tide is a datum, and Leopold's rule takes the lip for the flood. The lips' forces and the 2 mm tolerance are
+read, and the jaw's 26° is set. Hertz's trace leaves out the crack's own field (34° for a measured 22°), and the tooling's
+2° facets and 5 cm strokes are set. The mortar's grain and the mason's half-millimetre are read, and the dagger's foot
+(.9 ρ, .3 ρ down) is still a proportion.
