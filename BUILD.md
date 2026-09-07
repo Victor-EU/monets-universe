@@ -2912,3 +2912,99 @@ the harbour's water keeps its datum, and Leopold's rule takes the lip. The lips'
 the mouth's width and the mandible's length are proportions of the body. Hertz's trace still leaves out the crack's
 own field, and the mallet, the edges' 25° and the stone's 40 MPa are read. The mortar's grain and the mason's
 half-millimetre are read.
+
+### Progress · M45 — the body: the swimmer's turning no longer a law but the body's own (its yaw inertia, its cross-flow drag, the strokes' unequal pull at the hands' own reach, a steersman's law from those numbers), the plan's tasks the swim's own turn and the look's turn in the pull's window, the reflex fitted over the task's own rates and the short range measured at its peak, a third synergy feature, and the fit forgetting over movements (what M44 left visible)
+
+**What was wrong.** The swim's turning was a law set (95% in .6 s: the body came round like a cursor, at a head's
+speed, 7.9 rad/s), and the neck's plan was measured against that impossible turn, which no gain could hold. The
+reflex's gains were fitted at one tone and one rate, the short range was a number stated (1.6%), the synergy stood on
+two features and forgot over the loop's settling (55 ms). The nod's pace was the body's .2 s, a law too.
+
+**What changed.**
+- The swimmer's turning is the body's own (`SWIM`, after `BODY`): the prone body's yaw inertia about its middle
+  (mass on length squared over twelve, 10.8 kg m²); its resistance to turning the cross-flow drag of its length
+  swinging through the water (a rough cylinder's coefficient on the shoulders' breadth, integrated along the body,
+  35 N m s² — the torque goes as the rate squared); and what turns it the strokes' own pull: the arms' share of the
+  propulsion (.4 of the stroke's impulse, as `PULSE` has it) at the pace's own drag (a coefficient of .5 on the
+  shoulders' breadth by a chest's depth: 17 N at the easy pace, 82 sprinting), spread over the pull's window as the
+  pull is, pulled unequally on the two sides by a steering asymmetry, each hand's pull times its own lateral reach on
+  the arms' path (2.5 N m at full asymmetry over the easy stroke). The steersman's law comes from those numbers
+  alone: full asymmetry until the angle still to turn is within the stopping angle under the drag with the pull
+  reversed, eased over the angle the body coasts through from its steady rate. So a quarter turn takes six seconds of
+  easy strokes and three sprinting, in lurches with the pulls (the body's peak rate .39 and .70 rad/s), the body
+  hunts a little about its heading (±.1 rad: the pulls come in quanta), the stroke's line lags the key while the
+  swimmer crabs toward it, and the drawn arms pull unequally as the body turns. The pace and the sprint live in one
+  place with the speed. The chest's depth and the two drag coefficients are read.
+- The plan's tasks are the world's own and a plant may have several, the excursion the worst of them: for the
+  turning, the swim's own quarter turn at the sprint from the pull's start (`taskTrace` runs `SWIM` itself, the
+  target the body's angle at each frame's end, the canals the frame's mean rate, two strokes) and the look's own turn
+  to the neck's end within the pull's window (the body's turn alone is so slow that a plan holding only it goes limp,
+  .11 and .03, and the flick takes .33 s); the nod's the look dropping to the hands within the pull's own window
+  (`STROKE.pullRise`, .095 s; M44 used the body's .2 s). The body's own turn is held to .04 by any plan; the look's
+  turn is past these muscles at any gain (.38 for .148, the floor .37: an 80° flick in a tenth of a second is the
+  lags', not the gain's), so the yaw plan stays at 10.6 and .39 at a weight of .32 and says the task is not held; the
+  nod is held at 5.8 and .34 at .87 (M44 1.29 and .14 at 9.0). The hands' path is continuous at the recovery's start
+  (M34's jumped 8 cm), and the arms are drawn from it with the steering asymmetry.
+- The reflex's gains are fitted over the task's own rates, not one: the body's rate at the arm through the task's own
+  run, its peak, its median and its lower quartile for each task (`taskRates`), the cost summed over them for the
+  task's own time. The turning's rates are 3.1, 1.3 and 1.0 cm/s from the body's turn and 40, 2.9 and .7 from the
+  look's (M44's law gave 24 alone); the fit gives no length gain and a speed gain of 8.3 (the cost 3.1 N against 6.9
+  with none), the nod .13 and 6.9, the jaw 0 and 7.3.
+- The short range is measured, not stated (`bellyRange`, in each plan's `rf.range`): the belly stretched at the task's
+  peak rate until its force has come nine tenths of the way to what the yielded contractile part holds at that rate.
+  It is the rate's, not the muscle's: at the look's 40 cm/s the turning's bellies give 1.21, 1.08 and 1.30% of their
+  length, the nod's 1.35, 1.05 and 1.25, the jaw's 1.18; at the body's slow turn it would be a tenth of that.
+- The synergy has a third feature, the demand's own rate (the feed-forward a quick demand needs), bounded at the
+  tasks' own peak demand rate (`wmax`, 14.7 rad/s for the turning) so that a weight fitted at the body's half radian
+  a second does not meet a flick's eighty; each belly keeps the covariance of its three features (six numbers). And
+  the fit forgets over the tasks' own length (two strokes, 2 s), not the loop's settling: a synergy is fitted over
+  movements and forgets over movements. Over four slow turns the rate's weights come out .10 on the plus side and
+  −.12 on the minus, the hold unchanged (.022 → .014), and the flick after the fit is the flick before it (1.31 rad
+  at .13 s from its start).
+
+**Verified** headless, keys held, from `m45a.js` (the record `m45a7.json`, the flight at 16.7 ms a frame) and the
+node harness `m45neck2.mjs` on the page's own code; the body's turn prototyped in `body45b.mjs`. `SWIM`: I 10.84,
+c 35.07, the mean moment 2.496 N m, the steady rate .267 rad/s, the easing angle .107 rad, the drag area .0418 m².
+The world's turns under a held key: the easy stroke reaches a quarter turn at 6.05 s (the body's peak rate .39 rad/s,
+the overshoot to 1.65, the head held to the look throughout, −1.37 at the neck's end), the sprint at 3.27 s (.70
+rad/s, to 1.60); the steering asymmetry 1 through the turn, then .43, .29, −.05 … as the body eases. The plans:
+turning 10.59 and .394 at R .316, sat −1, exc .384, floor .367, wmax 14.66; nodding 5.83 and .336 at .872, exc .1484;
+jaw 54.7 and .213 at 5.6, sat −1, .0130; aperture 38.8 and .201 at 9.7; protrusion 11.1 and .059 at 9.3; the whole
+planning 267 ms. The reflex fits: turning kL 0, gv 8.33 (3.09 against 6.94), rates [.0312, .0131, .0099] over .3 s and
+[.4036, .0294, .0073] over .095, ranges 1.211, 1.076, 1.30%; nodding kL .133, gv 6.94 (1.83 against 7.46), ranges
+1.354, 1.053, 1.253; jaw 0 and 7.28 (.19 against 1.67), 1.183. The flick: .61 rad at .079 s, 1.31 at .131, the peak
+1.39, 13.5 rad/s at most; after four learned turns, from a head .10 off its body, 1.20 at .131 (1.31 from its start),
+settling 1.26 for a target of 1.30. The body's own turn under a held look: the head's excursion .018 with everything,
+.018 without the canals, .021 without the reflexes, .014 without the model; over four fitted turns .022, .018, .015,
+.014; the weights on the demand −.10 (plus) and −.08 (minus), on the canals' report +.08 and −.04, on the demand's
+rate +.10 and −.12; the covariance's trace .0017 on the demand, .0015 on the report, 1.50 on the rate. Co-contraction
+.02 at rest and swimming. The head-first aisle slide, the vault, the low aisle and the corner unchanged; the street
+4.4 m astern −.44; the moorings, the headings, the flood, the temperatures, the formants (rest 491/1485/2539), the
+tract's gasp (jaw .04 → .31), the tools and Hertz's 30.9° unchanged; the wake's model .2745/.2527/.0965, refused, the
+world on .164. No errors; 120 solids; draw calls 42. Triangles at Rouen 591,182, at the harbour 427,872; 264,763
+patches. Frames in `m45-sheet.jpg`.
+Bench, DPR 2 at 3840×1376, four runs alone, the machine's other work at a load of 1.9 to 6.1 (lighter than M44's):
+pond 12.1 · parasol 9.1 · argenteuil 9.5 · poplars 10.6 · haystacks 11.4 · rouen 10.1 · sunrise 6.3 · orangerie 11.0 ·
+aerial 5.8 ms, then 11.8 · 9.2 · 9.5 · 11.2 · 11.7 · 10.5 · 6.5 · 12.0 · 5.7, then 12.5 · 10.7 · 10.3 · 11.6 · 12.1 ·
+11.6 · 6.9 · 9.3 · 6.2, then 12.6 · 10.0 · 9.3 · 10.5 · 11.5 · 9.5 · 6.8 · 8.9 · 5.9 (M44, load 8.4 to 19.3: 11.1 /
+8.4 / 9.8 / 10.1 / 10.2 / 9.0 / 6.4 / 11.1 / 8.1 and 13.2 / 8.4 / 8.9 / 10.7 / 11.1 / 8.9 / 5.8 / 8.5 / 7.8): the
+parasol's, Rouen's and the bridge's views read about a millisecond over M44 and the aerial's two under, with nothing
+of M45 in a still frame (the body's turn and the neck's fit run only afloat, the planning is a one-off 267 ms at the
+first stroke): the spread is the machine's, not the build's.
+**Still visible.** The body's turn is the body's own but two drag coefficients and a chest's depth are read, the
+arms' share of the propulsion is `PULSE`'s .4, the steersman's easing angle is the coasting angle from the steady
+rate (a choice of angle), and the drawn hands are not the propulsion's own (their path pushes a newton where the pace
+needs seventeen); the look's own turn in the pull's window is past these muscles and the twentieth of the floor the
+plan then settles for is chosen; the stroke's windows and paces are set; the activation's 15 and 50 ms, the cupula's
+5.7 s and the arcs' lengths are read; the muscle's yield at 1.8 and Hill's .06 are read; the reflex's gains are fitted
+to Nichols and Houk's finding taken as the criterion, at one tone; the synergy's third feature changes the hold
+little. The crash tests' criteria scale by Mertz and Irwin's laws with the tissues taken the same; the case
+fatalities, the body mass index, Lobdell's thorax and the extensors' 3 kN are read. The wake's model is refused by
+its own runs, so the world's street runs on Roshko's read .164, Townsend's .037 and a read deficit and width; Brown
+and Roshko .17, Thwaites' .45 and −.09 and Pohlhausen's quartic are read; the model's core is the quantum's, its
+street stirs eleven times a real one's and a sixth of its blobs reattach, and its three runs cost two seconds at the
+bridge's build. Water's surface tension and the wetting are read where Hazen's C was; the geology's indices, the
+trunk's shares, Le Havre's two tides and the tide's age are read, the harbour's water keeps its datum, and Leopold's
+rule takes the lip. The lips' forces and the formants' 3% are read, the mouth's width and the mandible's length are
+proportions of the body. Hertz's trace still leaves out the crack's own field, and the mallet, the edges' 25° and the
+stone's 40 MPa are read. The mortar's grain and the mason's half-millimetre are read.
