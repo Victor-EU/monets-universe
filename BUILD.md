@@ -2668,3 +2668,147 @@ read, the tide is a datum, and Leopold's rule takes the lip for the flood. The l
 read, and the jaw's 26° is set. Hertz's trace leaves out the crack's own field (34° for a measured 22°), and the tooling's
 2° facets and 5 cm strokes are set. The mortar's grain and the mason's half-millimetre are read, and the dagger's foot
 (.9 ρ, .3 ρ down) is still a proportion.
+
+### Progress · M43 — the measure: the plan's trade measured against each plant's own task and Riccati's equation solved by Kleinman, the plan run on its own model, the spindle's speed gain the muscle's own slope referenced to the command, the synergy fitted by recursive least squares; the slide's criteria scaled by the body's own mass and length, its worths what the injuries kill; the wake's layer and separation by Thwaites on the pier's own surface, its period from the whole record, the discretisation's cost measured; the capillary rise by Young and Laplace, the tide from the moon; the lips' tolerances from the ear through the tract, the jaw's range from the mouth; the tooling from the blow's own cut; the dagger's foot the compass's circle (what M42 left visible)
+
+**What was wrong.** The plan's cost weighed an error of one tolerance against a full command, a trade stated. The
+spindle's velocity gain was set; the synergy learned two features by one rule at one pace, and the antagonist's
+braking was whatever the turns had taught. The crash tests' criteria scaled by similarity alone and the worths were
+the Injury Severity Score's squares. The wake's Blasius layer was a flat plate's, the Strouhal measurement rested on
+four crossings, and the core's floor was the discretisation's with its cost unmeasured. Hazen's C was read and the
+tide was a datum. The lips' 2 mm tolerance was read and the jaw's 26° set. The tooling's 2° facets and 5 cm strokes
+were set, and the dagger's foot was a proportion.
+
+**What changed.**
+- The plan's trade is measured (`neckTrade`): Riccati's equation is solved by Kleinman's iteration (a Lyapunov solve
+  of six unknowns a round, a dozen rounds, 9 ms for every plant — M42 integrated it through twenty thousand steps), so
+  the command's weight can be searched: it is walked down from a cheap command while the task's excursion still falls
+  and halved in to where the excursion is just the eyes' tolerance, on the plan's own linear plant with the canals in
+  the loop. The turning's task is the body's quarter turn under a held look at the body's own pace (.2 s); the
+  nodding's the look dropping to the arms at that pace; each lip's its breath's gesture at the breath's rise. The
+  gains come out 10.2 and .39 for the turning at a weight of .34 (M42's 5.6 and .26 at a weight of 1), 3.5 and .25 for
+  the nodding at 2.0 (5.4 and .32); the linear plant's excursion under the quarter turn is the tolerance, .148, by
+  construction, and the muscles' plant holds it to .146 (M42 .165).
+- The plan is run on its own model of the plant first (three more numbers in the state: the model's angle, speed and
+  activation): the model is sent the demand and gives the command the plan means — the agonist's pull and the
+  antagonist's braking as the plan has them — and the muscles get that command plus the plan's correction of where the
+  head has strayed from the model, plus the canals' report. So the braking is the plan's, not what any turn taught;
+  the synergy then fits only what the model misses. The hold on the quarter turn is .146 with the model and .159
+  without it.
+- The spindle's speed gain is no longer a half set but the muscle's own stretched slope (Hill's .8 over .06: 13 of the
+  fastest) at the belly's activation, as its length gain is the belly's short-range stiffness; and the stretch is
+  reckoned against the command's own motion — the reference moves with the demand, as the fusimotor drive moves it —
+  because with the gain on the raw stretch the reflex braked the head's own turns (the hold went from .08 to .20 rad
+  in the prototype, `neck6.mjs`); with the reference right the flick is quicker than M42's (1.27 rad at .13 s, the
+  peak 1.44 at .18; M42 1.33 at .19).
+- The synergy is fitted by recursive least squares: each belly keeps the covariance of its two features (three numbers
+  beside its two weights in `neckW`), so each feature's weight moves at the pace its own excitation gives it, the fit
+  forgets over the loop's settling time, and the covariance's trace is held so a quiet feature cannot wind it up. The
+  projection rule with a pace per feature was tried first and ran away (the error is shared, the paces were not); the
+  one-pace rule was kept as the fallback in the prototype and dropped. In the page the fit changes the hold little:
+  .154, .139, .153, .140 over four turns; the demand's direction settles (its covariance .014), the canals' report
+  stays open (2.0); the flick after the fit is the flick before it to .18 s.
+- The slide's criteria scale by Mertz and Irwin's laws with the walker's own mass and length apart: the mass by the
+  century's build (a body mass index of 22 on 1.56 m: 53.5 kg; the cube gave 49.5) — a force by the length squared, a
+  tolerable acceleration by that over the mass (1.15: the lighter body stands more g), a time by √(mass over length),
+  the Head Injury Criterion by the acceleration's 2.5 power times the time (1.26). The worths are what the injuries
+  kill: the crash records' case fatality by the worst injury, one in 250 for a tibia's fracture, one in 20 for a
+  chest's crush, one in 5 for the head's — 1, 12.5, 50 over the tibia's, where the Score's squares gave 1, 2.25, 4.
+- The wake's boundary layer is Thwaites' on the pier's own surface (`thwaites`): the momentum thickness integrated
+  from the bow's point up the cutwater under the speed the panels give there (from nothing to twice the stream at the
+  shoulder) and on to the flank, the layer separating where its shape reaches Thwaites' limit (λ = −.09), at every
+  shedding under that step's flow: on this plan the shoulder each time, and the point given as the speed's peak the
+  limit is reached from. The vorticity thickness there from Pohlhausen's separating quartic (4.9 θ): 2.5 mm in the
+  pier's stream, against Blasius's 5.5 on a 2 m flat run — the cutwater's acceleration thins the layer. The blob is
+  shed a hand past the corner on the cutwater's own tangent (the layer leaves a corner along the wall it came off),
+  and the flux is taken at the speed a tenth of the width off the stone: on the corner itself the panels' speed is the
+  potential flow's, which runs away there, and taken on it the flux went up a sixth and the street twice as wide (St
+  .28); set on the flank's line .29, a tenth out from the corner .13. The period is read from the whole record — the
+  probe's autocorrelation over the last 40 s, its first peak past the first zero, the peak read to a fraction of a
+  step — 13.35 s against the crossings' 13.81 on six. The discretisation's cost is measured (`wake9.mjs`): at steps of
+  .05 and .0125 s the Strouhal number reads .13 and .21 against this .17, and at .025 the run gives nothing sound (the
+  circulation runs to 4.7); an inviscid sheet has no limit to converge to (Moore's singularity), so the wake is the
+  model's at its core and the record says so (`study`). The Townsend number comes out .30 against the measured .037 —
+  the model's street stirs far more than a real wake, its blobs reattaching in bunches (93 of 400 on a plan 2.65
+  widths long, where Okajima's rectangles pass to intermittent reattachment near 2.8) — and the bound that calls a
+  record unsound is set at .5 so that this one stands and is read for what it is.
+- The capillary rise is Young and Laplace's in the pack's own throats: water's surface tension over the hydraulic
+  radius of a pack of the finest tenth's grains (e D10 / 6), 6σ/(ρ g e D10) — Hazen's rule with his C derived, .44 cm²
+  where he read .1 to .5: the Seine's fine sand 1.26 m (.86 by Hazen's .3), the Epte's silt 2.8, the pond's 3.3, the
+  shingle 15 mm. The stakes at 5 and 10 m stand .8 m up, now inside the Seine's capillary fringe: the clay there at 32
+  kPa (M42 127), holding 1.9 kN by Broms against the boats' 4 and 8 N. The tide is no longer a datum: the harbour's
+  high water on the painting's own morning from the moon — Le Havre's two tides (the moon's 2.65 m, the sun's .85)
+  beating at the moon's age, the springs a day and a half behind the syzygy, the age counted from a known new moon
+  back to 13 November 1872 (10.9 days old, a waxing gibbous): 2.08 m above the mean, half way from neaps (1.84) to
+  springs (3.46); the harbour's water stays at its datum, its flood moves with the moon.
+- The lips' tolerances are what the ear cannot hear (`lipTol`): a formant's just-noticeable difference (3%) over how
+  fast that formant moves with the gesture through this tract (the first two formants at a tenth of each gesture, the
+  tighter of the two): the jaw's .36°, the aperture's 2.1 mm (M42 read 2), the protrusion's 4.4. The jaw's range is
+  what the mouth asks of it (`JAW`): the tract's lips open from 2.5 to 8.5 cm² on a mouth 5 cm wide by the body, 1.35
+  cm of gape on a mandible of 8.9 cm, 8.7° (M41 set 26°, a yawn's). The plans: the jaw 88 and .32 at a weight of 2.4,
+  the aperture 286 and 1.3 at .70, the protrusion 133 and .65 at .47 (its settling 61 ms); the protrusion reaches .76
+  of its 12 mm within 90 ms of the blowing's start and falls to .48 and .28 over the next 90; the formants for the
+  same shapes unchanged.
+- The tooling comes from the blow (`TOOL`): a mallet of 1.1 kg swung at 3 m/s (5 J), a boaster 50 mm wide and a point
+  5 mm, their edges at 25°, on a limestone crushing at 40 MPa; a blow's cut is where its energy is spent crushing the
+  stone ahead of the edge, d = √(2E tan e / (σ w)): 1.5 mm under the boaster, 4.8 under the point. So the boaster's
+  facets tip by 1.5 over 50 (1.7°; M42 set 2°), each stroke is the boaster's own width (M42 set 5 cm as a number), and
+  the point's spalls sink 4.8 mm with the hand's swing scattering it (M42 drew 2 to 8). Hertz's cone: the crack's own
+  field was tried to first order (`hertz2.mjs`) — the crack grown step by step with its stress intensities from the
+  uncracked field's tractions through Bueckner's edge-crack weight function, each step kinked to the greatest hoop
+  stress — and it leaves the angle where the trajectory had it (33.0° for 33.2° at ν .22: along the trajectory the
+  shear intensity is nil), so the crack's field must be solved for whole (Kocer and Collins found 22° by finite
+  elements with the crack in the mesh); the trace stands, the gap named. A mixing layer of the model's own blobs was
+  run to measure Brown and Roshko's rate (`layer.mjs`, `layer2.mjs`) and gave .05 to .36 depending on how the
+  thickness was read — not a measurement — so the .17 stays read.
+- The dagger's foot is the very circle the compass found — the round that meets the lights' heads within a joint — no
+  longer a proportion of it set lower (M41's .9 ρ, .3 ρ down); its reach to the arch is measured from that centre.
+
+**Verified** headless, keys held, from `m43a.js` (the record `m43a3.json`) and `m43v.js`. The plan: turning 10.23 and
+.386 at R .337, the linear excursion .1484 for the tolerance .1484; nodding 3.51 and .247 at R 2.04; planned in 9 ms;
+the short-range stiffnesses 65, 75, 61 F/L0, the speed gain 13.3. The flick: .57 rad at .079 s, 1.27 at .131, the peak
+1.44 at .183, settling 1.38 to 1.39, 13.0 rad/s at most. The body's quarter turn: the head's excursion .146 with
+everything, .164 without the canals, .173 without the reflexes, .159 without the model; over four fitted turns .154,
+.139, .153, .140; the weights on the demand −.21, −.23, −.17 on the plus side and −.42, −.40, −.46 on the minus, on
+the canals' report −.17, −.19, −.13 and +.28, +.30, +.24; the covariance's trace .014 on the demand and 1.99 on the
+report; the flick after the fit the same to .18 s. Co-contraction .02 at rest, .028 swimming. The head-first aisle
+slide of 15.2 m: the choice feet from the first frame, the injury .996 on the new scale, the body turned through side
+to feet and held .23 rad short, the grasp .2 s; the vault tumbles with the grasp at 2.08 s; the low aisle holds feet
+first; the corner is caught feet first. The body: 1.559 m, 53.5 kg, the mass scale .688, the acceleration scale 1.153,
+the Head Injury Criterion's 1.255, the legs' damping 2.58, the trunk's .307. The wake: Strouhal .172, Roshko .135, the
+period 13.35 s by autocorrelation (13.81 by six crossings), Thwaites' limit reached at every shedding, the first
+separation 1.64 m from the bow (the shoulder at 1.60) at 1.93 of the stream, θ .5 mm, the layer 2.5 mm, the core 6.1
+cm (the floor), the shoulders' stream 1.278, 93 reattached, the ratio .217, the circulation −1.61 to +1.65, Townsend
+.298, the eddy viscosity .13, the deficit .50/√(1+s/h), the half-width .89 + .17 s/h; the study St .13 at .05, unsound
+at .025, .21 at .0125; the street 4.4 m astern −.45. The waters: capillary rises .015, 1.259, 2.755, 3.265; the flood:
+the Seine .509 (the south plain's lip), the sea 2.083 (the moon 10.86 days old; springs 3.46, neaps 1.84); the
+temperatures unchanged (20.6, 16.6, 23.0, 17.8); the stakes at 5 and 10 m holding 1.91 and 1.93 kN in clay at 32 kPa
+against 4 and 8 N; the harbour's boat on buoys; headings .367, .199, −.008, −.4 against the painted .35, .2, 0, −.4,
+after 12 s .367, .197, −.007, −.4. The lips: tolerances .0062 rad, 2.13 mm, 4.41 mm from formants 491 and 1485 moving
+36/−29, −7/−10, −4/−10 Hz at a tenth of each gesture; the jaw's range .152 rad; the plans 87.7/.322, 285.6/1.325,
+133.2/.652; the protrusion .03 → .76 → .75 → .48 → .28 at 90 ms samples; the formants rest 491/1485/2539, aperture
+323/1316/2500, protrusion 454/1396/2417, both 276/1280/2471, velum 405/556/1005. The tools: 4.95 J, the boaster's cut
+1.52 mm (tilt .0304), the point's 4.8; Hertz's cone 30.9° at ν .25. No errors; 120 solids; draw calls 42. Triangles at
+Rouen 591,182 (M42 593,924), at the harbour 427,872 (430,602); 264,763 patches. Frames in `m43-sheet.jpg`.
+Bench, DPR 2, four runs alone, the machine's other work at a load of 3.4 to 5.2 throughout: at 3840×1376 (M42's
+window) — pond 12.0 · parasol 8.9 · argenteuil 10.8 · poplars 16.6 · haystacks 14.6 · rouen 9.0 · sunrise 5.7 ·
+orangerie 8.1 · aerial 7.3 ms, then pond 14.3 · parasol 9.3 · argenteuil 10.0 · poplars 12.0 · haystacks 16.5 · rouen
+17.1 · sunrise 13.2 · orangerie 10.5 · aerial 7.3; two earlier runs at a window 174 px shorter (3840×1202: the
+headless window's own chrome, since corrected) pond 11.6 · 8.9 · 13.0 · 16.3 · 10.5 · 8.6 · 6.3 · 8.3 · 8.6 and 14.1 ·
+9.9 · 14.2 · 12.5 · 10.1 · 8.2 · 5.3 · 7.9 · 7.3 (M42, load 2.1 to 5.8: 11.9 / 9.2 / 8.5 / 9.8 / 10.6 / 8.8 / 6.0 /
+8.7 / 8.6): the spikes move from view to view with the load (rouen 9.0 then 17.1, sunrise 5.7 then 13.2); M43 draws
+one patch fewer and 2,700 triangles fewer, and the street's eddies are a fixed count on the record's period; the
+bridge's view reads 10.0 to 14.2 in all four against M42's 8.5 and is not resolved from the load here.
+**Still visible.** The tasks the plans are measured against are chosen (the body's quarter turn at its pace, the
+look's drop to the arms, the breath's rise), the activation's 15 and 50 ms, the cupula's 5.7 s and the arcs' lengths
+are read, the spindle's speed gain is the yielded muscle's slope and not the short-range's, and the synergy's fit
+changes the hold little and still stands on two features. The crash tests' criteria scale by Mertz and Irwin's laws
+with the tissues taken the same; the case fatalities, the body mass index, Lobdell's thorax and the extensors' 3 kN
+are read. The wake's Brown and Roshko .17, Thwaites' .45 and −.09 and Pohlhausen's quartic are read, the core's floor
+is still the discretisation's, the model does not converge with its step (St .13, .17, .21, one run unsound), its
+street stirs eight times a real one's, and a quarter of its blobs reattach. Water's surface tension and the wetting
+are read where Hazen's C was; the geology's indices, the trunk's shares, Le Havre's two tides and the tide's age are
+read, the harbour's water keeps its datum, and Leopold's rule takes the lip. The lips' forces and the formants' 3% are
+read, the mouth's width and the mandible's length are proportions of the body. Hertz's trace still leaves out the
+crack's own field (the first-order account leaves the angle where it was), and the mallet, the edges' 25° and the
+stone's 40 MPa are read. The mortar's grain and the mason's half-millimetre are read.
