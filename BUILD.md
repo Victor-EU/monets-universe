@@ -2310,3 +2310,94 @@ fifth. The boatman's costs are a table of penalties. The year's mean winds and t
 painting's wind is read by eye. The tract's area function is a drawn schwa and /a/, with no lips' rounding or velum. The blocks'
 faces are a noise on a grid, not a chisel's work, and the tooling is strokes. The tracery's rule fits circles; a real head is
 drawn by a mason's compasses from the arcs it has. The mouldings are three scalings of one profile.
+
+### Progress · M39 — the muscles: the neck turned by Hill's muscles with a length and a speed, the head's weight from its immersion; the slide costing every attitude it can reach, its grasp set by the landing; the wake's simulation with the pier as a body and the shedding fed back from its own flow; the moorings' ground costed in time and holding; the painting's wind into the strokes' sway; the tract's lips and velum; the blocks pitched by spalls, the margins tooled; the tracery struck with compasses, foils of lobed arcs, three mouldings of their own (what M38 left visible)
+
+**What was wrong.** The neck was a spring and a damper with a cap, and the head's weight afloat a guess at half. The slide's
+choice was a rule over three catches and a fixed half-second's grasp. The wake's vortex model had no body in it and shed at a
+fixed rate, and its Strouhal number was twice the tables'. The boatman's costs were a table of penalties. The painting's wind
+moved only the water. The tract had neither lips' rounding nor a velum. The blocks' faces were a noise on a grid, the tooling
+strokes across the whole face. The tracery's circle was found by bisection and its foils were rings with boxes for cusps; the
+mouldings three scalings of one profile.
+
+**What changed.**
+- The neck by its muscles (`MUSC`, `neckTurn`): a pair to each turn, the two sternomastoids for the turning (130 N at a 3 cm
+  arm on a 16 cm belly), the extensors and the flexors for the nodding (200 N at 5 cm, 100 at 3.5). Each has Hill's force by its
+  length (a parabola a half-length wide about the rest length) and by its speed (the hyperbola falling to nothing at ten lengths
+  a second shortening, rising to 1.8 lengthening) and a passive pull past a fifth's stretch; its activation follows the neural
+  drive with 15 ms to rise and 50 to fall; the drive is proportional (3 a radian of shortfall, .3 a rad/s) plus the tone that
+  holds the head's weight where it is asked for. The head's inertia is turned by their torques and its weight, stepped at 2 ms.
+  So the neck's speed is what the muscles can do against the hyperbola, and its strength their force at its arm; the chin lifts
+  quicker than it drops. The head's weight afloat is read from its immersion: a ball of 10 cm about a point 6 cm under the eye;
+  at the swimmer's eye (.35 over the water) it is out of the water and the neck carries all 4.5 kg.
+- The slide (`LIP_LEVER`, `ARM_REACH`): the catch is a function of the body's angle to the slide, not a label: the lip's lever
+  on a body pivoting on it (the feet's lever feet first, falling with the angle to 1 across, none head first) and the arms' reach
+  to the hold (all of them head first, one arm across, the hands by the hips feet first). At the eave it sees, the body costs
+  every attitude the hands can bring it to (37 across the reach): caught, nothing; over the lip uncaught, the fall's harm by how
+  it goes over (.3 feet first, .65 across, 1 head first); and a twentieth for a half-turn of turning. The least takes it, and where
+  the attitude chosen is the farthest it can reach the hands give all they have. The grasp is set by the landing (`graspT`): a
+  standing body's hands are on the slates in .2 s; a body landed from a fall needs .12 s more for every m/s it landed at.
+- The wake's simulation has the pier in it: thirty source panels on the plan (Hess and Smith's), their strengths solved every
+  step so that nothing passes the stone under the stream and the blobs together (an LU of the influence matrix, once). The blobs
+  are shed at the flow's own speed read a tenth off each shoulder, so the wake's state sets the shedding as the base pressure
+  does. 800 steps of a tenth of a second; the period, the rows, the scatter, the integral and the fits as before. The record
+  gives the Strouhal number on the width (what the street's period runs on) and Roshko's on the shoulders' stream.
+- The moorings' ground is costed in what it costs a boatman (`b.pick`): a stake must hold twice the line's pull (the stream's
+  cross load on the hull over the line's lead across it; 3 kN a metre driven, a third in the saturated ground within a hand of the
+  water, half in a cliff's scree, and the drive shallower the steeper the bank, none past 1 in 1.2); among the grounds that hold,
+  the least time: the walk along the rope's length and back at 1.2 m/s, the climb at .3, the driving (half a minute in firm ground,
+  longer in soft), and the flood's risk (a bank .35 m up is drowned once in e, ten minutes to moor again). The buoy: its sinker
+  must hold the line's pull along the stream (a stone's weight in water at a friction of .6, 20 kg at least), its chain three
+  depths, the water half a metre at least; the time rowing out and back, hauling the sinker and the chain, and 20 s a radian off
+  the stream's line for the fouling.
+- The painting's wind is one number: the strokes' sway follows it (`uWind` scaled each frame, 3 m/s the sway as built), as the
+  water's exchange and stirring already did. The year's mean winds and the baseflow index stay declared, as data.
+- The tract (`formants(jaw, round, velum)`): the lips rounded close their section to a fifth and add 12 mm; the velum opened
+  couples the nose at the fourth section as a shunt on the chain (an open tube of 11 cm and 3 cm²), whose poles the root finder
+  skips. The breath in begins pursed from the blowing and opens over 80 ms; a gasp lets the velum open a little.
+- Each block's face is pitched as a chisel leaves it: three to five spalls, each a plane struck from a point of the face at its own
+  height and tilt, the face the lowest of them, so it is facets meeting at ridges, on a 6×4 grid, with a drafted margin 35 mm wide
+  left flat; the margin along the top and bottom arrises is boasted, a chisel line every 8 cm at the mason's angle.
+- The tracery's head is struck as a mason strikes it: the circle's size by proportion (a quarter of the span over two lights, a
+  fifth over three, a sixth over more), its centre on the axis where arcs of the span less the circle, struck from the two
+  springings, cross; where it would cut the lights' heads the compass is closed a little and struck again. The foil is lobes: their
+  centres on a circle inside the head's, each lobe's compass opened a fifth wider than would just touch its neighbours, each lobe
+  an arc from its own centre cusp to cusp the outer way round, and a cusp at each crossing pointing in. Three mouldings, each its
+  own: the bays' arches a broad fillet between hollow chamfers with a roll 30 mm proud of both faces; the lights' a wave moulding,
+  a hollow rising to a small bead at each face; the figures' and forked bars' a plain chamfered bar.
+
+**Verified** headless, `m39a.js`, `m39b.js`, `m39c.js`. The neck: a flick of the look by 1.4 rad afloat is answered by the
+sternomastoid at .97 activation, the head at 9.65 rad/s by .11 s, the other side braking at .6 from .14 s, 90% at .29 s, and it
+settles at 1.35: the muscles' length leaves it 3° short of the neck's end. A nod of .5 rad down takes .28 s (3.8 rad/s), up .22
+(4.3): the extensors are twice the flexors. At rest the head sits on the look with the extensor's tone at .09 and no sag. The eye
+afloat is .35 over the water, the head dry, its weight all the neck's. The lift asked .349, given .309. The slide: head first onto
+the aisle the eave is seen at 1.98 s and 6.6 m/s; feet is chosen at first, then the farthest attitude the hands can reach, with
+the steer at its full 2.5 rad/s; the body comes round to 12° short of feet first (M38: 28°), holds from 1.97 s and goes over at
+6.63 m/s. M33's aisle slides read `hold` (feet first, caught) and are caught at 17.56; the corner catch at 34.45 stands. The vault
+off the corner: the body slides off at 5.8 s, falls 12 m and lands tumbling at 7.4 s (a roll of 4.4 rad/s) with a grasp of 2.14 s
+from its 16 m/s. The wake's run (~350 ms at build): 8 sign changes in the last 40 s, a period of 10.3 in the unit stream, the
+Strouhal number .223 on the width (Okajima's read .16), Roshko's .189 on the shoulders' stream of 1.18 (read .164), the Townsend
+number .080, the deficit .65/√(1 + s/h), the half-width .90 + .060 s/h, the integral .74 h, ν .028, the rows .59 to 1.18 h
+and their scatter .22 to 1.0 down the street. The same model standalone across the blob core, the shedding offset and the step
+gives .235 to .269 at a thousand steps: a spread of a seventh. At .55 m/s the piers shed every 18.7 s (M38 13.7, M37 25.5),
+λ 8.25 m; the street sampled 4.4 m astern reads −.44 ± .03. The boats: two stakes chosen 5 and 10 m up the bank at .8 m over the
+water (slope .05, leads −.5 and −.2), at 104 and 113 s, holding 1.4 kN against a pull of 4 and 12 N; two buoys at the shortest
+scope with 20 kg sinkers (24 s); headings at rest .368, .202, −.001, −.400 against the painted .35, .2, 0, −.4, and after 20 s
+.366, .200, .006, −.4. The wind: the Seine's stops read 3.0 m/s, the poplars' 6.8 (the sway 2.3 times as built). The tract: rest
+516/1549/2611 Hz, open 804/1368/2605, pursed 287/1288/2478, the velum open 370/934/1555, half down and a little nasal
+559/903/1468; swimming, the breath in begins pursed at .93 with 325/1298/2481 and opens over 80 ms to 639/1485/2606 at the
+jaw's .35. No errors; 120 solids; draw calls 42. Triangles at Rouen 400,172 to 501,160 (the wave mouldings and the lobes), at
+the harbour 261,120 to 343,482 (the faces' grid); 284,930 patches (the margins' tooling). Build 800 to 1000 ms (M38 ~750: the
+wake's panels). Frames in `m39-sheet.jpg`.
+Bench, DPR 2, load average 3.4 to 4.6 (the machine's other work): pond 11.8 · parasol 10.2 · argenteuil 13.0 · poplars 13.0 ·
+haystacks 11.9 · rouen 10.0 · sunrise 6.7 · orangerie 10.5 · aerial 9.3 ms (M38, load 2–4: 14.3 / 8.1 / 10.8 / 10.1 / 10.8 /
+8.8 / 5.5 / 10.9 / 7.7; M37, load 2: 11.7 / 9.6 / 8.8 / 10.4 / 12.4 / 8.8 / 5.2 / 8.0 / 5.6): Rouen and the harbour are up
+1.2 ms each, the tracery's mouldings and lobes and the blocks' grids; the rest moves with the load. 284,930 patches.
+
+**Still visible.** The muscles are Hill's curves under one proportional drive: no reflexes, no co-contraction, one belly a side.
+The slide's harms (.3, .65, 1) and the grasp's .12 s a m/s are numbers set, not measured, and the attitude is costed at the eave
+only. The wake's model is inviscid, its blobs' core fixed, its separation pinned to the shoulders, the body without circulation;
+its Strouhal number (.22) is still a third over the tables' (.16). The stake's holding (3 kN a metre) and the flood's .35 m are
+declared, and so are the year's winds and the baseflow index; the painting's wind is read by eye. The nose is one tube, the
+rounding one number. The spalls are planes and the margin's tooling is strokes. The compass rule's proportions are three numbers
+and the daggers are still bars; each moulding is drawn once and never varies.
