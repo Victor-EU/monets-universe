@@ -1,5 +1,12 @@
 # Monet's Universe — design
 
+> **Status.** This is the design as written before the build (September 2026), kept as the record of intent. Three things
+> changed on the way and are not rewritten below: there are eight paintings, not seven (the Orangerie's *Nymphéas* were
+> added at M12, so the viewpoints are keys 1–8 and the aerial is 9); each place is painted by its own canvas projected
+> from where Monet stood, not by procedural paint alone (see the addendum at the end); and the world grew a body that
+> lands, slides, swims and turns its head, which no section here foresaw. `BUILD.md` records every change, milestone by
+> milestone.
+
 A single web page. You open it and you are standing on the Japanese
 bridge at Giverny, inside *The Water-Lily Pond*. Drag to look. Walk, or
 scroll, and the pond becomes the garden, the garden becomes the meadow

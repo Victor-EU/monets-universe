@@ -5,6 +5,15 @@ and why; this file says in what order and how we know each step is done.
 A milestone is done when its exit criteria pass, not when its code
 exists. Sequencing changes land here, never in the design.
 
+The file has two parts. The first is the plan as written before the
+build: the verification harness and milestones M0 to M8, then what was
+deferred. The second, under **Progress**, is the log: one entry per
+milestone from M0 onward, each saying what was wrong or asked, what was
+built, how it was verified, and what is still visible. The log names the
+frame captures and node scripts it verified with; those lived in a local
+scratch folder and are not in the repository. The commit for each
+milestone carries the same title as its entry.
+
 Two rules for the whole build:
 
 - **Always walkable.** After every milestone `index.html` opens, renders,

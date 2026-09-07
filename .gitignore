@@ -1,2 +1,7 @@
+# local reference material: full-resolution originals and web copies of the paintings (see paintings/CREDITS.md)
 ref/
+# machine and session leftovers
 .DS_Store
+.claude/settings.local.json
+node_modules/
+scratch/
