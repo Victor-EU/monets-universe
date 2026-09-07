@@ -2812,3 +2812,103 @@ read, the harbour's water keeps its datum, and Leopold's rule takes the lip. The
 read, the mouth's width and the mandible's length are proportions of the body. Hertz's trace still leaves out the
 crack's own field (the first-order account leaves the angle where it was), and the mallet, the edges' 25° and the
 stone's 40 MPa are read. The mortar's grain and the mason's half-millimetre are read.
+
+### Progress · M44 — the yield: the muscle's short range and its yield as a series spring, the reflex's two gains fitted on the belly's own stretch, the plan's trade measured on the muscles themselves and its tasks the world's own (the swim's turn, the hands' drop, the gasp's rise), the frame's demand ramped; the wake's blobs cut by a fixed quantum and the record judging its model by three runs — and refusing it (what M43 left visible)
+
+**What was wrong.** The plans' tasks were chosen (a nod of .62, horizons of 1.5 and 1 s, the easy stroke's .375 s
+for the gasp). The muscle had no short range at all — Hill's force went straight to the stretched branch — while the
+spindle's gains were set from Nichols and Houk's finding about that short range, its speed gain the yielded slope. The
+plan's trade was measured on a linear plant that keeps the short-range stiffness for ever, and the frame's demand
+jumped, so a slow frame changed the hold (M43's .146 was a flight at about 20 frames a second; at 60 the same head
+wanders .168). The wake's step and its discretisation were tied (halving one halved the other), and the model's number
+was taken from one run.
+
+**What changed.**
+- Each belly's contractile part is in series with the cross-bridges' and the tendon's own spring (`STRETCH`, the
+  extension a state per belly): a quick stretch is taken by the spring first at the short-range stiffness until the
+  spring's force reaches what the stretched contractile part can hold (1.8 of the isometric) and the belly yields —
+  the short range comes out at 1.6% of the belly, the yielded slope Hill's; each 2 ms step solved implicitly (the
+  extension bisected on the monotone balance of rates). The flick is unchanged by it (1.30 rad at .13 s).
+- The reflex's two gains are fitted, not set (`reflexFit`, in each plan): the plant's first belly alone at the plant's
+  tone, stretched at the task's own rate through its yield for the task's own time with the reflex loop on it, its
+  force fitted to the short-range spring's by a length gain and a speed gain. The length gain comes out nil in every
+  case tried (tones .02 to .2, rates a quarter to twice the body's: a length gain feeds the activation it raises and
+  runs past the spring), the speed gain 9.2 for the turning, 12.7 for the nodding, 6.9 for the jaw. M43's gains (the
+  short-range stiffness and Hill's 13) missed the spring's force by 113 N root mean square over the turn's stretch;
+  the fit misses by 5, no reflex at all by 28.
+- The tasks are the world's own: the turning's the swim's own turn under a key (the stroke set square to the look,
+  the body coming round at its own lag, `BODY_TURN`, one law for the swim and the plan), the nodding's the look
+  dropping to the hands where the stroke brings them nearest under the eye (`HAND_DROP`, .55 rad from the arms' own
+  path — `strokeHands`, which now draws the arms as well; M43 set .62), each lip's the breath's gesture at the gasp's
+  own rise (`STROKE`: the breath's window at the sprint's stroke as a half-sine, .08 s; M43 took the easy stroke's
+  .12); each task runs until the demand's residual is under a twentieth of the tolerance (1.07 s for the turn, .86
+  for the nod). The stroke's windows and paces live in one place and the swim, the breath and the arms read them.
+- The plan's trade is measured on the muscles themselves (`neckTask` runs the whole of `neckTurn` under a candidate
+  plan; the linear plant kept as `neckTaskLin`), the weights scanned from a thousand down and the costliest that
+  holds the task halved in on, because on the muscles the excursion is not monotone in the gain. The finding: the
+  body's quarter turn cannot be held within the eyes' tolerance by these muscles — the least excursion at any weight
+  is .161 for a tolerance of .148 (the activation's and the arc's lags bound it, not the gain) — so the plan takes
+  the cheapest weight within a twentieth of that floor and says the task is not held (`sat` −1): 10.6 and .39 at a
+  weight of .32, which is M43's plan (10.2 and .39) found again by a different road. The nod is held: 1.29 and .14 at
+  9.0 (M43 3.5 and .25). The jaw cannot follow the gasp within the ear's tolerance (.013 for .0062; 54.7 and .21);
+  the aperture and the protrusion can, at 38.8 and 11.1 (M43's plant asked 285.6 and 133.2 of them).
+- The frame's demand is ramped across its substeps and the task's target is the body's at the frame's end, as the
+  world has it: the hold on the quarter turn at frame ends is .168 at 60 frames a second, .169 at 30, .158 at 20,
+  .098 at 15 and .033 at 10 (a slow frame hides the head's lag inside the frame; M43's .146 was such a frame).
+- The wake's sheet is cut into blobs by a fixed quantum of length whatever the step (a fifth of a second of the bare
+  stream's sheet, the sides half a quantum apart), so the step can be halved with the discretisation held; and the
+  record judges itself: the model is run at its step, at half of it, and at its step under the midpoint rule instead
+  of Euler's, and its numbers are taken only where the three agree within a tenth. They do not — Strouhal .275, .253
+  and .097 — so the world's street runs on the read values (Roshko's .164, Townsend's .037, the read deficit and
+  width) and the record says which, with the model's own numbers beside them. The study that tried the rest is in
+  the record: the midpoint rule at three steps (.10, .10, unsound), the core at a tenth of the width (every blob
+  absorbed), the blobs that touch the stone absorbed into the bound circulation instead of re-shed at the stern (the
+  street twice as fast), the shedding at the stern's shoulders alone (.5 to .8), and M43's own settings under two
+  engines from one code (Chrome .172, node .188): an inviscid sheet at this resolution has no limit to converge to
+  and its street is chaotic. The three runs cost about two seconds at the bridge's build.
+
+**Verified** headless, keys held, from `m44a.js` (the record `m44a3.json`, the flight at 16.6 ms a frame) and the
+node harness `m44neck6.mjs` on the page's own code. The reflex fits: turning kL 0, gv 9.21 (rms 4.75 against 27.59
+with none), nodding 0 and 12.73 (.94 against 15.41), jaw 0 and 6.93 (.43 against 3.25); fitted at the belly's own
+rates .235, .125, .076 m/s. The plans: turning 10.59 and .394 at R .316, sat −1, exc .168, floor .1606 (the scan from
+R 1000: .874 … .1606 at R .01 … .575 at R 1e−5); nodding 1.29 and .139 at 9.03, exc .1484; jaw 54.7 and .213 at
+5.6, sat −1, .0130; aperture 38.8 and .201 at 9.7; protrusion 11.1 and .059 at 9.3; the whole planning 121 ms. The
+tasks: turn π/2 at τ .200 within 1.4, T 1.073; nod .5543 at .200, T .864; lips at τ .0796, T .49/.36/.32. The flick:
+.61 rad at .081 s, 1.30 at .134, the peak 1.385, 13.5 rad/s at most. The body's quarter turn: .166 with everything,
+.179 without the canals, .198 without the reflexes, .171 without the model; over four fitted turns .194, .173, .185,
+.174; the flick after the fit 1.31 at .13; in the harness at 60 frames .168 (.169 without the reflex, .204 without
+the canals, .170 without the model), a push of .5 N m for .1 s moves the held head .0073 rad (.015 at a co-contraction
+of .2), the weight's sag on the nod .017. Co-contraction .02 at rest, .029 swimming. The head-first aisle slide: feet
+from the first frame, injury .996, held short, grasp .2; the vault tumbles with the grasp at 2.08; the low aisle and
+the corner feet first. The wake: the model .2745 at its step (Roshko .208, period 8.38 s, 143 reattached of 840
+blobs, Townsend .417), .2527 at half the step, .0965 under the midpoint rule (period 23.8), so `measured` false and
+the world's St .164; Thwaites' limit at every shedding, the first separation 1.64 m at 1.93 of the stream, θ .5 mm,
+the layer 2.5 mm, the core 6.1 cm; the street 4.4 m astern −.45. The waters, the flood (Seine .509, sea 2.083), the
+temperatures, the stakes (1.91 and 1.93 kN), the moorings and the headings unchanged; the formants unchanged (rest
+491/1485/2539); the tract's jaw .08 → .20 → .34 through a gasp; the tools and Hertz's 30.9° unchanged. No errors; 120
+solids; draw calls 42. Triangles at Rouen 591,182, at the harbour 427,872; 264,763 patches. Frames in `m44-sheet.jpg`.
+Bench, DPR 2 at 3840×1376, four runs alone, the machine's other work at a load of 8.4 to 19.3 through them (its
+heaviest yet): pond 11.1 · parasol 8.4 · argenteuil 9.8 · poplars 10.1 · haystacks 10.2 · rouen 9.0 · sunrise 6.4 ·
+orangerie 11.1 · aerial 8.1 ms, then 13.2 · 8.4 · 8.9 · 10.7 · 11.1 · 8.9 · 5.8 · 8.5 · 7.8, then 11.4 · 8.2 · 8.7 ·
+9.3 · 10.5 · 9.0 · 5.8 · 9.8 · 9.1, then 12.9 · 8.2 · 9.3 · 9.4 · 10.3 · 8.9 · 5.9 · 8.7 · 8.7 (M43, load 3.4 to 5.2:
+12.0 / 8.9 / 10.8 / 16.6 / 14.6 / 9.0 / 5.7 / 8.1 / 7.3 and 14.3 / 9.3 / 10.0 / 12.0 / 16.5 / 17.1 / 13.2 / 10.5 /
+7.3): the bridge's view reads 8.7 to 9.8 in all four (M43's 10.0 to 14.2, M42's 8.5), so M43's spikes there were the
+load's after all; the street draws the read period's count of eddies as before; nothing in the frame changed but the
+neck's per-frame work (a bisection a belly a substep, about .2 ms a frame across the three joints, inside the noise
+here) — the wake's three runs are a one-off two seconds when the bridge is built, not in the frame.
+**Still visible.** The tasks are the world's own but the world's laws behind them are set (the swim's 95% in .6 s,
+the stroke's windows and paces); the activation's 15 and 50 ms, the cupula's 5.7 s and the arcs' lengths are read;
+the muscle's yield at 1.8 and Hill's .06 are read, and the short range that comes of them (1.6% of the belly) is not
+measured; the reflex's gains are fitted to Nichols and Houk's finding taken as the criterion, at one tone and one
+rate; the quarter turn cannot be held within the eyes' tolerance by these muscles and the twentieth of the floor the
+plan then settles for is chosen; the synergy still stands on two features. The crash tests' criteria scale by Mertz
+and Irwin's laws with the tissues taken the same; the case fatalities, the body mass index, Lobdell's thorax and the
+extensors' 3 kN are read. The wake's model is refused by its own runs, so the world's street runs on Roshko's read
+.164, Townsend's .037 and a read deficit and width; Brown and Roshko .17, Thwaites' .45 and −.09 and Pohlhausen's
+quartic are read; the model's core is the quantum's, its street stirs eleven times a real one's and a sixth of its
+blobs reattach, and its three runs cost two seconds at the bridge's build. Water's surface tension and the wetting are
+read where Hazen's C was; the geology's indices, the trunk's shares, Le Havre's two tides and the tide's age are read,
+the harbour's water keeps its datum, and Leopold's rule takes the lip. The lips' forces and the formants' 3% are read,
+the mouth's width and the mandible's length are proportions of the body. Hertz's trace still leaves out the crack's
+own field, and the mallet, the edges' 25° and the stone's 40 MPa are read. The mortar's grain and the mason's
+half-millimetre are read.
