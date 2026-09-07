@@ -2477,3 +2477,79 @@ separation is the fastest panel with no reattachment, and the body has no circul
 floods' heights, the year's winds and the baseflow index are declared, and the painting's wind is read by eye. The nose's sections
 and sinus are drawn; the rounding is still one gesture. The scallops are a power law and the margin's tooling is strokes. The
 compass trial's tolerance and the dagger's inflexion are numbers, and the mouldings vary in scale only.
+
+### Progress · M41 — the canals: the vestibulo-collic reflex, each belly's own share of the command, the arc's lag and a co-contraction from a tolerance; the slide's injuries by their criteria and weighted by their worth, the rebound by the landing's damping; the wake's viscosity from the mixing layer and its shear layer let reattach, the circulation tried once more and refused; the clay's strength from its liquidity; the lips as two gestures; the spalls as Hertz's cones; the tracery's circle to within a lead joint, the dagger from two centres, mouldings in two families by the face's style (what M40 left visible)
+
+**What was wrong.** The reflex gains, the spindle's lag and the co-contraction's rule were set; the bellies shared one command;
+nothing held the head in space when the body turned under it. The slide's harm was a ratio of set tolerances and gives, its
+restitution a number. The wake's viscosity was a number, its separation could not reattach, its body had no circulation. The
+clay's strengths were declared. The nose's rounding was one gesture. The spalls were a power law. The circle's tolerance and the
+dagger's inflexion were numbers, and the mouldings varied in scale only.
+
+**What changed.**
+- The neck: the canals' report is in the command — the vestibulo-collic reflex, .8 of the head's speed in space (the body's
+  turning under it, `bodyRate`, added to the neck's own) in the damping term, so a body turning under a held look is met before
+  the look's error grows. Each belly takes its own share of the side's command, by its force-length over the best of the side's,
+  so the bellies nearest their best length do the most. The spindle's lag is the arc's own: 15 cm of nerve each way at 60 m/s, a
+  synapse's millisecond and the muscle's 20 ms to take up, 26 ms. The co-contraction is what the task needs: the disturbance the
+  head expects (the water's drag on it at the swim's speed at a 10 cm lever, the body's turning at the head's inertia, the look's
+  own demand) over the 3° the neck keeps, over the stiffness both sides give at unit activation (their short-range stiffness,
+  30 F/L0 at the arm squared: 94 N·m/rad for the turning), between .02 and .5.
+- The slide's harm is an injury by its criteria (`injury`): the landing shared among the legs, the trunk and the head by the
+  attitude (cosine squared); the legs' chance by the tibia's 8 kN over the 50 kg they carry (16 g), stopped over the knees'
+  45 cm, a logistic on that; the trunk's by the chest's 60 g over its 63 mm; the head's by the Head Injury Criterion (the
+  deceleration in g to the 2.5 over its 4 cm's stopping time) and Prasad and Mertz's curve; each weighted by what its injury is
+  worth (a leg 1, the chest 1.5, the head 2), so that a fall that will hurt whatever the attitude is still taken on the legs. A way
+  across a rolling slope is a certain injury. The rebound is the landing's own: a damped spring's, e = exp(−πζ/√(1−ζ²)), the
+  legs' damping .4 feet first (e .25, .07 s a m/s of bouncing), the trunk's or the head's .15 rolling or head first (e .62, .33 s).
+- The wake: the cores spread at the mixing layer's eddy viscosity, .014 of the shoulders' stream by a shear layer a tenth of the
+  half-width thick (Prandtl's free shear layer: .002 U h for this pier, as was set before — now from where it comes). A blob that
+  comes down onto the flank between the shoulders is taken into the boundary layer and its vorticity shed again from the stern's
+  shoulder the same step (reattachment). The body's circulation was tried once more, as a bound vortex at the centroid relaxed
+  toward the balance of all vorticity shed: over 2 s it holds and gives Roshko's number .164 to the digit, over 5 s it drifts to
+  −2.9 and over .5 s it kills the shedding; the number is the relaxation's, not the wake's, so it is not adopted.
+- The clay's strength follows its liquidity, Wroth and Wood's c_u = 170 e^(−4.6 LI) kPa, the liquidity by a silt bank's capillary
+  rise of .8 m: the ground at the water's edge at its liquid limit (1.7 kPa), .8 m up at its plastic (170 kPa), .4 of that in a
+  cliff's scree. The tide's and the floods' heights, the year's winds and the baseflow index stay declared as the data they are.
+- The lips are two gestures: the aperture (closing the section to a fifth) follows the breath as before; the protrusion (12 mm)
+  is pushed out in 60 ms for the blowing and drawn back over 150 ms after, and each moves the formants its own way.
+- Each spall is the flank of Hertz's cone from where the chisel struck, rising at 5° to 10° to the face as a brittle stone's cone
+  fracture leaves it; the face the lowest of them, cones' flanks meeting at ridges.
+- The tracery's circle is opened until its ring meets the lights' heads within a lead joint (`JOINT`, 5 mm). The dagger is struck
+  from two centres: the foot's round carried up to 60° each side, and from there a second arc tangent to the first, its centre out
+  on the same radius and opened so that it meets the axis tangent at the apex (R = ρ cos 60° / (1 − cos 60°) = ρ, the apex at
+  1.73 ρ): a mouchette's reverse curve with no inflexion set. The mouldings are two families by the face's style: a geometric face
+  has its bays' arches in a fillet between hollow chamfers with a roll, its lights' in a wave, its figures' in a chamfer; a
+  curvilinear face its arches in a double wave with a fillet, its lights' in a keeled roll, its figures' in a sunk chamfer; each
+  at the bay's scale.
+
+**Verified** headless, `m41a.js`, `m41b.js`. The neck: the body turned 1.5 rad under a held look (a strafe from a swim along
+the look): with the canals and the spindles the head's excursion peaks at .19 and .18 rad; without the canals .34; without
+either .45 — the canals halve it. The flick of 1.4 rad reaches 90% at .19 s at 10.8 rad/s and settles at 1.32. At rest the
+co-contraction is .02; swimming .17, the extensor at .51 for the lift; through the flick .085. The slide: head first onto the
+aisle over its 15.2 m drop the injury reads .99 held head first and 1.02 arrived feet first (a fall that hurts whatever the
+attitude, taken on the legs), the choice feet, the body brought round to 13° short and held. The vault off the corner lands
+rolling from 16 m/s with a grasp of 5.6 s (a rigid landing's bounces, e .62). M33's aisles hold and are caught; the corner
+catch stands. The wake: the separation found at the bow's shoulder (x = −1.61 of the pier's −1.45), three blobs reattached in
+80 s (the shear layer mostly stays off the flank), the shoulders' stream 1.21, 7 sign changes, a period of 11.8, the Strouhal
+number .196 on the width and Roshko's .162 on that stream (read .164), the Townsend number .126, the deficit .66/√(1 + s/h),
+the half-width 1.12 + .102 s/h, the integral 1.07 h, the rows .82 to 1.73 h. At .55 the piers shed every 21.4 s, λ 9.4; the
+street 4.4 m astern reads −.41 ± .01. The boats: the two stakes at 5 and 10 m, .8 m up, in clay at 170 kPa holding 10.1 and
+10.3 kN by Broms against 4 and 8 N, at 293 and 302 s; headings .367, .203, −.005, −.400 against the painted .35, .2, 0, −.4,
+and after 12 s .366, .196, −.006, −.4. The tract: at rest 491/1485/2539 Hz; the aperture alone 323/1316/2500, the protrusion
+alone 454/1396/2417, both 276/1280/2471, the velum open 405/556/1005; swimming, the protrusion rises to 1 through the blowing
+and falls back to .02 through the breath in, the formants with it. No errors; 120 solids; draw calls 42. Triangles at Rouen
+507,828, at the harbour 344,522; 284,974 patches. Frames in `m41-sheet.jpg`.
+Bench, DPR 2, load average 3.7 falling to 1.4 (the machine's other work had just peaked at 19): pond 11.0 · parasol 8.9 ·
+argenteuil 9.3 · poplars 9.5 · haystacks 10.6 · rouen 8.7 · sunrise 5.7 · orangerie 8.8 · aerial 8.6 ms (M40, load 5–2: 11.4 /
+9.5 / 9.4 / 10.8 / 10.4 / 9.3 / 6.0 / 10.3 / 12.1; M39: 11.8 / 10.2 / 13.0 / 13.0 / 11.9 / 10.0 / 6.7 / 10.5 / 9.3): no geometry
+to speak of was added; within the spread. 284,974 patches.
+
+**Still visible.** The canals' gain (.8), the spindle's gains, the 3° tolerance and the short-range stiffness's 30 are set; the
+command is still one signal a side shared out, not a synergy learned. The injury criteria are the crash tests' (tibia 8 kN,
+chest 60 g, HIC) on a body of one size, the worths 1, 1.5, 2 are set, and the landing's damping .4 and .15 are numbers. The
+wake's shear layer thickness (a tenth of the half-width) and Prandtl's .014 are read, the reattachment is a capture window that
+rarely fills, and the body has no circulation. The capillary rise .8 m and Wroth and Wood's constants are read; the tide, the
+floods, the winds and the baseflow index are data. The lips' two gestures are two numbers with two clocks. Hertz's angle is
+sampled, and the margin's tooling is strokes. The lead joint's 5 mm and the dagger's 60° are set, and the mouldings are two
+families of three, drawn once each.
