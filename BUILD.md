@@ -3465,3 +3465,92 @@ Climbing out of the Seine onto the south bank the ground now moves more in a met
 from Argenteuil's spot. That is the waterline's own contrast, which the key had been flattening. And the reflection's key is measured from
 the mirrored eye, so it lets go a little earlier in the water than in the air, a metre or two of it on the parasol's hill and none at
 Argenteuil, as `canvasHere` already did.
+
+### Progress · M50 — the crossing made a cross-fade: two pictures mixed where two places meet, and the halves the same length (fix: "the world does not fade from one picture to the next but spikes through its own colours between them")
+
+**What was wrong.** M49 gave the ground's key the painter's own spot, over twelve to forty-five metres, and its note said the crossing was
+still a dissolve through the world's own colours and that the two halves were uneven. Both were the same thing, and it was that the key's
+strength still carried the weight: `projectorOn` multiplies by `sstep(w, .45, .75)` on the normalized share of the eye's place, which is
+pinned near a half wherever two places meet, and M49 had only laid a distance falloff over the top of that, which made the notch shallower
+without closing it.
+
+Walked from the parasol to Argenteuil and measured against the same build with the term put back, frame beside frame at each metre, the key
+reads 1.00 at 110 m, .79 at 120, .44 at 128, .23 at 132, .015 at 136, .14 at 138, .47 at 140 and .99 at 144 — out and back in sixteen
+metres, five seconds' walking. Two of the walk's six legs still had such a notch: the crossing south of the parasol at 136 m, where the key
+fell to .009, and the one between the poplars and the haystacks at 294, where it fell to .010.
+
+The halves were uneven because the two ends were governed by different things. Leaving the parasol the strength fell by the distance from
+his spot, which takes thirty-three metres; arriving at Argenteuil it rose by the weight, whose window is crossed in a few metres because
+Argenteuil's viewpoint stands 19.5 m from that border where the parasol's stands 38. So the picture let go over twenty-seven metres and came
+back over nine. And between the two the world wore neither picture: it went from the parasol's key up through its own colours and down into
+Argenteuil's, a dissolve through a third thing, which the ground read as 32 levels of 255 out and 38 back.
+
+**What changed.** The key is thrown from two spots at once and mixed. A second set of uniforms carries the next-nearest picture — its
+canvas, the basis to read it by, its frame's half-angles and its grade — and nothing else: not the depth map, not the plate, not the halo,
+which belong to the canvas itself and are gone eighteen metres from a spot, and no two spots in this world stand within fifty-four (the
+poplars and the haystacks, 54.9 m, are the nearest pair). So the second slot is one texture read at level seven to nine, sixteen pixels
+across and then four.
+
+How far each reaches is `keyReach`: the distance from the painter's own eye over the same twelve to forty-five metres the sky has used since
+M48 and the ground since M49, times the harbour's reveal, times the climb above his eye (M47). No weight at all. The strength is the two
+reaches added and capped at one, the mix is the second's share of them, and both are taken once a frame. `projectorOn` keeps the weight and
+keeps the canvas, which is what the canvas wants — it dissolves by eighteen metres, where the weight is still 1.
+
+The blend is symmetric, so the moment the eye crosses a border and the two spots exchange rank nothing moves: at 136.5 m the key is .886
+Argenteuil under the parasol's slot, at 137.0 it is .098 parasol under Argenteuil's, and the ground reads 149,165,120 and then 149,163,122.
+Both halves are now the same falloff from a spot, so the leaving and the arriving are the same length by construction. Overhead the two
+spots look the same way but not with the same frame, so each falls off past its own edge (M48) and the sky's mix is weighted by that as well
+as by nearness.
+
+With one spot in reach the whole thing reduces to the line M48 and M49 wrote: the mix is zero, the second sampler is not read, and the
+strength is the one falloff. That is the case at all nine viewpoints.
+
+**Verified.** Against HEAD at 2560 x 1440, the nine viewpoints frame for frame: eight are identical to the byte over all 1440 rows of 3.69 M
+pixels, and the haystacks differ in 210 pixels, every one of them by a single level and none by more than one. Argenteuil and the harbour,
+whose boats drift, were compared pixel by pixel rather than by row: not one pixel differs at all. The key's own numbers say why — `uKeyMix`
+is 0 and `uKeyAmt` is exactly 1 at all seven viewpoints that have a painting, and 0 at the Orangerie and in the air.
+
+On the stretch the crossing was reported from, 110 to 146 m at a metre, the ground taken over five strips of the lower third: the key runs
+.912 to 1.00 where it ran .015 to 1.00; the span falls from 32,38,18 levels to 10,11,16; the worst single metre from 8.5 to 5.4; the whole
+stretch's movement, every step added up, from 75,86,54 to 41,47,61. The sky over the same stretch: span 5.6,9.8,20.8 to 2.7,9.8,6.8, worst
+metre 3.4 to 1.4.
+
+Over the whole 526 m walk at two metres, each station rendered twice: the median step falls from 4.8 levels to 4.5, the ninetieth from 17.9
+to 16.7, the sum of all of them from 2295 to 2208. Eighteen steps are better by more than two levels and five are worse; all five are in the
+meadow north of the parasol, between 64 and 80 m, where his picture now reaches back the same forty-five metres it reaches forward instead
+of stopping at a border. Both notches are gone: at 136 m the key holds between .91 and 1.00, and between the poplars and the haystacks,
+whose spots are 54.9 m apart, it is 1.00 the whole way across.
+
+No new seam where the ground meets the sky: the largest step from one row of the frame to the next, over its middle five hundred rows, falls
+at every station of the crossing — 6.3 to 5.4 at 118 m, 7.9 to 4.7 at 126, 7.1 to 3.2 at 134, 5.0 to 4.7 at 142 — because the two now carry
+the same key instead of the ground losing it while the sky keeps some. And the climb still takes the key away: over the parasol's spot it is
+.83 at twenty metres up, .02 at forty and .00 from eighty, so M47's sunburst does not come back.
+
+The cost is one textureLod of the second canvas at level seven to nine and about twenty operations, inside a branch that is not taken at any
+viewpoint, and eighteen more distances a frame on the processor. A paired bench could not separate the two builds: ten pairs at 2560 x 1440
+spread from −60 to +20 ms about a frame of 21.6, which is the pane-away bench M46d showed cannot be trusted, saying only that the change is
+small.
+
+**Still visible.** Only two of the six legs are short enough for the two keys to overlap. The others still have a stretch in the middle
+where neither spot reaches and the world is its own — eight metres of it between the pond and the parasol, twenty-two between Argenteuil and
+the poplars, twenty-seven between the haystacks and Rouen, and Rouen to the harbour touching at four thousandths. That is M49's argument and
+it is right, but it means the crossing is a cross-fade where the spots stand close and a long release into the world's own colours where
+they do not.
+
+And what holds the whole way is the key, which is not the canvas. At a viewpoint the picture itself covers the middle of the frame —
+`canvasHere` has it whole to eight metres and gone by eighteen — and it is vivid; past that only the key is left, the canvas's own mean laid
+at 85 %, which is hazier and less saturated than the world's own colours. So the walk used to alternate: keyed and silvery at 118 m where
+the parasol still had it, its own and sunlit at 134 where nothing did. It is keyed the whole way now. That is the swing removed, but it is
+removed by holding the picture, and the country between two near places wears more of the painting than it did — which is the same trade M48
+and M49 made, one step further along.
+
+The second spot's read is centred on a point ahead of the walker where the first is centred behind him, so its columns fan out from there —
+the sunburst M47 found from the air, now on the ground in front. Rendered alone it is plain; in the world, under `inKey` at 85 %, it did not
+rise above the scene's own structure in any frame measured: the swing of the frame's column profile across the crossing is 27 to 31 levels
+where the same walk shows 26 to 34 twelve metres earlier and eight metres later, in both builds.
+
+The key is each picture's mean, and `inKey` is not linear in it, so a mix of two can stand a little outside both: over the crossing the
+ground's blue reads 128 at 120 m, 142 at 126 and 117 at 129, about ten levels above either end. And only two spots are ever mixed; a third
+that reached would be dropped, though nowhere in this world do three viewpoints stand within forty-five metres of one point. The strength
+itself still dips where two reaches sum to just under one — 1.00 to .91 across the parasol's border — which is a ninth of the key over
+eleven metres, where it was the whole of it over eight.
