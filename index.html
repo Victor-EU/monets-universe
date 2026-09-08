@@ -161,7 +161,23 @@ const params = new URLSearchParams(location.search);
 const STILL = params.has('still');
 const QUALITY = { light: .35, balanced: .73, rich: 1.3 };
 let savedQuality = null; try { savedQuality = localStorage.getItem('monet.quality'); } catch (e) {}
-let qualityName = QUALITY[params.get('quality')] ? params.get('quality') : QUALITY[savedQuality] ? savedQuality : matchMedia('(pointer:coarse)').matches && innerWidth < 900 ? 'light' : 'balanced';
+// the window's size, read in one place — by the quality's guess, the camera, the canvas and the canvas over the view — and never zero, and so
+// never a NaN: a hidden or collapsed pane reports 0 x 0, and an aspect of 0/0 goes into the projection and stays there, every frame after it
+// clipping away, `monet.snap()` coming back black, which is the one thing the harness must not do (M0: a frame is checked without a visible
+// pane). A zero size is not taken: what stands instead is the last real one, or 1280 x 720 if there has never been one, so the world still
+// renders at a size worth reading while the pane is away. `vpReal` says whether the window has ever given a size of its own, so that what had
+// to be guessed from the stand-in can be asked again when it does
+let vpW = 1280, vpH = 720, vpReal = false;
+function viewport() { if (innerWidth > 0 && innerHeight > 0) { vpW = innerWidth; vpH = innerHeight; vpReal = true; } return [vpW, vpH]; }
+const viewAspect = () => { const v = viewport(); return v[0] / v[1]; };
+
+// the quality, if nothing is asked for and nothing was chosen before: a touch device with a small window is a phone, and gets the light
+// world. The width comes through `viewport` now — read raw, a pane collapsed at load gave 0, which is under 900, and every touch device was
+// called a phone. And a guess made against the stand-in size is only provisional (`qualityGuessed`): the first size the window gives of its
+// own makes it again
+const guessQuality = () => matchMedia('(pointer:coarse)').matches && viewport()[0] < 900 ? 'light' : 'balanced';
+const qualityAsked = QUALITY[params.get('quality')] ? params.get('quality') : QUALITY[savedQuality] ? savedQuality : null;
+let qualityName = qualityAsked || guessQuality(), qualityGuessed = !qualityAsked && !vpReal;
 
 // seeded random: identical world on every load
 let rng = 18401926;
@@ -181,13 +197,6 @@ const col = hex => new THREE.Color(hex);
 
 // ============================================================ renderer, scene, camera
 const scene = new THREE.Scene();
-// the window's size for the camera and the canvas, never zero and so never a NaN: a hidden or collapsed pane reports 0 x 0, and an aspect
-// of 0/0 goes into the projection and stays there — every frame after it clips away and `monet.snap()` comes back black, which is the one
-// thing the harness must not do (M0: a frame is checked without a visible pane). A zero size is not taken: what stands instead is the last
-// real one, or 1280 x 720 if there has never been one, so the world still renders at a size worth reading while the pane is away
-let vpW = 1280, vpH = 720;
-function viewport() { if (innerWidth > 0 && innerHeight > 0) { vpW = innerWidth; vpH = innerHeight; } return [vpW, vpH]; }
-const viewAspect = () => { const v = viewport(); return v[0] / v[1]; };
 const camera = new THREE.PerspectiveCamera(58, viewAspect(), .05, 900);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
@@ -2687,9 +2696,14 @@ let drifting = false, driftS = 0, driftTarget = 0, recover = null;
 const velocity = V(), keys = new Set(), EYE = 1.45; const BODY = (() => { const H = EYE / .93, s = H / 1.75, m = 22 * H * H, lm = m / 77.7, la = s * s / lm, lt = Math.sqrt(lm / s), lHIC = Math.pow(la, 2.5) * lt, F0 = 3000 * s * s, kT = F0 / (.03 * .4 * s), Bh = F0 * (.8 / .06) / (2 * s), zl = Bh / (2 * Math.sqrt(kT * m)); return { s, H: +H.toFixed(3), m: +m.toFixed(1), lm: +lm.toFixed(3), la: +la.toFixed(3), lHIC: +lHIC.toFixed(3), zetaLeg: +zl.toFixed(2), zetaTrunk: +(520 / (2 * Math.sqrt(26300 * 27.2))).toFixed(3), w: [1 / 250, 1 / 20, 1 / 5].map(v => v * 250) }; })(), LANDING_E = z => z >= 1 ? 0 : Math.exp(-Math.PI * z / Math.sqrt(1 - z * z)), SWIM = (() => { const pace = .9, sprint = 2.2, shoulder = ARM[1].S.x, depth = .22, cdA = .5 * 2 * shoulder * depth, drag = v => .5 * 1000 * cdA * v * v, win = STROKE.pull[1] - STROKE.pull[0], pullF = (p, v) => p >= STROKE.pull[0] && p < STROKE.pull[1] ? .4 * drag(v) / (win / 2) * Math.pow(Math.sin((p - STROKE.pull[0]) / win * Math.PI), 2) : 0, I = BODY.m * BODY.H * BODY.H / 12, c = 1000 * 1.0 * 2 * shoulder * Math.pow(BODY.H, 4) / 64; let Mm = 0; for (let i = 0; i < 300; i++) { const p = i / 300; Mm += pullF(p, pace) * strokeHands(p).sp / 300; } const wss = Math.sqrt(Mm / c), thE = I / (2 * c) * Math.log(2), moment = (p, v, u) => u * pullF(p, v) * strokeHands(p).sp, steer = (d, om) => clamp((d - Math.sign(om) * I / (2 * c) * Math.log(1 + c * om * om / Mm)) / thE, -1, 1), step = (st, d, dt, v, stroking, per) => { const u = steer(d, st.om), M = stroking ? moment(((st.ph % 1) + 1) % 1, v, u) : u * Mm * (v / pace) * (v / pace); st.om += (M - c * st.om * Math.abs(st.om)) / I * dt; st.th += st.om * dt; if (per) st.ph += dt / per; st.u = u; return u; }; return { pace, sprint, cdA: +cdA.toFixed(4), I: +I.toFixed(2), c: +c.toFixed(2), Mmean: +Mm.toFixed(3), wss: +wss.toFixed(3), thE: +thE.toFixed(4), drag, pullF, moment, steer, step }; })(), swimTurn = { th: 0, om: 0, ph: 0, u: 0 }; let steerU = 0; // the swimmer's turning is the body's own (`SWIM`), no law set: the body's yaw inertia is the prone body's about its middle (its mass on its length squared over twelve, 10.8 kg m²), its resistance to turning the cross-flow drag of its length swinging through the water (a rough cylinder's coefficient of 1 on the shoulders' breadth, integrated along the body: the torque goes as the rate squared, 35 N m s²), and what turns it is the strokes' own pull: the arms' share of the propulsion (.4 of the stroke's impulse, as `PULSE` has it) at the pace's own drag (half a coefficient of .5 on the shoulders' breadth by a chest's depth, 17 N at the easy pace, 82 sprinting), spread over the pull's window as the pull is, and pulled unequally on the two sides by a steering asymmetry — each hand's pull times its own lateral reach on the arms' path (`strokeHands`) gives the yaw moment, 2.5 N m at full asymmetry averaged over the easy stroke; the steersman's law from those numbers alone: full asymmetry until the angle still to turn is within what the body would swing through if the pull were reversed now (the stopping angle under the quadratic drag), eased over the angle the body coasts through from its steady rate. So a quarter turn takes six seconds of easy strokes and three sprinting (the body's peak rate .4 and 1.0 rad/s; M44's law turned it in .6 s at 7.9 rad/s, a head's speed, not a body's), the body turns in lurches with the pulls, and the stroke's line lags the key while the swimmer crabs toward it. Floating, the same moment sculled steadily. The chest's depth (.22 m) and the two drag coefficients are read // the walker's body from the eye's height (the eye at .93 of the stature, 1.56 m): its length scale s on the crash tests' 1.75 m, and its mass no longer by the cube but by the build (a body mass index of 22, the century's adult: 53.5 kg — the cube gave 49.5), so the criteria scale by a mass and a length apart, not by similarity alone: Mertz and Irwin's laws for dummies of another size — with the tissues the same, a force scales as the length squared, an acceleration as that over the mass (1.15 here: the lighter body stands more g), a time as √(mass over length), and the Head Injury Criterion as the acceleration's 2.5 power times the time (1.26); the legs' landing damping from the muscles themselves: the extensors' 3 kN at the foot (by the square) on Hill's stretched slope (.8 over .06 of the fastest, 2 m/s, per the scale) against the tendons' spring (3% at full force over .4 m) and the body's mass — 2.7, overdamped: the legs give and do not bounce; the trunk's from Lobdell's thorax (26.3 kN/m and 520 Ns/m on 27.2 kg): .31; the worths of the parts' injuries no longer the Injury Severity Score's squares (a convention) but what each kills: the crash records' case fatality by the worst injury, one in 250 for a tibia's fracture (AIS 2), one in 20 for a chest's crush (3), one in 5 for the head's (4), over the tibia's: 1, 12.5, 50
 function lookAtTarget(look) { camera.lookAt(look); yaw = camera.rotation.y; pitch = camera.rotation.x; }
 function fitFov(pl) { const f = pl.view.fov || 58; if (!pl.painting) return f; const sa = viewAspect(); return sa >= pl.painting.aspect ? f : 2 * Math.atan(Math.tan(f * Math.PI / 360) * pl.painting.aspect / sa) * 180 / Math.PI; }
+// whose framing the camera's fov is holding — set wherever the fov is set, and not `placeIndex`, which follows the walk: walking from the pond
+// to the poplars changes the dominant place, and the framing the visitor arrived with should not change under them. On a resize the fov is fit
+// to that place again, at the new aspect; mid-travel it is the fov being flown toward that is refit (the departure fov stands, a transient)
+let fovPlace = 0;
+function refitFov() { if (travel) travel.f1 = fitFov(places[travel.i]); else camera.fov = fitFov(places[fovPlace]); camera.updateProjectionMatrix(); }
 function paintingHour(pl) { const P = pl.painting || pl.panels; if (!P || !pl.stops || params.has('hour')) return; hourT = pl.stops.length < 2 ? 0 : P.stop / (pl.stops.length - 1); }
 function applyViewNow(i) {
-  const v = places[i].view; camera.position.copy(v.p); camera.fov = fitFov(places[i]); camera.updateProjectionMatrix(); lookAtTarget(v.look); paintingHour(places[i]);
+  const v = places[i].view; camera.position.copy(v.p); camera.fov = fitFov(places[i]); fovPlace = i; camera.updateProjectionMatrix(); lookAtTarget(v.look); paintingHour(places[i]);
   fly = !!places[i].aerial; syncFly(); travel = null; drifting = false; velocity.set(0, 0, 0); landed = falling = false; fallV = slideV = 0; if (!fly) lastSpot = spotSaid = i;
   applyHour(); showLocation(places[i]); selectView(i);
 }
@@ -2716,7 +2730,7 @@ function updateTravel(dt) {
   camera.position.copy(travel.curve.getPoint(e));
   // look: where you were looking, then down at the place you are flying to (the land passes below), then the painting's own look
   lookAtTarget(travel.l0.clone().lerp(travel.lm, sstep(e, 0, .3)).lerp(travel.l1, sstep(e, .62, 1))); camera.fov = lerp(travel.f0, travel.f1, e); camera.updateProjectionMatrix();
-  if (k >= 1) { const i = travel.i; travel = null; fly = !!places[i].aerial; syncFly(); paintingHour(places[i]); applyHour(); showLocation(places[i]); }
+  if (k >= 1) { const i = travel.i; travel = null; fovPlace = i; fly = !!places[i].aerial; syncFly(); paintingHour(places[i]); applyHour(); showLocation(places[i]); }
 }
 const _fwd = V(), _right = V(), _move = V();
 function updateWalk(dt) {
@@ -2997,7 +3011,15 @@ $('#closePhoto').addEventListener('click', () => photo(false));
 $('#savePhoto').addEventListener('click', savePhoto);
 $('#hour').addEventListener('input', e => setHour(+e.target.value));
 document.querySelectorAll('[data-quality]').forEach(b => b.addEventListener('click', () => setQuality(b.dataset.quality)));
-addEventListener('resize', () => { camera.aspect = viewAspect(); camera.updateProjectionMatrix(); renderer.setSize(...viewport()); });
+// the window changed: the camera's aspect, its framing, and the canvas. The framing was fit at the viewpoint and never again, so a window
+// resized after the visitor arrived kept the shape of the one they arrived at — turned narrow at the haystacks, the picture ran off both sides
+// instead of the view widening to hold it. And if the quality had to be guessed against the stand-in size because the pane was away at load,
+// this is the first the window has said of its own: guess again, and take the answer if it differs — without saving it, a guess being no
+// choice of the visitor's
+addEventListener('resize', () => {
+  const wasGuess = !vpReal; camera.aspect = viewAspect(); refitFov(); renderer.setSize(...viewport());
+  if (wasGuess && vpReal && qualityGuessed) { qualityGuessed = false; const g = guessQuality(); if (g !== qualityName) setQuality(g, false); }
+});
 
 // ============================================================ the paintings, projected
 // Each place is one of Monet's canvases (public domain; see paintings/CREDITS.md). After the world is built, the scene is rendered
@@ -3151,9 +3173,11 @@ let overlayOn = params.has('overlay'), overlayAlpha = parseFloat(params.get('ove
 function updateOverlay() {
   const pl = places[placeIndex];
   if (!overlayOn || !pl.painting) { overlay.style.display = 'none'; return; }
-  const P = pl.painting, hf = Math.tan(pl.view.fov * Math.PI / 360) / Math.tan(camera.fov * Math.PI / 360), h = innerHeight * hf, w = h * P.aspect;
+  // the frame is measured against the canvas the world is drawn on, not the window: with the pane away the canvas stands at the size the
+  // world renders at (`viewport`) while the window reports nothing, and a height of 0 x hf gave a frame with no height at all
+  const [vw, vh] = viewport(), P = pl.painting, hf = Math.tan(pl.view.fov * Math.PI / 360) / Math.tan(camera.fov * Math.PI / 360), h = vh * hf, w = h * P.aspect;
   if (overlay.getAttribute('src') !== P.src) overlay.src = P.src;
-  overlay.style.cssText = `display:block;position:fixed;left:${(innerWidth - w) / 2}px;top:${(innerHeight - h) / 2}px;width:${w}px;height:${h}px;opacity:${overlayAlpha};pointer-events:none;z-index:5`;
+  overlay.style.cssText = `display:block;position:fixed;left:${(vw - w) / 2}px;top:${(vh - h) / 2}px;width:${w}px;height:${h}px;opacity:${overlayAlpha};pointer-events:none;z-index:5`;
 }
 
 // ============================================================ building, quality
@@ -3172,11 +3196,11 @@ function buildAll() {
   buildProjectors();
   genMs = performance.now() - t0;
 }
-function setQuality(name) {
-  if (!QUALITY[name]) return; qualityName = name;
+function setQuality(name, save = true) { // `save` false where the quality was not chosen but guessed again (the pane's first real size): the guess is not the visitor's choice and is not kept
+  if (!QUALITY[name]) return; qualityName = name; qualityGuessed = false;
   document.querySelectorAll('[data-quality]').forEach(b => { b.classList.toggle('selected', b.dataset.quality === name); b.setAttribute('aria-pressed', String(b.dataset.quality === name)); });
   renderer.setPixelRatio(Math.min(devicePixelRatio, aerialMode ? 1 : DPR_CAP[name])); reflTarget.setSize(...REFL_SIZE[name]);
-  try { localStorage.setItem('monet.quality', name); } catch (e) {}
+  if (save) try { localStorage.setItem('monet.quality', name); } catch (e) {}
   buildAll(); awake();
 }
 document.querySelectorAll('[data-quality]').forEach(b => { b.classList.toggle('selected', b.dataset.quality === qualityName); b.setAttribute('aria-pressed', String(b.dataset.quality === qualityName)); });
@@ -3247,13 +3271,44 @@ function start() {
   setTimeout(() => { const s = monet.state; console.log(`monet: ${s.patches} patches · ${s.drawCalls} draw calls · ${s.triangles} triangles · generated in ${s.genMs} ms`); }, 400);
   if (params.has('debug')) { const d = $('#debug'); d.style.display = 'block'; const upd = () => { const s = monet.state; d.textContent = `patches ${s.patches}  calls ${s.drawCalls}  tris ${s.triangles}\ngen ${s.genMs} ms  ${JSON.stringify(timings)}\nfps ${s.fps}  cam ${s.camera}  ${s.stop}`; }; upd(); setInterval(upd, 500); }
   if (params.has('bench')) { // GPU-synced frame times at each viewpoint, drawn into the debug overlay for headless capture
-    const gl = renderer.getContext(), px = new Uint8Array(4), res = [];
-    const measure = () => { monet.tick(0); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const t0 = performance.now(); for (let k = 0; k < 20; k++) { monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / 20; };
-    for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) { if (!places[i].view) continue; applyViewNow(i); res.push(`${places[i].file || 'aerial'} ${measure().toFixed(1)}ms`); }
-    applyViewNow(2); const withR = measure(); monet.flags.noRefl = true; const without = measure(); monet.flags.noRefl = false; res.push(`refl ${(withR - without).toFixed(1)}ms`);
-    monet.flags.noProjPass = true; const noP = measure(); monet.flags.noProjPass = false; res.push(`proj ${(withR - noP).toFixed(1)}ms`);
-    applyViewNow(0); monet.tick(0);
-    const d = $('#debug'); d.style.display = 'block'; d.textContent = `bench ${canvas.width}x${canvas.height} dpr ${renderer.getPixelRatio()}  ${res.join('  ')}\npatches ${patchTotal}  gen ${genMs.toFixed(0)} ms`; console.log(d.textContent);
+    // the first frames at a viewpoint are not the frame's cost: the materials new to that place compile on their first draw and the projector's
+    // depth pass is taken again — 211 ms a frame at the pond against 32 once it is running, and M46's single block of twenty caught that and
+    // called it the pond's price (64 ms). So a block is thrown away before any is kept. And the passes that follow spread 32 to 53 ms with
+    // nothing changing between them: that spread is the machine's, not the frame's, so several are run and the least kept — the pass least
+    // interrupted by whatever else the machine was doing. `?bench=6` asks for six. The frame is only found this way with the clock driven by
+    // hand and each frame synced by a read of one pixel: with the pane away the page is given no animation frames at all, and it says so
+    const gl = renderer.getContext(), px = new Uint8Array(4), res = [], detail = {}, N = 20, P = Math.max(1, +params.get('bench') || 3);
+    const block = () => { const t0 = performance.now(); for (let k = 0; k < N; k++) { monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / N; };
+    // and the size is read after the warm-up, not before: from above sixty metres the world is drawn at one device pixel to the CSS pixel, not
+    // two (`aerialMode`), and that switch is made in the first `update` of the measurement. So the aerial viewpoint's frame is a quarter of the
+    // others' pixels and its number is not theirs — a bench that printed one canvas size across the top said otherwise. Any viewpoint drawn at
+    // a size other than the first's now carries it
+    const measure = key => { monet.tick(0); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const warm = +block().toFixed(1), size = `${canvas.width}x${canvas.height}`, runs = []; for (let p = 0; p < P; p++) runs.push(+block().toFixed(1)); detail[key] = { warm, runs, least: Math.min(...runs), size }; return Math.min(...runs); };
+    let size0 = null;
+    for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) { if (!places[i].view) continue; const nm = places[i].file || 'aerial'; applyViewNow(i); const t = measure(nm); size0 ||= detail[nm].size; res.push(`${nm} ${t.toFixed(1)}ms${detail[nm].size === size0 ? '' : ` at ${detail[nm].size}`}`); }
+    // what a pass costs is a difference between two measurements, and a difference is only as good as what the two have in common. Taken minutes
+    // apart the machine's own drift lies between them, and measured that way the projector's pass came out at −3.4 ms, cheaper than not running
+    // it. So the blocks alternate, on and off within one run, each on with an off beside it that met the same machine; every other pair is taken
+    // the other way round, or whatever happens over the course of a pair is charged to the pass (which put the projector at −2.5 ms, all six
+    // differences negative and agreeing); the pass costs the middle of the paired differences; and the extreme pair at each end is set aside
+    // before saying whether it was resolved — one block interrupted is enough to put a −8.7 among five differences of 5 to 16.
+    // Both passes are real and both are near the noise, so a difference wants more pairs than a level does: over twenty-five pairs at Argenteuil,
+    // at 2560 x 1600, the reflection is 8.1 ms (24 of the 25 positive, quartiles 6.7 and 11.0) and the projector 6.9 ms (23 of 25, 4.5 and 9.9) —
+    // a fifth of that frame each. So a run takes twice the passes in pairs and no fewer than eight; at the eight a default run gives, or the twelve
+    // of `?bench=6`, the reflection resolves every time and the projector seldom, and a run that cannot separate a pass says so and does not say it
+    // is absent — which the harness did say, and which its own `projMs` seemed to confirm, but that timer reads the submission (.1 to .5 ms), not
+    // the pass the GPU then runs
+    const Q = Math.max(8, 2 * P);
+    const delta = (key, flag) => { monet.tick(0); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); block(); const on = [], off = [];
+      const take = f => { monet.flags[flag] = f; const t = +block().toFixed(1); monet.flags[flag] = false; return t; };
+      for (let p = 0; p < Q; p++) { if (p & 1) { off.push(take(true)); on.push(take(false)); } else { on.push(take(false)); off.push(take(true)); } }
+      const pairs = on.map((v, k) => +(v - off[k]).toFixed(1)).sort((a, b) => a - b), md = (pairs[(Q - 1) >> 1] + pairs[Q >> 1]) / 2;
+      const lo = pairs[1], hi = pairs[Q - 2], found = lo * hi > 0;
+      detail[key] = { on, off, pairs, median: +md.toFixed(1), trimmed: [lo, hi], found };
+      return found ? `${md.toFixed(1)}ms (${lo} to ${hi})` : `under the noise at ${Q} pairs (${lo} to ${hi}ms)`; };
+    applyViewNow(2); res.push(`refl ${delta('reflection at argenteuil', 'noRefl')}`); res.push(`proj ${delta('projector at argenteuil', 'noProjPass')}`);
+    applyViewNow(0); monet.tick(0); monet.bench = detail;
+    const d = $('#debug'); d.style.display = 'block'; d.textContent = `bench ${size0} dpr ${DPR_CAP[qualityName]}  ${res.join('  ')}\npatches ${patchTotal}  gen ${genMs.toFixed(0)} ms  ${P} passes of ${N} after a discarded one, least kept${document.hidden ? '  (pane hidden: no animation frames, the clock driven by hand)' : ''}`; console.log(d.textContent);
   }
   monet.ready = true; document.body.classList.add('ready');
 }

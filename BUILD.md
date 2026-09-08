@@ -3099,8 +3099,93 @@ arrives → taken, canvas 3200 × 1800; collapsed to 0 × 0 → the 1600 × 900 
 the fov widened by `fitFov` for a canvas taller than the window; collapsed again → the tall size stands. No NaN at any step, and a real
 window always wins.
 
-**Still visible.** Two other readings of the window are left as they were, neither of them a NaN: the quality preset at load reads
-`innerWidth < 900` on a coarse pointer, so a touch device whose pane is collapsed at load picks `light`; and the canvas overlay (key C)
-takes its height from `innerHeight`, so with the pane away it has none — it is a DOM element over the canvas, which no snap carries
-anyway. The fov `fitFov` chose for a viewpoint is still not re-fitted when the window resizes, as before: the resize handler sets the
-aspect alone, and the painting's fit is right again at the next viewpoint.
+**Still visible in M46b; fixed in M46c.** Two other readings of the window are left as they were, neither of them a NaN: the quality preset
+at load reads `innerWidth < 900` on a coarse pointer, so a touch device whose pane is collapsed at load picks `light`; and the canvas
+overlay (key C) takes its height from `innerHeight`, so with the pane away it has none — it is a DOM element over the canvas, which no snap
+carries anyway. The fov `fitFov` chose for a viewpoint is still not re-fitted when the window resizes, as before: the resize handler sets
+the aspect alone, and the painting's fit is right again at the next viewpoint.
+
+### Progress · M46c — the bench across the nine viewpoints, and the three readings of the window M46b left (fix: "do a proper bench across the nine viewpoints now that the camera is sane and fix what's visible")
+
+**What was wrong.** The bench measured nothing. Run headless before M46b it printed its own header — `bench 0x0 dpr 2` — and under it nine
+plausible frame times, the pond at 54.2 ms; but the camera's NaN clipped every vertex and the canvas had no pixels at all. Run again now
+against that build to be sure: aspect NaN, fov NaN, no element of the projection finite, not one lit pixel across the middle of the frame,
+and the nine times printed just the same. They were the cost of `update` and of the pixel read that syncs it, and not a frame's.
+
+With the camera sane it still over-reported, because the first frames at a viewpoint are not the frame's cost: the materials new to that
+place compile on their first draw and its projector depth pass is taken again. One tick of warm-up does not cover it — at the pond the first
+block of twenty runs 211 ms a frame, the next 39, and the least of the ten after it 32. M46's line put the pond at 64.1 ms, near three
+times what it costs. And the two passes were
+priced by differences between measurements taken minutes apart, with the machine's own drift lying between them: 20.9 ms for the reflection,
+7.6 ms for the projector, both mostly warm-up. Nothing in the line said which of it was measurement and which was the machine.
+
+The three readings of the window M46b left were each wrong in their own way. The quality guessed at load read `innerWidth < 900` raw, and 0
+is under 900, so a touch device whose pane was collapsed at load was called a phone and given the light world for the session. The canvas
+over the view (key C) took its height from `innerHeight`, so with the pane away it had none, while the canvas beneath it stood at 1280 × 720.
+And `fitFov` — which widens the view when the window is narrower than the picture, so that the whole canvas is held — ran at the viewpoint
+and never again: a window narrowed after the visitor arrived kept the shape of the one they arrived at, and the picture ran off both sides.
+
+**What changed.** `viewport` moves up among the basics, above the quality, and the quality's guess reads the window through it like everything
+else. A guess that had to stand on the stand-in size is provisional (`qualityGuessed`), and the first size the window gives of its own makes
+it again — taken if it differs, and not written to `localStorage`, a guess being no choice of the visitor's (`setQuality`'s second argument).
+The canvas over the view is measured against the canvas the world is drawn on, not the window, so the two agree wherever the window is. And
+the framing is fit again on every resize (`refitFov`), against the place whose framing the fov is holding — a new `fovPlace`, set wherever the
+fov is set, and not `placeIndex`, which follows the walk: walking from the haystacks to Rouen must not re-frame the view under the visitor.
+Mid-flight it is the fov being flown toward that is refit, so a window changed in the air arrives right.
+
+The bench keeps the shape it had — the clock driven by hand, each frame synced by a read of one pixel, the whole drawn into the debug overlay
+for headless capture — and is made to say what it measured. A block of twenty frames is run and thrown away before any is kept; several
+passes follow and the least is kept, the one least interrupted by whatever else the machine was doing (`?bench=6` asks for six). Each
+viewpoint's canvas size is recorded and printed where it differs from the first's, because above sixty metres the world drops to one device
+pixel per CSS pixel and the aerial viewpoint's frame is a quarter of the others' — a single size across the top said otherwise. The two
+passes are priced by blocks alternating on and off within one run, every other pair taken the other way round so that a drift inside a pair
+falls on both sides; the pass costs the middle of the paired differences, the extreme pair at each end set aside first. And a run that cannot
+separate a pass from the noise says that, and does not say the pass is absent.
+
+**Verified.** The nine viewpoints, at 2560 × 1440 and DPR 2 (a retina window of 1280 × 720), quality balanced, 264,763 patches and 1,146,086
+triangles, on an Apple M3, with the pane hidden. The figure is the median of four runs' minima, each run six passes of twenty frames after a
+discarded one; the range is those four runs.
+
+| Viewpoint | Frame | Over four runs |
+| --- | --- | --- |
+| The Water-Lily Pond | 22.0 ms | 20.9–22.3 |
+| Woman with a Parasol | 23.8 ms | 21.1–26.0 |
+| The Bridge at Argenteuil | 22.6 ms | 20.4–26.6 |
+| Poplars on the Epte | 22.7 ms | 18.7–24.0 |
+| Haystacks | 21.4 ms | 18.3–24.5 |
+| Rouen Cathedral | 19.1 ms | 17.2–21.2 |
+| Impression, Sunrise | 16.0 ms | 14.1–17.5 |
+| Les Nymphéas | 19.6 ms | 18.2–22.5 |
+| The whole universe (at 1280 × 720) | 20.4 ms | 19.8–21.8 |
+
+So the world costs much the same wherever you stand in it — eight of the nine within 5 ms of each other, the harbour cheapest at 16 (it is
+mostly fog and water) and the meadow dearest at 24. At this size that is 42 to 63 frames a second: the world as it now stands sits on the
+edge of M0's sixty and no longer comfortably inside it, where the pond alone, at 74.7 k patches, was 4.6 ms.
+
+The two passes are both real and both near the noise, so a difference wants more pairs than a level does. Over twenty-five pairs at
+Argenteuil, at 2560 × 1600: the reflection 8.1 ms, 24 of the 25 differences positive, quartiles 6.7 and 11.0; the projector 6.9 ms, 23 of 25,
+quartiles 4.5 and 9.9 — near a fifth of that frame each. At the twelve pairs a default run gives, the reflection resolves every time (6.4 to
+8.3 ms over the four runs) and the projector none of them, and the line says so. The harness said "not found in the frame" before this was
+measured, and its own `projMs` seemed to agree at .1 to .5 ms — but that timer reads the submission, not the pass the GPU then runs.
+`m46c-nine.jpg` is the nine frames themselves, every one out of `monet.snap()` with the window at 0 × 0.
+
+The quality's guess: with the pane at 0 × 0 and a coarse pointer, the old expression picks `light` and the new one `balanced`. When
+420 × 800 then arrives, the guess is made again and `light` taken — 264,763 patches down to 126,212, the canvas to 525 × 1000 — and
+`localStorage` stays empty. A second change of the window does not guess again; a visitor who then chooses `rich` gets it and it is saved;
+and a narrow window after that leaves their choice alone. The canvas over the view, with the window at 0 × 0 and the canvas at 1280 × 720:
+the frame 575.78 × 720 at 352.11 from the left, which is the canvas's own centre ((1280 − 575.78) / 2, and 720 × .7997), where it was 0 × 0
+at 0 before. Under a real window of 1280 × 800 it is 639.76 × 800 at 320.12 — exactly what it was before the change, the fix being felt only
+where the window says nothing. The framing: at the haystacks at 1280 × 720 the fov is 31; the window turned to 700 × 900 it becomes 62.064,
+which is `fitFov`'s own value for that aspect, where it stayed at 31 and the stacks ran off the sides. Standing at Rouen but framed for the
+haystacks, a resize keeps 62.064 and does not take Rouen's 45. And a flight to the harbour begun at 1400 × 800 aims at 30; the window turned
+to 700 × 900 in the air, it arrives at 47.896 — the harbour's fit at the aspect it landed in.
+
+**Still visible.** The bench is run with the pane hidden, which is what makes it a harness at all — the page is given no animation frames
+there, and the line says so — but a GPU compositing to a visible surface may be clocked differently, and these numbers have not been taken
+against one. The machine's own spread is wider than anything measured here: the pond moved by 1.4 ms across the four quiet runs and by 26
+across the contended ones earlier in the session, and the runs above were taken with nothing else of mine running. The projector's pass
+wants about twenty pairs where a default run gives eight and `?bench=6` twelve, so it usually goes unresolved; and three of the viewpoints
+(the haystacks, Rouen, the Orangerie) came out in two clusters 6 ms apart across the four runs, which is not the machine's shape and has not
+been chased. `travel.f0` — the fov a flight departs from — is not refit when the window changes in the air, only the one it arrives at. The
+quality is guessed a second time once and only if the first guess had to stand on the stand-in size; a visitor who loads on a phone at a
+real size and never resizes is where they always were.
