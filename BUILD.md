@@ -3017,3 +3017,62 @@ trunk's shares, Le Havre's two tides and the tide's age are read, the harbour's 
 rule takes the lip. The lips' forces and the formants' 3% are read, the mouth's width and the mandible's length are
 proportions of the body. Hertz's trace still leaves out the crack's own field, and the mallet, the edges' 25° and the
 stone's 40 MPa are read. The mortar's grain and the mason's half-millimetre are read.
+
+### Progress · M46 — the key beyond the frame: the picture swept a second time over the frame's top, the seam behind him, the fan at the pole (fix: "when flying, there are some visual bugs, look at the sky of both screenshots")
+
+**What was wrong.** The world outside the frame is painted in the picture's key, and the sky takes the same key: `extCol` reads the
+canvas by angle (`dirUv`) and, past the frame, reads the picture's own mirror image, soft. The mirror was unbounded in both
+coordinates, and both ran out. None of it depends on where the eye is — the sky's key is a function of direction alone — so all three
+faults were there from the first frame; on foot the canvas covers the frame and the rest sits low in the view, and flying is simply
+where the whole dome comes into sight.
+
+- **Over the frame's top the picture was swept again.** The mirror did not carry the top rows on: between the frame's edge and the pole
+  it ran through the whole canvas a second time, upside down. The pond's frame ends 31° above his axis, the zenith stands at 1.95 canvas
+  heights, and the mirror folded that to .048 — the canvas's foot, the pond's own water, hanging over your head. The rest the same: the
+  poplars' zenith read .300 of their canvas, the parasol's .375, Rouen's and the sunrise's .500, the haystacks' .597, Argenteuil's .750.
+- **Behind him the mirror never closed.** The pond's canvas is 51° wide, so a turn holds 7.014 of it — not a whole even number, so the
+  last copy met its own reflection: over four thousandths of a radian the read went from .996 of the canvas to .004, a step of 26 levels,
+  a hard edge standing from the horizon to the zenith at the azimuth opposite his look. It is worst where the count falls nearest an odd
+  number: Argenteuil 6.952 (a step of 31), the poplars 7.200 (30), the haystacks 7.178 (14), the pond 7.014 (26), the parasol 9.129 (10),
+  Rouen 11.856 (5) and the sunrise 9.445 (3).
+- **At the pole the columns fanned.** Toward the pole of the mapping every azimuth is nearly the same direction, so the canvas's columns
+  crowded into a pinwheel standing on the zenith. Round the turn at 86° up the read swung 41 levels at the poplars, 34 at Argenteuil, 20
+  at Rouen, 17 at the pond, in steps of up to 32 between neighbouring directions.
+
+**What changed.** Three repairs in `PAINT_GLSL`, all within the ext read, so the world beyond the frame and the sky take them together.
+
+- `extWidth` rounds the canvas's width in azimuth so that a whole even number of them fills the turn (the pond 7.014 → 8, Argenteuil
+  6.952 → 6, the poplars 7.200 → 8, the haystacks 7.178 → 8, the parasol 9.129 → 10, the sunrise 9.445 → 10, Rouen 11.856 → 12): the
+  mirrored copies then close on themselves behind him. It moves the frame's own edge by at most 7% of a canvas width (the pond's; Rouen's
+  by .6%), which at level 7 of a 13 × 16 read is under a texel, so the promise that `dirUv` matches the projection near the frame holds.
+- `foldV` leaves the frame's top and bottom edge and settles a fifth of a canvas inside it (a fold saturating at .18, at a rate of 4 a
+  canvas height) instead of sweeping the picture again. Every zenith now reads .82 of its own canvas — the rows just under the frame's
+  top, the willows at the pond and the sky at Argenteuil — and every nadir the rows just over its foot.
+- Toward the pole the columns close on the middle, from the frame's own top edge to 80°, so straight overhead the picture is read in one
+  column and not in wedges. Closing it earlier was tried and is worse: at 66° and at 57° the canvas's dark centre column is laid over the
+  whole upper sky, and the pond's high sky goes flat and green.
+
+**Verified.** `m46-sky.jpg`: the pond's whole sky as the ext read alone has it (the zenith at the centre, the horizon at the rim), then
+three frames — twenty metres up looking up the sky, back over his shoulder, and thirty-four up straight overhead — each before and after.
+The seam's step in the ext read, over three elevations and 256 samples across the azimuth opposite his look, before → after (of 255):
+the pond 26 → .7, Argenteuil 31.3 → .3, the poplars 30 → 1.0, the haystacks 14.3 → .3, the parasol 10 → .7, Rouen 5.3 → .3, the sunrise
+3.3 → .3 — every one down to the read's own quantisation. Round the whole turn at 86° up, the swing (and the worst step between
+neighbours) before → after: the pond 17.3 (13.7) → .7 (.7), the parasol 14.3 (.7) → 1.3 (.7), Argenteuil 34.3 (25.7) → 0, the poplars
+40.7 (32) → 0, the haystacks 18.0 (12.3) → 0, Rouen 19.7 (1.0) → 0, the sunrise 18.3 (3.0) → 0. Over the whole sky the mean difference
+old → new is 8.9 at the pond, 19.7 at the parasol, 14.5 at Argenteuil, 9.2 at the poplars, 4.5 at the haystacks, 4.9 at Rouen, 6.0 at the
+sunrise; within 15° of the horizon, where walking looks, it is .2 at Rouen, 2.1 at the haystacks, 2.7 at the pond and at most 7.5 at
+Argenteuil (whose count rounds down); above the frame it is 5.1 to 41.7. The figures are the same at his spot and 38 m up, as they must
+be for a read that takes a direction and not a place.
+
+The frames were taken by rendering the scene to a target with a camera made for the purpose, because the app's own camera was carrying a
+NaN: with the pane collapsed the resize handler sets `camera.aspect = innerWidth / innerHeight` on a 0 × 0 window, `fitFov` then divides
+by it, and every frame after that clips away — `monet.snap()` returns black, against M0's promise that a frame can be checked without a
+visible pane. Not touched here. For the same reason there is no bench this milestone; the ext read gains a floor, two divides, an `exp`
+and a `smoothstep`, once per fragment in the sky and once in the world's base pass.
+
+**Still visible.** The mirrored copies still read as soft wedges in the upper sky, light and dark by the canvas's own top rows: at
+the pond that band is willow, so the sky over the water garden keeps its green cast and carries eight wedges all the way round.
+The fold's fifth and its rate, and the pole's 80°, are chosen and not measured. The rounding takes the nearest even count, so a
+copy is not quite the canvas's width — the pond's an eighth narrower, Argenteuil's a sixth wider — though the frame's own edge
+lands under 7% of a width off. The ext read still knows nothing of the sun: the upper sky's colour round the turn is the canvas's,
+mirrored, not the light's.

@@ -519,18 +519,35 @@ uniform sampler2D uPaint, uPaintW; uniform float uPxRad, uDbg;
 // the painting, projected from where Monet stood: its texture, the depth map seen from there, the projector matrix (world -> canvas uv, depth)
 uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; uniform mat4 uProjM; uniform vec2 uNearSize; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
-vec2 mirr(vec2 uv) { return 1. - abs(fract(uv * .5) * 2. - 1.); }
+float mirr(float u) { return 1. - abs(fract(u * .5) * 2. - 1.); }
+// the canvas's width in radians of azimuth, rounded so that a whole even number of them fills the turn: the mirrored copies then close on
+// themselves behind him, where before the last one met its own reflection in a seam — a hard edge standing from the horizon to the zenith
+// in the sky, at the azimuth opposite his look. The rounding moves the frame's own edge by at most a fourteenth of a canvas width, which is
+// less than a texel of so soft a read
+float extWidth() { float k = 2. * atan(uProjTan.x); return 6.2831853 / max(2., 2. * floor(3.1415927 / k + .5)); }
 // canvas coordinates of a direction from the painter, by angle: continuous all the way round, and the same as the projection near the frame
 vec2 dirUv(vec3 d) {
   float x = dot(d, uProjR), y = dot(d, uProjU), z = dot(d, uProjF);
-  return vec2(atan(x, z) / (2. * atan(uProjTan.x)), atan(y, length(vec2(x, z))) / (2. * atan(uProjTan.y))) + .5;
+  return vec2(atan(x, z) / extWidth(), atan(y, length(vec2(x, z))) / (2. * atan(uProjTan.y))) + .5;
 }
+// over the frame's top edge and under its bottom the picture is not swept through a second time: the read leaves the edge and settles a
+// fifth of a canvas inside it, so that a direction over the frame keeps what the frame's top has (the willows at the pond, the sky at
+// Argenteuil) and one under it what the bottom has. Mirrored the whole way, the zenith took the canvas's foot instead — at the pond its
+// own water, hanging upside down overhead, and the whole picture swept through between the frame and the pole
+float foldV(float v) { float e = clamp(v, 0., 1.), o = v - e; return e - sign(o) * (1. - exp(-abs(o) * 4.)) * .18; }
 // the picture's colour carried on beyond its frame: a read of the canvas so soft that nothing of the picture is left in it, only its
 // colour in that direction; the world outside the frame takes this colour and keeps its own light and structure
 // farther round from the frame it is read softer still, but never down to the picture's one mean colour (at Argenteuil that is a grey-green
 // mud of sky, trees and water together): a few rows and columns remain, so the sky's directions keep the sky's colour and the ground's
 // the water's, and behind him the columns of the edge no longer fan out over the ground in bands from where he stood
-vec3 extCol(vec3 d) { vec2 uv = dirUv(d); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.; return textureLod(uPainting, mirr(uv), 7. + 2. * smoothstep(1.1, 2.4, em)).rgb * uGradeMul + uGradeAdd; }
+vec3 extCol(vec3 d) {
+  vec2 uv = dirUv(d); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.;
+  // toward the poles of this mapping every azimuth is nearly the same direction, and the canvas's columns crowd into a fan there: a
+  // pinwheel of wedges standing on the zenith. So as the ray rises past the frame's own top edge the columns close on the middle, and
+  // straight overhead the picture is read in one column and not in wedges
+  float ky = 2. * atan(uProjTan.y), pole = smoothstep(min(ky * .5, 1.3), 1.4, abs(uv.y - .5) * ky);
+  return textureLod(uPainting, vec2(mix(mirr(uv.x), .5, pole), foldV(uv.y)), 7. + 2. * smoothstep(1.1, 2.4, em)).rgb * uGradeMul + uGradeAdd;
+}
 // the world outside the frame, painted in the picture's key: the picture's colour for this direction, carrying the world's own light
 // (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves. The world keeps
 // two fifths of its own colour under the key: a tree stays green and a sail white where the key is blue, and the key is a tint, not a wash
