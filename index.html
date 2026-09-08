@@ -788,7 +788,13 @@ void main(){
     vec3 ecol = extCol(vWorld - uProjPos);
     vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 1.8), O, .6);
     ex = mix(ex, applyPaint(ecol, O, .3), smoothstep(.7, .95, fog)); // far off, the picture's own distance takes over from the fog
-    fin = mix(fin, ex, .85 * uProjOn);
+    // and the key belongs to his spot, as the sky's does (SKY_FRAG) and by the same twelve to forty-five metres: the ext read is soft by
+    // design — level seven to nine of the canvas, sixteen pixels across and then four — so away from the frame it is the picture's own
+    // mean, and it was laid over the whole world at 85 % from a spot the walker had left. The strength that carried it falls to nothing
+    // at every border between two places (see projectorOn), 1 to 0 and back in sixteen metres, so the meadow south of the parasol swung
+    // fifty levels of 255 in four seconds' walking, summer to winter and back. Now the picture holds where he stood and lets go by the
+    // time the border comes, and the world between two places is its own, which is the same argument M48 made for the sky overhead
+    fin = mix(fin, ex, .85 * uProjOn * (1. - smoothstep(12., 45., distance(cameraPosition, uProjPos))));
     float here = canvasHere(vWorld, cameraPosition);
 #ifdef INSTANCED
     float conf = front * frameEdge(puv) * projVis(puv, pz, 1.) * here;

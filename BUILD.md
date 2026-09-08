@@ -3407,3 +3407,61 @@ the world's; at the horizon behind you the two meet without a seam, checked at t
 fog colour is its sky's horizon colour by construction. The four numbers (.5, 1.25, 12, 45) are chosen against the eight viewpoints and the
 eye, not measured. And Argenteuil's boats move when the world is asked to stand still: `?still` stops the clock for everything else, and the
 one viewpoint with moored boats in it cannot be compared with itself frame to frame.
+
+### Progress · M49 — the crossing between two places: the world un-painted and painted again in six metres (fix: "the green became all of sudden darker and seems like from summer to winter")
+
+**What was wrong.** The key's strength is `sstep(w, .45, .75)` on the *normalized* share of the nearest place. Where two places meet neither
+can hold more than about half, so the one that wins stands at .50 — the very bottom of that window, where the key is .07. It is not one
+border but every border in the world. Walked from the pond to the poplars the key reads 1.00 at 40 m, .01 at 50 and 1.00 at 60; 1.00 at 108,
+.06 at 116, 1.00 at 124; 1.00 at 200, .00 at 212, 1.00 at 224 — three notches, each sixteen to twenty-four metres wide, and walking is 3.2
+m/s, so the fall alone is under two seconds.
+
+What the world does inside a notch is not a fade from one picture to the next but a spike through its own colours between them. On the
+meadow south of the parasol the lower third of the frame reads 129,140,93 at −121 m, 182,203,129 at −128 and 162,176,135 at −134: a dark
+olive, a bright spring green, a chalky sage — fifty-three levels of 255 up and twenty back, in thirteen metres. That is the season the walk
+seemed to cross.
+
+The two ends are that far apart because of what the key is made of away from the frame. `extCol` reads the canvas at level seven and, past
+the frame, at level nine — sixteen pixels across and then four — so away from the frame it is the picture's own mean. M48 found this
+overhead and gave the sky back to itself; the ground kept it, at 85 %, thrown from a spot the walker had left, and M48's own note said as
+much: the ground's key did not fall with distance or direction, so at forty metres the ground was the picture's and the sky was the world's.
+Rendered on its own the read is a structureless grey-olive wash with a few broad bands in it, no strokes and no picture (`m49-ext.jpg`). And
+the parasol's frame is .344 by .419 radians pointed 28° to the right of the walk and 15° up, so almost nothing the walker faces is inside
+it: the ground ahead stands .17 to .79 radians outside.
+
+It is that one line and nothing else. With it neutered twenty-eight metres past the parasol's spot the ground band goes 134,146,104 →
+174,196,127 and the far bank 116,125,108 → 132,144,130; neutering the re-fogging that follows it changes nothing at all, 134,146,104 either
+way.
+
+**What changed.** The ground's key belongs to his spot as the sky's does, and over the same twelve to forty-five metres: one term on the
+line that lays it, `1. - smoothstep(12., 45., distance(cameraPosition, uProjPos))`. At a viewpoint that distance is zero and the picture is
+thrown exactly as before; by the time a border comes it has let go, and the country between two places is its own. It also closes the split
+M48 left behind it — sky and ground now hand over together instead of at forty metres apart.
+
+**Verified.** The nine viewpoints at 3200 by 1600, compared pixel for pixel: seven have not one pixel of 5.12 M differing by more than a
+level, the aerial has two, and Argenteuil has 889 against the 2898 its own moored boats move between two frames of `?still` — the same one
+M48 could not compare with itself.
+
+The walk it was reported on, in 1 m steps. Before: 129,140,93 at −121 m, 182,203,129 at −128, 162,176,135 at −134. After: 158,175,118,
+182,203,129, 162,177,135. Over the whole stretch from the parasol's crest to Argenteuil's bank the ground's span falls from 52,62,49 to
+32,37,27 and the worst single metre from 14 levels to 8. The thirteen metres of approach that used to darken by 20 in the green now rise by
+9, which is flat. The largest row-to-row step across the middle of that frame — the far bank's edge, the nearest thing to a seam there —
+goes 17.2 to 15.2, and at the spot itself it is 2.4.
+
+The cost is one `distance` and one `smoothstep` inside a branch that already takes two texture reads and four depth taps. A paired bench
+alternating the two shaders over eight blocks at the pond could not separate them, −0.02 ms of 1.7 — but it ran with the browser pane away
+and prices the whole reflection pass at 0.2 ms where M46d measured 8.1, so it says only that the change is small against a frame it
+under-reports.
+
+**Still visible.** The crossing is a dissolve through the world's own colours, not a cross-fade between two pictures, and it cannot be one
+while a single canvas is thrown at a time: at a border both places stand at about half, so holding the key up there would mean swapping one
+picture for another at full strength, which is a cut where this is a dip. Nor can the window's top be raised far — Rouen's own viewpoint
+stands at a share of .824, and anything above about .80 would take key off the picture at the place the picture is for.
+
+The two halves are still uneven. Argenteuil's viewpoint is 19.5 m from that border where the parasol's is 38, so the picture goes over
+twenty-seven metres and comes back over nine, and the ground still moves 32 levels across the thirteen in the middle, four seconds' walking.
+
+Climbing out of the Seine onto the south bank the ground now moves more in a metre than it did — 41 levels against 20, forty-seven metres
+from Argenteuil's spot. That is the waterline's own contrast, which the key had been flattening. And the reflection's key is measured from
+the mirrored eye, so it lets go a little earlier in the water than in the air, a metre or two of it on the parasol's hill and none at
+Argenteuil, as `canvasHere` already did.
