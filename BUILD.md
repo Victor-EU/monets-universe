@@ -3161,6 +3161,9 @@ discarded one; the range is those four runs.
 So the world costs much the same wherever you stand in it — eight of the nine within 5 ms of each other, the harbour cheapest at 16 (it is
 mostly fog and water) and the meadow dearest at 24. At this size that is 42 to 63 frames a second: the world as it now stands sits on the
 edge of M0's sixty and no longer comfortably inside it, where the pond alone, at 74.7 k patches, was 4.6 ms.
+(These nine figures are the walk's shape and not the world's, and M46d withdraws them: the bench took them in a fixed order, so the places
+walked last were measured while the machine had quietened and came out a quarter cheaper than they are. What survives is the level — 21 to
+39 ms a viewpoint depending on the machine — and the reading that the world no longer holds sixty at this size.)
 
 The two passes are both real and both near the noise, so a difference wants more pairs than a level does. Over twenty-five pairs at
 Argenteuil, at 2560 × 1600: the reflection 8.1 ms, 24 of the 25 differences positive, quartiles 6.7 and 11.0; the projector 6.9 ms, 23 of 25,
@@ -3186,6 +3189,65 @@ against one. The machine's own spread is wider than anything measured here: the 
 across the contended ones earlier in the session, and the runs above were taken with nothing else of mine running. The projector's pass
 wants about twenty pairs where a default run gives eight and `?bench=6` twelve, so it usually goes unresolved; and three of the viewpoints
 (the haystacks, Rouen, the Orangerie) came out in two clusters 6 ms apart across the four runs, which is not the machine's shape and has not
-been chased. `travel.f0` — the fov a flight departs from — is not refit when the window changes in the air, only the one it arrives at. The
+been chased. (Chased in M46d: there are no clusters — four samples had fallen into two pairs — and what moved them was the fixed order of
+the walk.) `travel.f0` — the fov a flight departs from — is not refit when the window changes in the air, only the one it arrives at. The
 quality is guessed a second time once and only if the first guess had to stand on the stand-in size; a visitor who loads on a phone at a
 real size and never resizes is where they always were.
+
+
+### Progress · M46d — the two clusters were the order of the walk (fix: "chase the two clusters at haystacks, rouen and orangerie")
+
+**What was wrong.** M46c saw the haystacks, Rouen and the Orangerie each come out in two clusters 6 ms apart across four runs, said it was
+not the machine's shape, and left it. It was not their shape either: four samples had fallen into two pairs. Taken eight times each, in a
+randomised order, every one of the three is a single broad spread — the haystacks 27.3 to 31.6 ms, Rouen 25.3 to 36.0, the Orangerie 19.8
+to 26.1 — with nothing in the middle missing.
+
+What was moving was the machine, and it moves whole stretches of a run rather than one place in it: across those four runs the four late
+viewpoints rose and fell together, all high in the first and third and all low in the second and fourth. And the bench walked the nine in a
+fixed order, so a machine busy for ten seconds charged the same places every time, and a machine quietening over a run credited the same
+ones. Two cold loads settle it, one walking the nine forward and one walking them back: the Orangerie is 20.1 ms measured eighth and 35.2
+measured second; the pond 44.9 measured first and 31.7 measured last; and the two runs' own means differ by one part in a hundred (30.20
+and 30.57). Nothing moved but where in the walk each place stood. M46c's table was the walk's shape, not the world's.
+
+**What changed.** The bench warms every viewpoint first — a block at each, all of them thrown away, so the materials' first compile is paid
+before anything is kept — and then walks the nine as a round, each round starting one place further along, so that over the passes a place
+stands in a different position each time. The least of a place's rounds is kept. It costs exactly what it cost: sixty-three blocks of twenty
+frames either way, nine warm and fifty-four kept, only differently arranged. And a block is now preceded by two settled frames rather than
+one, because arriving at or leaving the aerial viewpoint changes the device pixel ratio and the canvas and its buffers are made again on the
+first frame there — a cost belonging to the arrival, not to the frame.
+
+**Verified.** With the order randomised, position no longer predicts anything: over 72 measurements the mean by position in the walk runs
+25.5, 28.5, 28.1, 24.9, 27.2, 28.3, 28.8, 26.1, 29.7 ms — no order to it, where the fixed walk had put 45 at the first place and 23 at the
+ninth. What is reproducible is not the level but the shape. Over 22 rounds in three runs whose own levels ran from 21 to 39 ms a viewpoint,
+each place against the mean of the nine in its own round:
+
+| Viewpoint | Against its round | Draw calls | Passes |
+| --- | --- | --- | --- |
+| The Bridge at Argenteuil | +9% | 56 | reflection, projector |
+| Woman with a Parasol | +7% | 58 | reflection, projector |
+| The Water-Lily Pond | +5% | 42 | reflection, projector |
+| The whole universe | +5% | 148 | neither, at a quarter the pixels |
+| Haystacks | +4% | 45 | reflection, projector |
+| Poplars on the Epte | +2% | 37 | reflection, projector |
+| Rouen Cathedral | −1% | 38 | reflection, projector |
+| Les Nymphéas | −7% | 39 | reflection, no projector |
+| Impression, Sunrise | −22% | 26 | reflection, projector |
+
+The three runs agree on that shape to within four parts in a hundred while their levels differ by three fifths. So the machine sets what a
+frame costs and the place sets only this, and no absolute table taken on this machine deserves more precision than the level it was taken at.
+
+Why the two ends of it, counted rather than timed — the renders themselves, `renderer.render` counted over eight frames: twenty-four at
+seven of the nine (eight to the screen, four the reflection at 512 × 288, twelve the projector's depth at 1024 × 768, three to a pass taken
+every other frame); twelve at the Orangerie, which is `panels` and not a `painting` with a camera, so `updateProjector` returns at its first
+test and that pass is never taken there at all; and eight at the aerial, where the reflection is skipped above sixty metres and the painting's
+spot is out of range — it draws the whole world, 148 calls and 1,146,086 triangles against 26 to 58 elsewhere, and lands at the mean anyway
+because it does it on a quarter of the pixels. The harbour takes both passes like the rest and is still the cheapest thing in the world by a
+fifth: it simply has the least to draw, 26 calls and 30 of the 119 place objects surviving its fog. `m46d-nine.jpg` is the nine again, with
+what each costs against its round.
+
+**Still visible.** The shape is one machine's at one size, and the level under it is this machine's mood: the same nine ran at 21 ms a
+viewpoint on the quietest round and 39 on the busiest, and nothing here separates a place's cost to better than a few parts in a hundred. A
+round is still a whole trip through the nine, so a round's level is set by ten seconds of machine and not by one; only the rotation keeps
+that from landing on the same places. The projector's pass still does not resolve at the eight pairs a default run gives or the twelve of
+`?bench=6` — 6.9 ms over twenty-five. And the reflection's own cost is not the same at every place (8.3 ms at Argenteuil, 0.5 at the
+harbour, where the reflected world is almost entirely fog), which the single figure the bench prints does not say.

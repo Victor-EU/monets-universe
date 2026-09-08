@@ -3273,19 +3273,28 @@ function start() {
   if (params.has('bench')) { // GPU-synced frame times at each viewpoint, drawn into the debug overlay for headless capture
     // the first frames at a viewpoint are not the frame's cost: the materials new to that place compile on their first draw and the projector's
     // depth pass is taken again — 211 ms a frame at the pond against 32 once it is running, and M46's single block of twenty caught that and
-    // called it the pond's price (64 ms). So a block is thrown away before any is kept. And the passes that follow spread 32 to 53 ms with
-    // nothing changing between them: that spread is the machine's, not the frame's, so several are run and the least kept — the pass least
-    // interrupted by whatever else the machine was doing. `?bench=6` asks for six. The frame is only found this way with the clock driven by
-    // hand and each frame synced by a read of one pixel: with the pane away the page is given no animation frames at all, and it says so
-    const gl = renderer.getContext(), px = new Uint8Array(4), res = [], detail = {}, N = 20, P = Math.max(1, +params.get('bench') || 3);
-    const block = () => { const t0 = performance.now(); for (let k = 0; k < N; k++) { monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / N; };
-    // and the size is read after the warm-up, not before: from above sixty metres the world is drawn at one device pixel to the CSS pixel, not
-    // two (`aerialMode`), and that switch is made in the first `update` of the measurement. So the aerial viewpoint's frame is a quarter of the
+    // called it the pond's price (64 ms). So every viewpoint is warmed first, a block at each and all of them thrown away, before any is kept.
+    // Then the passes, and not all of one viewpoint's together: a machine busy for ten seconds charges the whole of that to whichever place was
+    // being measured, and taken in a fixed order the same places are charged every time — the harbour and the Orangerie, last in the walk, came
+    // out a quarter cheaper than they are, and the table read as though the world cost much the same everywhere. So a pass is a round of all
+    // nine, and each round starts one place further along, so that over the passes a place stands in a different position each time. The least
+    // of a place's rounds is kept, the round least interrupted by whatever else the machine was doing (`?bench=6` asks for six rounds). The
+    // frame is only found this way with the clock driven by hand and each frame synced by a read of one pixel: with the pane away the page is
+    // given no animation frames at all, and it says so.
+    // The size is read after the warm-up and not before: from above sixty metres the world is drawn at one device pixel to the CSS pixel, not
+    // two (`aerialMode`), and that switch is made in the first `update` at the viewpoint. So the aerial viewpoint's frame is a quarter of the
     // others' pixels and its number is not theirs — a bench that printed one canvas size across the top said otherwise. Any viewpoint drawn at
     // a size other than the first's now carries it
-    const measure = key => { monet.tick(0); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const warm = +block().toFixed(1), size = `${canvas.width}x${canvas.height}`, runs = []; for (let p = 0; p < P; p++) runs.push(+block().toFixed(1)); detail[key] = { warm, runs, least: Math.min(...runs), size }; return Math.min(...runs); };
+    const gl = renderer.getContext(), px = new Uint8Array(4), res = [], detail = {}, N = 20, P = Math.max(1, +params.get('bench') || 3);
+    const block = () => { const t0 = performance.now(); for (let k = 0; k < N; k++) { monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return (performance.now() - t0) / N; };
+    const views = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter(i => places[i].view), nm = i => places[i].file || 'aerial';
+    // two frames before a block, not one: arriving at or leaving the aerial viewpoint changes the device pixel ratio, and the canvas and its
+    // buffers are made again on the first frame there — a cost belonging to the arrival and not to the frame
+    const settle = i => { applyViewNow(i); monet.tick(0); monet.tick(1 / 60); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); };
+    for (const i of views) { settle(i); const warm = +block().toFixed(1); detail[nm(i)] = { warm, size: `${canvas.width}x${canvas.height}`, runs: [] }; }
+    for (let p = 0; p < P; p++) for (let k = 0; k < views.length; k++) { const i = views[(k + p) % views.length]; settle(i); detail[nm(i)].runs.push(+block().toFixed(1)); }
     let size0 = null;
-    for (const i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) { if (!places[i].view) continue; const nm = places[i].file || 'aerial'; applyViewNow(i); const t = measure(nm); size0 ||= detail[nm].size; res.push(`${nm} ${t.toFixed(1)}ms${detail[nm].size === size0 ? '' : ` at ${detail[nm].size}`}`); }
+    for (const i of views) { const d = detail[nm(i)]; d.least = Math.min(...d.runs); size0 ||= d.size; res.push(`${nm(i)} ${d.least.toFixed(1)}ms${d.size === size0 ? '' : ` at ${d.size}`}`); }
     // what a pass costs is a difference between two measurements, and a difference is only as good as what the two have in common. Taken minutes
     // apart the machine's own drift lies between them, and measured that way the projector's pass came out at −3.4 ms, cheaper than not running
     // it. So the blocks alternate, on and off within one run, each on with an off beside it that met the same machine; every other pair is taken
