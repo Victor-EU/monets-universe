@@ -436,7 +436,7 @@ const U = {
   uFogCol: { value: new THREE.Color() }, uFogNear: { value: 15 }, uFogFar: { value: 60 },
   uSkyTop: { value: new THREE.Color() }, uSkyHorizon: { value: new THREE.Color() }, uHaze: { value: .16 }, uSunDisc: { value: 0 },
   uRefl: { value: null }, uReflMatrix: { value: new THREE.Matrix4() }, uWaterDeep: { value: new THREE.Color() }, uWaterTint: { value: new THREE.Color() }, uReflectivity: { value: .8 }, uRipple: { value: .012 }, uBands: { value: .25 },
-  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uFadeK: { value: 1 }, uDbg: { value: params.has('dbg') ? (parseFloat(params.get('dbg')) || 1) : 0 },
+  uPaint: { value: null }, uPaintW: { value: null }, uAtlas: { value: null }, uPxRad: { value: 1000 }, uFadeK: { value: 1 }, uWaterLo: { value: 0 }, uDbg: { value: params.has('dbg') ? (parseFloat(params.get('dbg')) || 1) : 0 },
 };
 
 // ============================================================ the brushes
@@ -689,7 +689,7 @@ void main(){
 const PATCH_FRAG = /* glsl */`
 uniform vec3 uPalA[20]; uniform vec3 uPalB[20]; uniform float uBlend, uPaintAmt;
 uniform vec3 uSunDir, uSunCol, uHemiSky, uHemiGround, uShadowTint, uFogCol;
-uniform float uSunInt, uHemiInt, uFogNear, uFogFar, uTime;
+uniform float uSunInt, uHemiInt, uFogNear, uFogFar, uTime, uWaterLo;
 #ifdef WATER
 uniform sampler2D uRefl; uniform vec3 uWaterDeep, uWaterTint; uniform float uReflectivity, uRipple, uBands; uniform mat4 uReflMatrix;
 varying vec4 vRefl;
@@ -725,7 +725,15 @@ void main(){
   vec3 an = abs(vN); vec3 bw = an * an * an * an; bw /= dot(bw, vec3(1.));
   vec2 mc = vWorld.xz + vWorld.y * vec2(.9, .6);
   float m = vn(mc * 1.3) * .5 + vn(mc * 3.4 + 9.) * .3 + vn(mc * 8.1 + 4.) * .2;
-  vec3 local = hueShift(pal(vPal), (m - .5) * .3 * uPaintAmt) * (1. + (m - .5) * .24 * uPaintAmt);
+  float vp = vPal;
+#ifdef TERRAIN
+  // the terrain is the water's colour or the grass's and nothing between. Carried as an index on the vertices it is interpolated across
+  // every shore, and the seven indices lying between the two are the place's other colours — of the pond's, whose palette the terrain
+  // wears, two are all but white. So a band of white a cell wide stood round every water in the world, and round the harbour it read as
+  // a kerb. The rule the ground was built by is asked again here, per fragment, of the height itself
+  vp = vWorld.y < uWaterLo ? 0. : 9.;
+#endif
+  vec3 local = hueShift(pal(vp), (m - .5) * .3 * uPaintAmt) * (1. + (m - .5) * .24 * uPaintAmt);
   #ifdef WATER
   O = paintAt(uPaintW, vec3(vWorld.x, 0., vWorld.z), vec3(0., 1., 0.), vDist, STROKE * 1.3);
   vec3 vd = normalize(cameraPosition - vWorld);
@@ -906,6 +914,7 @@ function patchMaterial(o = {}, PU) {
   const defines = {};
   if (o.instanced !== false) defines.INSTANCED = 1;
   if (o.water) defines.WATER = 1;
+  if (o.terrain) defines.TERRAIN = 1;
   return new THREE.ShaderMaterial({ uniforms: Object.assign({}, U, PU), vertexShader: PATCH_VERT, fragmentShader: PATCH_FRAG, defines, side: THREE.DoubleSide, alphaToCoverage: !!defines.INSTANCED });
 }
 function materialsFor(pl) {
@@ -983,6 +992,7 @@ function baseMesh(geom, pal, material) {
 
 // ============================================================ the pond: terrain
 const WATER_Y = 0, BRIDGE_Z = .4, BRIDGE_HALF = 7.6; // the bridge 8 m from where he stood: from there its painted rails and deck are a real bridge's (M18)
+U.uWaterLo.value = WATER_Y - .3; // the height under which the terrain wears the water's colour and not the grass's — the rule the ground is built by, and the one the patch shader asks per fragment
 function pondHalfWidth(z) {
   const zMin = -26, zMax = 8; if (z < zMin || z > zMax) return 0;
   const u = (z - zMin) / (zMax - zMin);
@@ -1553,15 +1563,18 @@ function buildHill(D) {
   placeGroup.add(baseMesh(gg, q => 9, MAT.base));
   // meadow: tall grass leaning downwind, with flowers, densest where the painter stood
   const gr = new Patches();
-  const NG = Math.floor(10000 * D);
+  const NG = Math.floor(14300 * D);
   for (let i = 0; i < NG; i++) {
-    const a = rand() * TAU, r = Math.pow(rand(), .8) * 36;
+    const a = rand() * TAU, r = Math.pow(rand(), .8) * 48;
     const x = viewP.x + Math.cos(a) * r, z = viewP.z - 6 + Math.sin(a) * r;
     if (z > -76) continue;
+    // the grass stopped dead at 36 m: a circle drawn on the meadow round the painter, which the walker never sees and the flyer sees at
+    // once. It reaches further now and thins over the last eighteen metres, the blades shortening with it, so the field has no rim
+    const rim = 1 - sstep(r, 30, 48); if (rand() > rim) continue;
     if (r < 9 && rand() < .55) continue; // near the painter: fewer, broader strokes
     const y = groundHeight(x, z); p.set(x, y, z);
     const near = r < 9 ? 1.7 : 1;
-    const k = clamp(sizeAt(p), 1, 2.4) * near, h = rr(.45, 1.05) * clamp(sizeAt(p), 1, 2.4) * (pathDist(x, z) < 1 ? .45 : 1);
+    const k = clamp(sizeAt(p), 1, 2.4) * near, h = rr(.45, 1.05) * clamp(sizeAt(p), 1, 2.4) * (pathDist(x, z) < 1 ? .45 : 1) * (.5 + .5 * rim);
     p.y += h * .45;
     const rc = rand(); const pal = rc < .5 ? 9 : rc < .72 ? 4 : rc < .86 ? 3 : rc < .94 ? 14 : 5;
     const lean = _a.copy(wind).multiplyScalar(rr(.15, .55));
@@ -1778,7 +1791,7 @@ function buildRiver(D) {
   }
 
   // --- water: base plane + painted patches, dense where the painter stands, broad and sparse far out
-  const wb = new THREE.PlaneGeometry(520, 54, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(5, WATER_Y - .03, -172);
+  const wb = new THREE.PlaneGeometry(3400, 54, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(5, WATER_Y - .03, -172); // out of the world both ways, and past the fog: the river does not end at the world's width
   waterGroup.add(baseMesh(wb, 0, MAT.waterBase));
   const water = new Patches();
   let NW = Math.floor(11000 * D), tries = 0;
@@ -2333,7 +2346,7 @@ function buildHavre(D) {
   }
   placeGroup.add(ground.mesh(MAT.patch));
   // --- the water: a base plane for the reflection, patches dense at the painter's feet and along the sun's column
-  const wb = new THREE.PlaneGeometry(220, 240, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(120, WATER_Y - .03, -470);
+  const wb = new THREE.PlaneGeometry(3400, 2400, 1, 1); wb.rotateX(-Math.PI / 2); wb.translate(700, WATER_Y - .03, -1520); // the open sea, out past where the fog closes: it shows only where the ground is under it, so it is the harbour's bed and nothing else. Its north edge stands clear of the Epte
   waterGroup.add(baseMesh(wb, 0, MAT.waterBase));
   const water = new Patches();
   let NW = Math.floor(4200 * D), tries = 0;
@@ -2530,6 +2543,11 @@ function buildOrangerie(D) {
     const pil = new THREE.BoxGeometry(.7, HT - y0 + .5, .5); pil.translate(x + 3.2, (HT + y0) / 2 - .25, Z0 - .25); pils.push(pil); }
   placeGroup.add(baseMesh(mergeParts(pils), 4, MAT.base));
   const roof = prism(2 * G.hx + 1.2, 2 * G.hz + 1.2, 2.6); roof.translate(G.x, HT - .05, Z); placeGroup.add(baseMesh(roof, 14, MAT.base));
+  // the lanterns the two rooms are lit through. Every one of the four hours here is daylight down through a veiled skylight (the cove and
+  // the veil, above), and none of it stood on the roof: 69 m by 28 of one grey at a pitch of ten degrees, which from the air is a lid laid
+  // on the garden and the only wide surface in the world with no incident on it. Each room carries its own monitor now, glazed dark, half a
+  // metre proud of the ridge and buried in the slates at its shoulders
+  for (const R of ROOMS) { const lan = new THREE.BoxGeometry(2 * R.a + 1.6, 2.4, 2 * R.b + 1.6); lan.translate(R.cx, HT + 1.9, R.cz); placeGroup.add(baseMesh(lan, 12, MAT.base)); }
   const cornice = new THREE.BoxGeometry(2 * G.hx + 1.2, .5, 2 * G.hz + 1.2); cornice.translate(G.x, HT - .2, Z); placeGroup.add(baseMesh(cornice, 4, MAT.base));
   // the doorway's threshold and the porch step
   const step = new THREE.BoxGeometry(3.2, .3, 1.6); step.translate(X0 - .8, y0 - .15, Z); placeGroup.add(baseMesh(step, 4, MAT.base));
@@ -2589,7 +2607,7 @@ function renderReflection() {
 }
 
 // ============================================================ hour blending
-let hourT = clamp(parseFloat(params.get('hour')) || .5, 0, 1);
+let hourT = clamp(parseFloat(params.get('hour')) || .5, 0, 1), hourAsked = params.has('hour'); // whether the hour standing is one the visitor asked for, by the url or by hand, or one the place gave
 if (params.has('hour')) hourT = clamp(parseFloat(params.get('hour')), 0, 1);
 let placeIndex = 0, hourFixed = false;
 const hourFog = { near: 15, far: 60 };
@@ -2606,8 +2624,12 @@ function applyHour(dt = 0) {
   // the hour dial belongs to the place you are in; every other place shows its own painting's hour, so a place at another moment of
   // its series does not sit as a foreign flat in the land around the one you are in. Crossing into a place, the dial re-bases to that
   // place's own hour, so nothing jumps; a place you leave eases back to its picture over a couple of seconds
+  // ...unless the visitor has set one. `placeWeights` measures along the ground alone, so flying the length of the world at one height crosses
+  // seven places in as many seconds, and each crossing re-based the dial — Full day, Afternoon, Midday, End of summer, Full sun, Dawn — so an
+  // evening asked for at the pond was gone by the poplars. An hour the url asked for was already kept; an hour set by hand ([ and ], the
+  // slider) is kept now too. A dial nobody has touched still follows the ground, which is what puts each painting's own hour under the flyer
   const w = placeWeights(); let dom = 0; places.forEach((pl, i) => { if (w[i] > w[dom]) dom = i; });
-  if (dom !== lastDom) { if (lastDom >= 0 && !params.has('hour') && places[dom].stops) hourT = ownHour(places[dom]); lastDom = dom; }
+  if (dom !== lastDom) { if (lastDom >= 0 && !hourAsked && places[dom].stops) hourT = ownHour(places[dom]); lastDom = dom; }
   const ease = dt > 0 ? 1 - Math.pow(.25, dt) : 1;
   if (BASE.PU) for (let i = 0; i < 20; i++) BASE.PU.uPalA.value[i].setRGB(0, 0, 0);
   for (const k of GLOBAL_COLORS) _acc[k] = _acc[k] || new THREE.Color(); for (const k of GLOBAL_COLORS) _acc[k].setRGB(0, 0, 0); for (const k of GLOBAL_SCALARS) _acc[k] = 0;
@@ -2646,7 +2668,7 @@ function gradeOf(pl, st) {
   return st.grade = { mul: a.map((v, i) => clamp(v / r[i], .45, 1.8)), add: [0, 0, 0] };
 }
 function currentStops() { return places[placeIndex].stops; }
-function setHour(t) { hourT = clamp(t, 0, 1); applyHour(); }
+function setHour(t) { hourT = clamp(t, 0, 1); hourAsked = true; applyHour(); } // every way the visitor sets the hour comes through here
 function stepStop(dir) { const n = currentStops().length; if (n < 2) return; const i = Math.round(hourT * (n - 1)) + dir; setHour(clamp(i, 0, n - 1) / (n - 1)); awake(); }
 
 // ============================================================ movement
@@ -3144,7 +3166,11 @@ function buildProjectors() {
   }
 }
 // every material takes the projector of the place the eye is in, weighted by how much it is that place; none while the place has no canvas
-function projectorOn(pl, w) { const P = pl.painting; return P && P.on && P.own.depth && P.own.plate ? sstep(w, .45, .75) * (P.reveal ?? 1) : 0; }
+// the key is the world seen in the picture's colours from where he stood, and the canvas is read for it by each point's azimuth from his
+// spot (`extCol`), so the columns of that read fan out over the ground around him. On foot the fan is under your feet and behind you and
+// never seen; from 250 m up it is a sunburst of light and shade standing on his spot, the plainest thing in the frame. So the key goes with
+// the climb, over the fifty metres above his own eye, and what is left from the air is the world in its own colours
+function projectorOn(pl, w) { const P = pl.painting; return P && P.on && P.own.depth && P.own.plate ? sstep(w, .45, .75) * (P.reveal ?? 1) * (1 - sstep(camera.position.y - pl.view.p.y, 12, 50)) : 0; }
 function syncProjectors() {
   const dom = places[placeIndex], on = projectorOn(dom, placeWeights()[placeIndex]);
   const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
@@ -3184,14 +3210,43 @@ function updateOverlay() {
 const BASE = {}; // the terrain under every place: the pond's palette, no canvas
 let genMs = 0;
 function clearPlace() { for (const g of [placeGroup, waterGroup]) { for (const m of [...g.children]) { g.remove(m); m.traverse(o => o.geometry && o.geometry.dispose()); } } boats.length = 0; dragonflies.length = 0; flotsam.length = 0; }
+// the country beyond the base plane. The plane is 520 by 720 and stops there, and from the air its four edges stood as straight cuts with
+// the sky under them — the fog cannot cover them, the nearest is 270 m from the aerial viewpoint where the fog's own near is 449 m. So the
+// ground is carried on outside it, on a ring of four strips graded outward (eight metres at the seam, seven hundred at the last step) and
+// sampled every eight along the rim: the same height field, which is defined everywhere and holds the rim's own value beyond the box, so
+// the Seine runs out of the world both ways and the sea past Le Havre runs to a horizon. Where that field lies under water the ring is laid
+// at the surface and not on the bed. 2.7 k quads, and the corners belong to the north and south strips alone, so no two of them overlap
+function apronGeometry(x0, x1, z0, z1) {
+  const OUT = [0, 12, 30, 62, 120, 230, 430, 800, 1500], R = OUT[OUT.length - 1], S = 8, pos = [];
+  const yAt = (x, z) => Math.max(groundHeight(x, z), WATER_Y - .35) - .1; // under water it is laid a third of a metre down: under the world's own water planes, and under the level the terrain calls water
+  const P = (x, z) => pos.push(x, yAt(x, z), z);
+  const quad = (ax, az, bx, bz, cx, cz, dx, dz) => { P(ax, az); P(bx, bz); P(cx, cz); P(ax, az); P(cx, cz); P(dx, dz); };
+  const fine = (lo, hi) => { const n = Math.max(1, Math.ceil((hi - lo) / S)), o = []; for (let i = 0; i <= n; i++) o.push(lo + (hi - lo) * i / n); return o; };
+  const XS = [...OUT.slice(1).reverse().map(t => x0 - t), ...fine(x0, x1), ...OUT.slice(1).map(t => x1 + t)], ZS = fine(z0, z1);
+  for (let k = 0; k + 1 < OUT.length; k++) {
+    const n0 = OUT[k], n1 = OUT[k + 1];
+    for (let i = 0; i + 1 < XS.length; i++) {
+      quad(XS[i], z0 - n0, XS[i + 1], z0 - n0, XS[i + 1], z0 - n1, XS[i], z0 - n1);
+      quad(XS[i], z1 + n0, XS[i + 1], z1 + n0, XS[i + 1], z1 + n1, XS[i], z1 + n1);
+    }
+    for (let i = 0; i + 1 < ZS.length; i++) {
+      quad(x0 - n0, ZS[i], x0 - n0, ZS[i + 1], x0 - n1, ZS[i + 1], x0 - n1, ZS[i]);
+      quad(x1 + n0, ZS[i], x1 + n0, ZS[i + 1], x1 + n1, ZS[i + 1], x1 + n1, ZS[i]);
+    }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
+  const nb = g.getAttribute('normal'); for (let i = 0; i < nb.count; i++) if (nb.getY(i) < 0) nb.setXYZ(i, -nb.getX(i), -nb.getY(i), -nb.getZ(i)); // a sheet: every face looks up, whichever way its quad was wound
+  return g;
+}
 function buildAll() {
   const t0 = performance.now(); clearPlace();
   const D = QUALITY[qualityName] / .73;
   places.forEach((pl, i) => { if (!pl.build) return; const n0 = placeGroup.children.length, w0 = waterGroup.children.length; pl.build(D); for (const g of [[placeGroup, n0], [waterGroup, w0]]) for (let k = g[1]; k < g[0].children.length; k++) g[0].children[k].userData.place = i; });
   const bw = new THREE.PlaneGeometry(520, 720, 130, 180); bw.rotateX(-Math.PI / 2); bw.translate(5, 0, -270);
   const bp = bw.getAttribute('position'); for (let i = 0; i < bp.count; i++) bp.setY(i, groundHeight(bp.getX(i), bp.getZ(i)) - .06); bw.computeVertexNormals();
-  if (!BASE.mat) { BASE.PU = paletteUniforms(); BASE.mat = patchMaterial({ instanced: false }, BASE.PU); }
-  const base = baseMesh(bw, q => q.y < WATER_Y - .3 ? 0 : 9, BASE.mat); base.userData.always = true; placeGroup.add(base);
+  if (!BASE.mat) { BASE.PU = paletteUniforms(); BASE.mat = patchMaterial({ instanced: false, terrain: true }, BASE.PU); }
+  const base = baseMesh(bw, 9, BASE.mat); base.userData.always = true; placeGroup.add(base); // water or grass is the shader's own test now, on the height
+  const apron = baseMesh(apronGeometry(-255, 265, -630, 90), 9, BASE.mat); apron.userData.always = true; placeGroup.add(apron);
   patchTotal = 0; for (const g of [placeGroup, waterGroup]) g.traverse(m => { if (m.userData.patches) patchTotal += m.userData.patches; });
   buildProjectors();
   genMs = performance.now() - t0;

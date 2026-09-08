@@ -3251,3 +3251,81 @@ round is still a whole trip through the nine, so a round's level is set by ten s
 that from landing on the same places. The projector's pass still does not resolve at the eight pairs a default run gives or the twelve of
 `?bench=6` — 6.9 ms over twenty-five. And the reflection's own cost is not the same at every place (8.3 ms at Argenteuil, 0.5 at the
 harbour, where the reflected world is almost entirely fog), which the single figure the bench prints does not say.
+
+### Progress · M47 — the country beyond the world, and five other things the air showed (fix: "conduct a full air fly review using the browser and taking pictures to have a full examination" / "apply the fixes")
+
+**What was wrong.** Sixteen stops flown over the world between 300 m and 26 m, and seventeen frames of A/B after them, found six things.
+Nothing had been looked at from above before.
+
+*The world ends.* The base plane is 520 by 720 and the ground stops at its edge, so from the aerial viewpoint the terrain, the Seine and the
+sea all finished in straight cut lines with the sky under them, and the world read as a card lying on cream paper. Fog cannot cover that,
+and the cap on the fog's climb that the review recommended as the one-line fix was tried and thrown away: at 250 m the fog opens to 1674 m
+where the farthest corner of the ground is 906, but the two long sides stand only 270 m from that eye where the fog's own near is 449, and
+no fog short enough to hide them leaves the cathedral standing — at 820 m and at 640 the far half of the world goes and the sides are as
+hard as before.
+
+*A sunburst standing on the painter's spot.* From sixty metres up a fan of light and shade over the ground, widest looking straight down.
+Not the projector's depth pass, which it survives; not the sun, being the same at dawn as at dusk; not a shadow camera, the scene holding no
+`THREE` light at all. It is the picture's key: `extCol` reads the canvas by the azimuth of each point from where the painter stood, so the
+canvas's columns fan out over the ground around him — the same fan M46 closed on the zenith, still open at the equator, where the ground
+around his feet is. And `projectorOn` gates the key on the place's weight, which `placeWeights` measures along the ground alone, so the key
+was thrown at full strength from 300 m up. On foot that fan is under your feet and behind you and never seen.
+
+*A white kerb round every water.* Found while chasing the first. The terrain carries its palette as an index on its vertices, 0 for the
+water and 9 for the grass, and the index is interpolated across every shore; the seven lying between are the pond's other colours, and two
+of them are all but white. So a band of near-white a cell wide stood at every waterline in the world, and round the harbour it read as a
+line ruled on the sea.
+
+*The Orangerie's roof.* A prism at a pitch of ten degrees, 69 m by 28, in one palette — from the air a grey lid laid on the garden, the
+widest surface in the world with no incident on it, and nothing on it of the veiled skylight that every one of the room's four hours is
+daylight through.
+
+*The meadow's grass stops at a circle.* The tall grass is laid in a disc of 36 m round the parasol's viewpoint, and the disc has an edge.
+The walker never reaches it; the flyer sees a circle drawn on the field.
+
+*And an hour asked for was thrown away.* Crossing into a place re-bases the dial to that place's own painting hour, which is what puts each
+painting's own light under a flyer and is right. But it did it to an hour the visitor had set as well: an evening chosen at the pond was
+gone by the poplars, seven crossings in seven seconds at 250 m.
+
+**What changed.** The ground goes on. A ring of four strips outside the base plane, graded outward (eight metres at the seam, seven hundred
+at the last of nine steps, out to a kilometre and a half) and sampled every eight along the rim, laid on the same height field — which is
+defined everywhere and holds the rim's own value beyond the box, so the plateau carries west, the shore of Le Havre carries south and the
+Seine's bed carries out both ways. Where that field lies under water the ring is laid at the surface and not on the bed. It is 2.7 k quads,
+and the corners belong to the north and south strips alone so no two overlap. Its faces are turned to look up whichever way their quads were
+wound, which two of the four were not, and stood as dark slabs until they were.
+
+With the ground continuing, the water had to as well, or the river and the sea ended in the middle of a plain: the Seine's own surface ran
+to exactly the world's width and the harbour's stopped 35 m short of the world's edge on one side and 40 on the other, leaving a strip of
+bank between the sea and what lay beyond it — that strip was the white line ruled round the harbour. Both surfaces now run out past where
+the fog closes, and show only where the ground is under them, so the harbour's is the bed it was dug for and nothing else; its north edge
+stands clear of the Epte.
+
+The picture's key is not thrown from the air: `projectorOn` now falls away over the fifty metres above the painter's own eye, and what is
+left from up there is the world in its own colours. And the terrain's palette is asked per fragment instead of carried on the vertices — the
+rule the ground was built by, `TERRAIN` in the patch shader, tested on the height itself — so the shore is where the ground crosses the
+water's level and there is nothing between the two colours.
+
+The Orangerie's two rooms carry their lanterns, each a monitor half a metre proud of the ridge and buried in the slates at its shoulders.
+The meadow's grass reaches to 48 m and thins over the last eighteen, the blades shortening with it, so the field has no rim; there are 14.3
+k strokes cast where there were 10 k, and 1.2 k more survive. And an hour the visitor sets is kept: `hourAsked`, which every way of setting
+the hour passes through, and which the url's `?hour=` already had in another form. A dial nobody has touched still follows the ground.
+
+**Verified.** `m47-after.jpg` is the same sixteen stops flown again and `m47-before-after.jpg` the six side by side. The world has a horizon
+in every frame and no cut edge in any. The sunburst is gone from the plan view; the white line round the harbour is gone; the grass fades
+where it stopped. The eight painting viewpoints are untouched — the canvas is thrown onto the world exactly as before, the key falling away
+only above twelve metres, which no viewpoint is. The dial holds 0.90 the length of the world when it is set by hand, where it ran 0.33,
+0.50, 0.50, 0, 0, 0.50, 0 before; untouched it still brings each place its own hour, and coming down it re-bases at 29 m above the ground.
+
+The cost, benched against the same build at HEAD on the same machine minutes apart, three passes of twenty at 2560 by 1440: the nine
+viewpoints 10.6, 8.5, 8.5, 9.7, 10.5, 10.2, 6.9, 8.3, 8.0 ms before and 10.9, 8.7, 9.2, 9.8, 10.6, 10.2, 7.5, 8.5, 8.4 after — a mean of
+9.02 against 9.31, three parts in a hundred, and the two largest of it at Argenteuil and the harbour, whose water surfaces were widened. 8.2
+k triangles more and 1.2 k patches, on 1.15 M and 266 k.
+
+**Still visible.** The white drift on the Seine is still there: it is the river's own painted strokes, laid dense where the painter stands
+and sized by the distance from him, so a hundred of them a metre across sit in front of the Argenteuil viewpoint. On foot that density is
+the picture's sparkle on the water; from 300 m it is the only thing in the world that clips to white, and it was left alone because thinning
+it changes the viewpoint that matters most. The hour still barely reaches the air — the three stops move the aerial frame by 7 to 22 levels
+of 255 where on the ground the same three move it by 23 to 50 and change its hue — because the fog at that height is 1674 m of the hour's
+own colour over everything. The flyer's ceiling is still 300 m, fifty above the aerial viewpoint. A boat seen from straight overhead is a
+dark ellipse with its masts lying flat on the water. And the ring's own far edge is fog-coloured but not fog: the fog stops at nine tenths,
+so a tenth of a green plain stands against the sky where it ends, which is a horizon and reads as one, but is not the sky's colour.
