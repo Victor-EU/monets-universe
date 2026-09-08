@@ -3329,3 +3329,81 @@ of 255 where on the ground the same three move it by 23 to 50 and change its hue
 own colour over everything. The flyer's ceiling is still 300 m, fifty above the aerial viewpoint. A boat seen from straight overhead is a
 dark ellipse with its masts lying flat on the water. And the ring's own far edge is fog-coloured but not fog: the fog stops at nine tenths,
 so a tenth of a green plain stands against the sky where it ends, which is a horizon and reads as one, but is not the sky's colour.
+
+### Progress · M48 — the grey sky: the canvas's own mean laid over the whole dome (fix: "I still see the grey sky. see the screenshot and investigate")
+
+**What was wrong.** The sky takes the picture's key as the rest of the world outside the frame does — `.85` of `inKey(sky, extCol(d))` —
+with no fall in direction and none in distance. But `extCol` is soft by design (level 7 of the canvas, level 9 a fifth of a width past the
+frame, and since M46 the columns close on the middle toward the pole), so far from the frame it is the canvas's own mean, and over the pond
+that mean is willow and water. Standing at his own spot and reading nine directions of the upper sky — 45, 65 and 85 degrees up, at the
+picture, ninety degrees round and behind him — every one of the nine came back between 129 and 144 red, 140 and 158 green, 130 and 148 blue,
+a blueness (b less the mean of r and g, of 255) from −4.8 to +3.6. One flat green-grey over the whole dome, greener than it was blue, with
+no gradient in it, no strokes, no sun and no hour. M46's own note had said as much and left it: *the ext read still knows nothing of the
+sun; the upper sky's colour round the turn is the canvas's, mirrored, not the light's.*
+
+Across the seven places, the upper sky (38–54 degrees, twelve azimuths, the dial pinned at .5) measured, against the same sky with no key at
+all: the pond −3.3 against 32.8, the harbour 6.2 against 37.2, the haystacks 22.9 against 50.7, Argenteuil 36.8 against 72.9, the poplars
+39.4 against 64.7, Rouen 49.4 against 85.9, the parasol 56.7 against 96.3. Half to all of the sky's blue, everywhere; and at the pond the
+sky came out green.
+
+The frame in the screenshot was found: the meadow between the pond and the parasol, at (−22, 2, −42), fifty metres south of where he stood
+and looking the way he looked. The canvas itself has gone there — it dissolves by eighteen metres — but its key had not, and `extCol` takes
+a direction and not a place, so the directions that held his water and his willows now hold sky, and the sky wore the pond's water: a
+green-grey with four soft columns of the canvas standing in it from the horizon to the top of the view. Forty metres on, the same seven
+measured the pond −5.9, the haystacks 22.6, Argenteuil 38.1, the poplars 38.8, Rouen 42.0, the harbour 40.0 and the parasol 87.8 — the last
+two already past their own weight gate, the other five as keyed as at his feet.
+
+**What changed.** Two falls, in `SKY_FRAG` alone. The ground's key is untouched, and so is everything M46 repaired.
+
+*By direction.* `outAng(d)` — how far outside the frame a direction lies, in radians, negative within it — and the key falls from half a
+radian past the frame's own edge to 1.25. Half a radian is 29 degrees, further out than the widest window shows beside the canvas: at the
+pond and at Rouen the screen's own edge stands .41 radians outside the frame at an aspect of 1.94, .52 at 2.39 and .67 to .69 at 3.39, so
+the eight viewpoints keep the surround they had. By 1.25 the key is gone, which is overhead and behind him.
+
+*By distance.* The key goes over 12 to 45 metres from the painter's spot, as the canvas goes over 8 to 18. It belongs to his spot as the
+canvas does; a place's own radius is 30 to 60 m, and the weight gate takes what is left.
+
+And the frame's own half-angles are now taken once a frame into `uProjAng` rather than as two `atan` of a uniform at every pixel of the dome
+— the sky is drawn first, with no depth to reject it, so its shader runs on every pixel of every frame.
+
+**Verified.** `m48-sky-1.jpg` and `m48-sky-2.jpg`: ten frames before and after — the pond's and Argenteuil's viewpoints, the meadow of the
+screenshot, behind him at the pond and a hundred degrees round from it, behind her at the parasol, the poplars' sun overhead, Rouen behind
+the front, the haystacks' far horizon, and the harbour out to sea.
+
+The pond's nine directions, at his spot, before → after (and the sky with no key at all): straight at the picture, 45 degrees up −4.8 → −4.8
+(30.4) and 65 up −4.2 → −3.5 (27.3), held to a tenth as they must be; ninety degrees round, −2.3 → 25.8 (34.4), 0.7 → 23.0 (36.2) and,
+overhead, 2.3 → 26.6 (36.9); behind him, −1.4 → 35.9 (35.8) and 3.6 → 40.6 (40.6), which is the world's own sky exactly; overhead in his own
+azimuth 1.2 → 20.6 (35.3). The dome that was one colour has a front and a back again.
+
+Over the seven places, the upper sky's blueness at the spot, before → after (no key): the pond −3.3 → 17.0 (32.8), the harbour 6.2 → 24.4
+(37.2), the haystacks 22.9 → 39.1 (50.7), Argenteuil 36.8 → 59.1 (72.9), the poplars 39.4 → 53.2 (64.7), Rouen 49.4 → 69.5 (85.9), the
+parasol 56.7 → 82.1 (96.3). Forty metres on, where the walker is, it comes back to within a unit of the sky with no key at all: the pond
+−5.9 → 24.4 (25.0), the haystacks 22.6 → 49.5 (50.2), Argenteuil 38.1 → 73.9 (74.8), the poplars 38.8 → 66.0 (66.7), Rouen 42.0 → 76.2
+(77.3), the parasol 87.8 → 89.4 (89.5), the harbour 40.0 → 39.7 (39.7). In colours, the pond's sky at the spot goes 139,154,143 →
+147,169,175 and forty metres on 136,150,137 → 150,175,187, against 151,176,188 with no key.
+
+And the spread round the turn — the sky's own gradient, its strokes and its sun coming back — at the spot: Rouen 54 → 81 (81), Argenteuil 36
+→ 56 (65), the pond 59 → 71 (68), the poplars 75 → 83 (82), the harbour 26 → 32 (40), the haystacks 15 → 15 (14). The parasol's falls, 63 →
+45 (50): what it lost was the canvas's own columns.
+
+The eight viewpoints: seven are the same to the byte — 0 of 48 900 pixels differ at 300 px wide, against the build at HEAD, both under
+`?still`. The eighth is Argenteuil, which differs by 145 levels over 4 799 pixels; but Argenteuil differs from *itself* by 110 over 3 526 on
+a second pass of the same walk in the same build, and by 131 over 4 141 on a third. Its boats drift under `?still`, and that drift is the
+whole of it. At an aspect of 2.39 the viewpoints differ by at most 1 level and at 3.39 by at most 7, at the corner where the window shows
+most beside the canvas.
+
+The cost could not be separated from the machine. Twenty paired blocks of 35 frames, thirty metres up looking up so that the whole sky is in
+the view, at 2800 × 1520: the median paired difference +0.26 ms and the trimmed mean +0.29, on a level of 14 ms, the differences running
+−1.15 to +1.94. A three-way run the same hour — the old shader, the new one, and the new one with the half-angles written in as literals —
+put the old at 14.43 ms, the new at 13.93 and the literal one at 13.35: the new faster than the old, which it cannot be. Under half a
+millisecond, and the machine moves more than that in a run (M46d).
+
+**Still visible.** In the frame's own cone, within half a radian of its edge and a dozen metres of the spot, the sky is still the ext
+read's, and over the pond that read is willow: the sky above the water garden keeps its green cast where he stood, which is the point of it
+— the two directions held above are −4.8 and −3.5 where the world's own sky is +30 and +27. Looking 70 to 100 degrees round from the frame
+the handover crosses the view as a soft gradient, blue away from the picture and the canvas's colour toward it, smooth over some forty
+degrees but there. The ground's key does not fall with distance or direction, so at forty metres the ground is the picture's and the sky is
+the world's; at the horizon behind you the two meet without a seam, checked at the harbour, the haystacks and Argenteuil, because a place's
+fog colour is its sky's horizon colour by construction. The four numbers (.5, 1.25, 12, 45) are chosen against the eight viewpoints and the
+eye, not measured. And Argenteuil's boats move when the world is asked to stand still: `?still` stops the clock for everything else, and the
+one viewpoint with moored boats in it cannot be compared with itself frame to frame.

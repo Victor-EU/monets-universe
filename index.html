@@ -533,7 +533,7 @@ float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f); re
 vec3 hueShift(vec3 c, float a){ const vec3 k = vec3(.57735); float ca = cos(a), sa = sin(a); return c * ca + cross(k, c) * sa + k * dot(k, c) * (1. - ca); }
 uniform sampler2D uPaint, uPaintW; uniform float uPxRad, uDbg;
 // the painting, projected from where Monet stood: its texture, the depth map seen from there, the projector matrix (world -> canvas uv, depth)
-uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; uniform mat4 uProjM; uniform vec2 uNearSize; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
+uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; uniform mat4 uProjM; uniform vec2 uNearSize; uniform vec3 uProjPos; uniform float uProjOn; uniform vec2 uPaintSize, uDepthSize, uProjNF, uProjTan, uProjAng; uniform vec3 uGradeMul, uGradeAdd, uProjR, uProjU, uProjF;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
 float mirr(float u) { return 1. - abs(fract(u * .5) * 2. - 1.); }
 // the canvas's width in radians of azimuth, rounded so that a whole even number of them fills the turn: the mirrored copies then close on
@@ -563,6 +563,15 @@ vec3 extCol(vec3 d) {
   // straight overhead the picture is read in one column and not in wedges
   float ky = 2. * atan(uProjTan.y), pole = smoothstep(min(ky * .5, 1.3), 1.4, abs(uv.y - .5) * ky);
   return textureLod(uPainting, vec2(mix(mirr(uv.x), .5, pole), foldV(uv.y)), 7. + 2. * smoothstep(1.1, 2.4, em)).rgb * uGradeMul + uGradeAdd;
+}
+// how far outside the frame a direction lies, in radians: negative within it, zero on its own edge. Used by the sky alone. The ext read is
+// soft by design, and far from the frame it is the canvas's own mean — at the pond a green-grey mud of willow and water — carried flat over
+// the whole dome, with none of the sky's gradient, its strokes or its sun in it: the sky over the water garden stood at 133,146,140 in every
+// direction from 25 degrees up to the zenith, greener than it was blue. So past the frame the key gives the sky back to itself, which is not
+// a loss of the painting: the place's own skyTop and skyHorizon are read from the same picture, and they have its light and its hour
+float outAng(vec3 d) {
+  float x = dot(d, uProjR), y = dot(d, uProjU), z = dot(d, uProjF), h = length(vec2(x, z));
+  return max((h > 1e-5 ? abs(atan(x, z)) : 0.) - uProjAng.x, abs(atan(y, h)) - uProjAng.y);
 }
 // the world outside the frame, painted in the picture's key: the picture's colour for this direction, carrying the world's own light
 // (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves. The world keeps
@@ -879,8 +888,16 @@ void main(){
   vec2 puv = pc.xy / max(pc.w, 1e-3);
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0.) {
-    fin = mix(fin, applyPaint(inKey(fin, extCol(d), .5, .6, 1.45), O, .5), .85 * uProjOn);
-    float dist = distance(cameraPosition, uProjPos), here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
+    float dist = distance(cameraPosition, uProjPos);
+    // the sky's key holds half a radian past the frame's own edge — further than the widest window shows beside the canvas, so the eight
+    // viewpoints keep the surround they had — and is gone by 1.25, which is overhead and behind him. And it belongs to his spot as the
+    // canvas does: walk south past the pond and the directions that held his water and his willows hold sky, and the sky wore the water's
+    // colour — a green-grey mud with the canvas's own columns standing in it, over a meadow fifty metres from where he stood. The canvas
+    // itself is gone by eighteen metres; its key in the sky goes by forty-five. What stands there is the world's own sky, which loses
+    // nothing of the picture: the place's skyTop and skyHorizon are read from it, and they have its light, its hour and its strokes
+    fin = mix(fin, applyPaint(inKey(fin, extCol(d), .5, .6, 1.45), O, .5),
+      .85 * uProjOn * (1. - smoothstep(.5, 1.25, outAng(d))) * (1. - smoothstep(12., 45., dist)));
+    float here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
     float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
     vec3 pc = texture2D(uPainting, puv, bias).rgb * uGradeMul + uGradeAdd;
     // the sky inside the outline of something near him (her, a mast, the bridge), and in a halo round it: from his spot it is the picture;
@@ -908,7 +925,7 @@ void main(){
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 // each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
 function projectorState() { return { tex: null, depth: null, near: null, plate: null, halo: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
-function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) } }; }
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
@@ -3179,7 +3196,7 @@ function syncProjectors() {
     if (!on) { T.uProjOn.value = 0; continue; }
     const S = dom.painting.own;
     T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uPaintHalo.value = S.halo; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
-    T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan);
+    T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan); T.uProjAng.value.set(Math.atan(S.tan.x), Math.atan(S.tan.y));
     if (T !== dom.PU) { T.uGradeMul.value.copy(dom.PU.uGradeMul.value); T.uGradeAdd.value.copy(dom.PU.uGradeAdd.value); }
     T.uProjOn.value = on;
   }
