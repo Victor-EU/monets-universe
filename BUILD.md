@@ -3064,11 +3064,11 @@ sunrise; within 15° of the horizon, where walking looks, it is .2 at Rouen, 2.1
 Argenteuil (whose count rounds down); above the frame it is 5.1 to 41.7. The figures are the same at his spot and 38 m up, as they must
 be for a read that takes a direction and not a place.
 
-The frames were taken by rendering the scene to a target with a camera made for the purpose, because the app's own camera was carrying a
-NaN: with the pane collapsed the resize handler sets `camera.aspect = innerWidth / innerHeight` on a 0 × 0 window, `fitFov` then divides
-by it, and every frame after that clips away — `monet.snap()` returns black, against M0's promise that a frame can be checked without a
-visible pane. Not touched here. For the same reason there is no bench this milestone; the ext read gains a floor, two divides, an `exp`
-and a `smoothstep`, once per fragment in the sky and once in the world's base pass.
+The frames were taken by rendering the scene to a target with a camera made for the purpose, because the app's own camera was carrying
+a NaN: with the pane collapsed the resize handler sets `camera.aspect = innerWidth / innerHeight` on a 0 × 0 window, `fitFov` then
+divides by it, and every frame after that clips away — `monet.snap()` returns black, against M0's promise that a frame can be checked
+without a visible pane. Not touched in M46; fixed in M46b. For the same reason there is no bench this milestone; the ext read gains a
+floor, two divides, an `exp` and a `smoothstep`, once per fragment in the sky and once in the world's base pass.
 
 **Still visible.** The mirrored copies still read as soft wedges in the upper sky, light and dark by the canvas's own top rows: at
 the pond that band is willow, so the sky over the water garden keeps its green cast and carries eight wedges all the way round.
@@ -3076,3 +3076,31 @@ The fold's fifth and its rate, and the pole's 80°, are chosen and not measured.
 copy is not quite the canvas's width — the pond's an eighth narrower, Argenteuil's a sixth wider — though the frame's own edge
 lands under 7% of a width off. The ext read still knows nothing of the sun: the upper sky's colour round the turn is the canvas's,
 mirrored, not the light's.
+
+### Progress · M46b — the harness: a frame checked with the pane away (fix: "fix the camera NaN guard too")
+
+**What was wrong.** M0 asks that a frame can be checked without a visible pane, and it could not. A hidden or collapsed pane reports a
+0 × 0 window, and the resize handler set `camera.aspect = innerWidth / innerHeight` — 0/0, a NaN. It went into the projection matrix and
+stayed there: every vertex after it fails the clip, so the frame is the clear colour and nothing else. `fitFov` divided by the same ratio,
+so `camera.fov` went NaN with it, and neither recovered short of a reload under a real window. The camera was built and the canvas first
+sized from that ratio too, so a page that loaded into a collapsed pane was in the state from its first frame. `monet.snap()` returned
+black, which is why M46 was verified with a camera made for the purpose instead of the world's own.
+
+**What changed.** One place now reports the window's size for the camera and the canvas — `viewport`, with `viewAspect` over it — and it
+never returns zero: a real size is taken and remembered, a zero one is refused and the last real size stands, and where there has never
+been a real one the size is 1280 × 720. The four readings that divided by the raw ratio go through it: the camera's construction, the
+renderer's first `setSize`, `fitFov`, and the resize handler.
+
+**Verified.** With the window at 0 × 0: the camera's aspect 1.7778 and its fov 62 at the pond, every element of the projection finite, the
+canvas 2560 × 1440 at DPR 2, and the frame's luminance 29 to 251 about a mean of 119 where before every pixel was the clear colour.
+`m46b-snap.jpg` is `monet.snap()` itself with the pane away — the pond from his spot, and the same garden 21 m up — where it returned one
+flat colour before. Through a run of sizes, each checked for a finite projection: loaded at 0 × 0 → 1280 × 720, aspect 1.7778; 1600 × 900
+arrives → taken, canvas 3200 × 1800; collapsed to 0 × 0 → the 1600 × 900 stands, the aspect unmoved; 900 × 1400 → taken, aspect .6429,
+the fov widened by `fitFov` for a canvas taller than the window; collapsed again → the tall size stands. No NaN at any step, and a real
+window always wins.
+
+**Still visible.** Two other readings of the window are left as they were, neither of them a NaN: the quality preset at load reads
+`innerWidth < 900` on a coarse pointer, so a touch device whose pane is collapsed at load picks `light`; and the canvas overlay (key C)
+takes its height from `innerHeight`, so with the pane away it has none — it is a DOM element over the canvas, which no snap carries
+anyway. The fov `fitFov` chose for a viewpoint is still not re-fitted when the window resizes, as before: the resize handler sets the
+aspect alone, and the painting's fit is right again at the next viewpoint.
