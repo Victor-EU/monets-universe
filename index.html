@@ -11,7 +11,18 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1b2a3a;color:#efe6cf;font-family:Georgia,"Times New Roman",serif}
-canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+/* the canvas's own ground, black. Every patch is drawn with alphaToCoverage: the stroke's coverage (the atlas's R, three steps at 0, .30,
+   .69 and 1) becomes a sample mask, and the alpha the fragment wrote lands in the buffer beside the colour. The colour is right there — the
+   samples the mask left alone already hold what stands behind — but the alpha is the stroke's own and not the frame's, and the context is a
+   premultiplied one: what the page showed was the frame plus (1 - a) of whatever lay behind the canvas, which was the body's #1b2a3a, added
+   at every partly-covered stroke edge in the world — a blue-lavender keyline round every leaf, rail and blade, and the thing that read as a
+   cut-out. The frame carries an alpha under one over 23.0 % of itself at Rouen, 22.3 at the pond, 13.9 at the haystacks, 11.9 at the poplars,
+   11.8 at Argenteuil, 5.1 at the sunrise, 3.1 at the parasol, 1.7 from the air and none at all in the Orangerie, the lowest .475, so up to
+   21.0 levels of 255 are added at the worst pixel, 6.5 at the average affected one and 0 to 1.4 over the whole frame. Against black that term
+   is nought and the frame is its own; no pixel at any of the nine viewpoints carries an alpha of nought, so nothing falls through to it.
+   (Not the renderer's alpha: false — three.js asks the context for an alpha channel whatever that parameter says, and uses it only to choose
+   the clear's alpha, which the sky covers anyway) */
+canvas{display:block;width:100%;height:100%;touch-action:none;outline:none;background:#000}
 button,input{font:inherit}
 button{cursor:pointer;color:inherit;border:0;background:none}
 button:focus-visible,input:focus-visible{outline:1px solid #e6c98a;outline-offset:5px}
@@ -671,10 +682,18 @@ vec3 inKey(vec3 world, vec3 key, float ex, float lo, float hi) {
 // 259 px out, inside the tower's own silhouette, and took the stonework with it; .62 begins at 292, which is where the tower ends. Measured as
 // the largest step from one column to the next in a smoothed profile within 40 px of the frame's edge, over both sides of the six painted
 // viewpoints, it takes the mean from 1.11 levels of 255 to 1.03 and the worst from 3.22 (Rouen's left) to 2.46
+// and the tear takes the canvas away and never gives it back. The wander was symmetric, so where the noise ran negative it carried the
+// canvas past its own edge — em under 1 at a direction outside the frame — and the painting is sampled with ClampToEdge, so what stood
+// out there was the canvas's last column, one texel of it stretched over the world in horizontal streaks. M46's amplitude allowed 11 % of
+// a half-frame of that and this one's .34, .14 and .06 allow 27, which is 216 px of smear at 2800 wide. It is the same rule the key's own
+// read is held to: past the edge there is no canvas, and an invention made legible is worse than no invention. So the wander is one-sided
+// — max(0., tear) — and frameEdge is nought at em 1 exactly, whatever the noise does. The edge is torn as it was, the tear now eating in
+// and never overhanging; it costs the canvas the mean of the half-noise it no longer subtracts, .043 of a half-frame
 float frameEdge(vec2 puv) {
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   float w = smoothstep(.35, .95, em);
-  em += w * ((vn(puv * 3.5) - .5) * .34 + (vn(puv * 9. + 7.) - .5) * .14 + (vn(puv * 23. + 3.) - .5) * .06);
+  float tear = (vn(puv * 3.5) - .5) * .34 + (vn(puv * 9. + 7.) - .5) * .14 + (vn(puv * 23. + 3.) - .5) * .06;
+  em += w * max(0., tear);
   return 1. - smoothstep(.62, 1., em);
 }
 float linD(float z) { float n = uProjNF.x, f = uProjNF.y; return 2. * n * f / (f + n - (2. * z - 1.) * (f - n)); }
