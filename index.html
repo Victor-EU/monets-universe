@@ -75,15 +75,15 @@ input[type=range]:disabled{opacity:.4}
 body.photo #photoHud{display:flex}
 
 /* caption */
-#location{position:fixed;bottom:36px;left:30px;pointer-events:none;opacity:0;transition:opacity 1s;font-size:16px;color:#f4ead0;text-shadow:0 2px 12px #0b182a}
-#location span{display:block;margin-top:6px;font:9px system-ui,sans-serif;letter-spacing:.24em;color:#e3d8c0b0;text-transform:uppercase}
+#location{position:fixed;bottom:36px;left:30px;pointer-events:none;opacity:0;transition:opacity 1s;font-size:16px;color:#f4ead0;text-shadow:0 1px 2px #0b182ad9,0 0 6px #0b182aa6,0 2px 14px #0b182a}
+#location span{display:block;margin-top:6px;font:9px system-ui,sans-serif;letter-spacing:.24em;color:#e9dfc8d9;text-transform:uppercase;text-shadow:0 1px 2px #0b182ae6,0 0 5px #0b182aa6}
 #location.show{opacity:.9}
 body.photo #location{opacity:0}
 
 #crosshair{display:none;position:fixed;left:50%;top:50%;width:3px;height:3px;background:#fff3cfaa;border-radius:50%;pointer-events:none}
 body.locked #crosshair{display:block}
 
-#hint{position:fixed;top:22px;left:50%;transform:translateX(-50%);font:11px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#f4ead0b0;text-shadow:0 1px 8px #0b182a;opacity:0;transition:opacity 1.2s;pointer-events:none;white-space:nowrap}
+#hint{position:fixed;top:22px;left:50%;transform:translateX(-50%);font:11px system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#f7eedcd9;text-shadow:0 1px 2px #0b182ae6,0 0 6px #0b182ab3,0 1px 10px #0b182a;opacity:0;transition:opacity 1.2s;pointer-events:none;white-space:nowrap}
 #hint.show{opacity:1}
 
 #touchpad{display:none;position:fixed;left:24px;bottom:24px;width:110px;height:110px;border-radius:50%;border:1px solid #f2e6c433;background:#16243a66}
@@ -538,7 +538,7 @@ uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; u
 // or its halo — those belong to the canvas itself, which is gone eighteen metres from a spot, and no two spots in the world stand within
 // fifty-four. uKeyAmt is how far the key reaches here at all and uKeyMix the second picture's share of it; both are taken once a frame, in
 // syncProjectors, and uKeyMix is zero at every viewpoint, so a viewpoint reads one canvas and takes the second sampler not at all
-uniform sampler2D uPainting2; uniform vec3 uProj2Pos, uProj2R, uProj2U, uProj2F, uGrade2Mul, uGrade2Add; uniform vec2 uProj2Tan, uProj2Ang; uniform float uKeyAmt, uKeyMix, uKeyHi;
+uniform sampler2D uPainting2; uniform vec3 uProj2Pos, uProj2R, uProj2U, uProj2F, uGrade2Mul, uGrade2Add; uniform vec2 uProj2Tan, uProj2Ang; uniform float uKeyAmt, uKeyMix, uKeyHi, uKeyFan, uKeyFan2;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
 float mirr(float u) { return 1. - abs(fract(u * .5) * 2. - 1.); }
 // the canvas's width in radians of azimuth, rounded so that a whole even number of them fills the turn: the mirrored copies then close on
@@ -591,9 +591,15 @@ vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec
 // stations the key's swing across a frame goes from a mean of 18 levels to 42 and its worst from 57 to 91, and the most it moves in one
 // degree — which is what shows as an edge — from 2.2 to 13.1. M51's figures for both of these came of a measure that read the world
 // through the key and moved 44 levels for two metres of walking; they are withdrawn, and these are on the key itself
-vec3 keyOf(vec3 da, vec3 db, float mx, float fl, float hi) {
-  vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, fl, hi);
-  if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, fl, hi), mx);
+// fa and fb close each spot's columns by how far the eye stands from that spot along the ground (uKeyFan, syncProjectors). The fan is
+// azimuthal and converges on the painter's own place: standing there, every wedge of it is under your feet or behind you and the read is
+// the picture's own left and right at one to one, which is what M53 measured and what M46 tuned. Twenty metres off it is a sunburst -- on
+// the promenade below the parasol, dark green spokes ran down the hill from the woman's feet, plainer than anything else in the frame, with
+// fl nought (a place's own ground, no second picture) and uKeyHi nought (a walker's eye). Neither of the two closings could see it: M51's
+// asks how far the leg is from being one picture's and M55's how high the eye stands, and this is a walker in the middle of one place
+vec3 keyOf(vec3 da, vec3 db, float mx, float fl, float hi, float fa, float fb) {
+  vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, max(fl, fa), hi);
+  if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, max(fl, fb), hi), mx);
   return a;
 }
 // how far outside the frame a direction lies, in radians: negative within it, zero on its own edge. Used by the sky alone. The ext read is
@@ -708,8 +714,13 @@ void main(){
     c += dir * s * amp;
   }
   // no stroke is painted longer than a few percent of the view, and none smaller than a few pixels: it fades rather than sparkles
+  // a leaf is allowed nearly twice the view a ground stroke is, and never shrinks past half: the ground's strokes shrink over a base coat
+  // and lose nothing, and a canopy's now have one too (canopyBlob), but a crown is a thin shell and at seven metres this cap alone took its
+  // strokes to a quarter of their size and its cover to a sixteenth, which is the confetti that was reported
   float dd = max(distance(cameraPosition, (modelMatrix * vec4(c, 1.)).xyz), .05), lu = max(length(iU), 1e-4);
-  float px = 2. * lu * uPxRad / dd, f = min(1., .016 * (.7 + .7 * fract(seed * 7.31)) * dd / lu);
+  float leaf = step(.5, kind) * step(kind, 1.5);
+  float px = 2. * lu * uPxRad / dd, f = min(1., mix(.016, .028, leaf) * (.7 + .7 * fract(seed * 7.31)) * dd / lu);
+  f = max(f, .5 * leaf);
   vFade = smoothstep(1.5, 4.5, px) * step(fract(seed * 5.13 + .37), uFadeK); // uFadeK < 1: the strokes go one by one
   vec3 anchor = c - iU * step(.7, iU.y / lu); // an upright stroke shrinks toward its foot
   c = anchor + (c - anchor) * f;
@@ -767,6 +778,12 @@ void main(){
   vec2 mc = vWorld.xz + vWorld.y * vec2(.9, .6);
   float m = vn(mc * 1.3) * .5 + vn(mc * 3.4 + 9.) * .3 + vn(mc * 8.1 + 4.) * .2;
   float vp = vPal;
+  // the palette index is carried on the vertices and rounded here, and between two of them it is interpolated: so a boundary between two
+  // indices fell where the interpolation crossed the half, which is the mesh's own grid, and the path through the haystacks was cut with
+  // metre-long right angles down both its sides. The rounding is nudged by the paint field, and only where the index stands between two of
+  // its own (4f(1-f) of the fraction, nought at every whole one, so a trunk or a wall carrying one index is untouched): the edge wanders a
+  // cell of the grid instead of following it, which is the edge the strokes over it already have
+  float fr = fract(vp); vp += (m - .5) * 1.15 * (4. * fr * (1. - fr));
 #ifdef TERRAIN
   // the terrain is the water's colour or the grass's and nothing between. Carried as an index on the vertices it is interpolated across
   // every shore, and the seven indices lying between the two are the place's other colours — of the pond's, whose palette the terrain
@@ -823,7 +840,7 @@ void main(){
     // one M52 to M54 laid after it, stood at a walker's eye. A canvas's columns lie over the ground around its spot in wedges; on foot you
     // stand inside that fan and it reads as the picture's own left and right at one to one, but from twenty metres up the whole of it is in
     // one frame at once and the columns lie over the fields as broad straight beams from the spot, sweeping as the flyer flies
-    vec3 ecol = keyOf(vWorld - uProjPos, vWorld - uProj2Pos, uKeyMix, 4. * uKeyMix * (1. - uKeyMix), uKeyHi);
+    vec3 ecol = keyOf(vWorld - uProjPos, vWorld - uProj2Pos, uKeyMix, 4. * uKeyMix * (1. - uKeyMix), uKeyHi, uKeyFan, uKeyFan2);
     vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 1.8), O, .6);
     ex = mix(ex, applyPaint(ecol, O, .3), smoothstep(.7, .95, fog)); // far off, the picture's own distance takes over from the fog
     // and the key belongs to the walk, as the sky's does (SKY_FRAG) and by the same twelve to forty-five metres: the ext read is soft by
@@ -944,7 +961,7 @@ void main(){
     float ga = 1. - smoothstep(.5, 1.25, outAng(d, uProjR, uProjU, uProjF, uProjAng)), sa = (1. - uKeyMix) * ga, sb = 0.;
     if (uKeyMix > 0.) sb = uKeyMix * (1. - smoothstep(.5, 1.25, outAng(d, uProj2R, uProj2U, uProj2F, uProj2Ang)));
     float st = sa + sb;
-    fin = mix(fin, applyPaint(inKey(fin, keyOf(d, d, st > 1e-5 ? sb / st : 0., 0., 0.), .5, .6, 1.45), O, .5), .85 * uKeyAmt * st);
+    fin = mix(fin, applyPaint(inKey(fin, keyOf(d, d, st > 1e-5 ? sb / st : 0., 0., 0., 0., 0.), .5, .6, 1.45), O, .5), .85 * uKeyAmt * st);
     float here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
     float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
     vec3 pc = texture2D(uPainting, puv, bias).rgb * uGradeMul + uGradeAdd;
@@ -973,7 +990,7 @@ void main(){
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 // each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
 function projectorState() { return { tex: null, depth: null, near: null, plate: null, halo: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
-function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) }, uPainting2: { value: null }, uProj2Pos: { value: V() }, uProj2R: { value: V(1, 0, 0) }, uProj2U: { value: V(0, 1, 0) }, uProj2F: { value: V(0, 0, -1) }, uProj2Tan: { value: new THREE.Vector2(1, 1) }, uProj2Ang: { value: new THREE.Vector2(.79, .79) }, uGrade2Mul: { value: V(1, 1, 1) }, uGrade2Add: { value: V() }, uKeyAmt: { value: 0 }, uKeyMix: { value: 0 }, uKeyHi: { value: 0 } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) }, uPainting2: { value: null }, uProj2Pos: { value: V() }, uProj2R: { value: V(1, 0, 0) }, uProj2U: { value: V(0, 1, 0) }, uProj2F: { value: V(0, 0, -1) }, uProj2Tan: { value: new THREE.Vector2(1, 1) }, uProj2Ang: { value: new THREE.Vector2(.79, .79) }, uGrade2Mul: { value: V(1, 1, 1) }, uGrade2Add: { value: V() }, uKeyAmt: { value: 0 }, uKeyMix: { value: 0 }, uKeyHi: { value: 0 }, uKeyFan: { value: 0 }, uKeyFan2: { value: 0 } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
@@ -1347,12 +1364,37 @@ const _pp = V();
 function promPoint(s, out = _pp) { return promenade.getPointAt(clamp(s / PROM_LEN, 0, 1), out); }
 
 // ============================================================ foliage tools (bushes and trees, shared by every place)
+// a canopy is patches and nothing else, and the strokes shrink toward their own centres as the eye comes up to them (PATCH_VERT: no stroke
+// is painted longer than a few percent of the view). The ground survives that because a base coat lies under it and the trunk because it is
+// a mesh; the leaves had nothing behind them, so within fifteen metres a crown opened into confetti with the sky through it and the bare
+// pole in the middle. So a bush lays its own base coat as the ground does: one blob a lobe, on the lobe's own radii and displaced by the
+// same vnoise the leaves are scattered by, so it is the leaf shell's own shape a little inside it, and what shows through the gaps is the
+// canopy's colour and not the sky. Its palette is the leaves' by the same rule, the lit side over and the shaded under
+const _bl = V();
+function canopyBlob(L, rx, ry, rz, seed, dark) {
+  const g = new THREE.IcosahedronGeometry(1, rx > 2 ? 2 : 1), a = g.getAttribute('position'), nrm = g.getAttribute('normal'), pal = new Float32Array(a.count); // a crown's outline is read at seven metres and a bush's is not
+  for (let i = 0; i < a.count; i++) {
+    const nx = a.getX(i), ny = a.getY(i), nz = a.getZ(i);
+    const th = Math.atan2(nz, nx), ph = Math.acos(clamp(ny, -1, 1));
+    const j = L[3] * (.85 + .3 * vnoise(th * 1.3 + seed, ph * 1.3) + .12 * (vnoise(th * 4.7 + seed, ph * 4.7) - .5)) * .7; // the leaves' own low note, and a second over it so the mass is lumpy and not a balloon
+    a.setXYZ(i, L[0] + nx * rx * j, L[1] + ny * ry * j, L[2] + nz * rz * j);
+    // the ellipsoid's own normal and not the facets': twenty faces of flat shading read as a cabbage, and this is a mass behind leaves
+    _bl.set(nx / rx, ny / ry, nz / rz).normalize(); nrm.setXYZ(i, _bl.x, _bl.y, _bl.z);
+    const light = clamp(ny * .5 + .5 - dark, 0, 1);
+    pal[i] = light > .72 ? 8 : light > .40 ? 7 : 6;
+  }
+  g.deleteAttribute('uv');
+  g.setAttribute('aPal', new THREE.BufferAttribute(pal, 1));
+  return g;
+}
 function foliageTools(fol, D, sizeAt) {
-  const n = V(), p = V(), trunks = [];
+  const n = V(), p = V(), trunks = [], canopies = [];
   function bush(cx, cy, cz, rx, ry, rz, count, dark = 0, amp = .05) {
     const lobes = []; const nl = 2 + Math.floor(rand() * 3);
     for (let l = 0; l < nl; l++) lobes.push([cx + gauss() * rx * .5, cy + gauss() * ry * .35, cz + gauss() * rz * .5, rr(.55, .95)]);
     const seed = rand() * 100;
+    // only where the leaves are thick enough to be a mass: a handful of dabs on a twig is a sparse bush and stays one
+    if (count / nl >= 7) for (const L of lobes) if (L[1] > groundHeight(L[0], L[2]) + ry * L[3] * .3) canopies.push(canopyBlob(L, rx, ry, rz, seed, dark));
     for (let i = 0; i < count; i++) {
       const L = lobes[i % nl], th = rand() * TAU, ph = Math.acos(rr(-1, 1));
       n.set(Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th));
@@ -1371,10 +1413,12 @@ function foliageTools(fol, D, sizeAt) {
     const trunk = new THREE.CylinderGeometry(r * .6, r, h * .5, 7, 3); trunk.translate(x + gauss() * .3, y + h * .25 - .2, z + gauss() * .3);
     trunks.push(trunk);
     scatterOn(trunk, Math.floor(40 * D * r * h), (q, m) => fol.lay(q, m, Math.PI / 2 + gauss() * .2, rr(.25, .5), rr(.1, .16), rand() < .85 ? 13 : 6, 0, 0));
-    bush(x, y + h * .6, z, w, h * .42, w * rr(.85, 1.1), Math.floor(w * h * 3.6 * D), dark, .04);
-    if (rand() < .5) bush(x + gauss() * 1.5, y + h * .9, z + gauss() * 1.5, w * .6, h * .22, w * .6, Math.floor(w * h * 1.6 * D), dark * .5, .05);
+    bush(x, y + h * .6, z, w, h * .42, w * rr(.85, 1.1), Math.floor(w * h * 5.6 * D), dark, .04);
+    if (rand() < .5) bush(x + gauss() * 1.5, y + h * .9, z + gauss() * 1.5, w * .6, h * .22, w * .6, Math.floor(w * h * 2.5 * D), dark * .5, .05);
   }
-  return { bush, tree, trunks };
+  // the canopies' base coat, merged as the trunks' is; null where nothing was thick enough to want one
+  const canopyMesh = mat => { if (!canopies.length) return null; const m = new THREE.Mesh(mergeGeometries(canopies), mat); m.userData.canopies = canopies.length; return m; };
+  return { bush, tree, trunks, canopies, canopyMesh };
 }
 
 // ============================================================ the pond: build
@@ -1449,7 +1493,7 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
 
   // --- foliage: willows, bushes, the far trees
   const fol = new Patches();
-  const { bush, tree, trunks } = foliageTools(fol, D, sizeAt);
+  const { bush, tree, trunks, canopyMesh } = foliageTools(fol, D, sizeAt);
   function willow(cx, cz, sc = 1) {
     const base = groundHeight(cx, cz);
     const trunk = new THREE.CylinderGeometry(.22 * sc, .5 * sc, 6.2 * sc, 8, 4); trunk.translate(cx, base + 3.1 * sc - .2, cz);
@@ -1490,6 +1534,7 @@ function buildPond(D) { // D: density multiplier (Balanced = 1)
   // trees flanking the Grande Allée's end
   for (const [x, z] of [[-9, -58], [9, -60], [-12, -66], [11, -68], [-7, -72], [8, -74], [-4.2, -43], [4.4, -46], [-5, -51]]) tree(x, z, rr(9, 14), rr(2.8, 4), .1);
   if (trunks.length) placeGroup.add(baseMesh(mergeGeometries(trunks.map(t => t.toNonIndexed())), 13, MAT.base));
+  const _cm = canopyMesh(MAT.base); if (_cm) placeGroup.add(_cm);
   placeGroup.add(fol.mesh(MAT.patch)); mark('foliage');
 
   // --- the bridge, as he painted it in 1899: the deck's beam, three rails on posts every 1.7 m, no trellis yet (the wisteria came in 1901);
@@ -1782,12 +1827,13 @@ function buildRiver(D) {
   placeGroup.add(ground.mesh(MAT.patch));
 
   // --- foliage: a bush at the painter's left, trees on the near bank behind, the far bank's tree line
-  const fol = new Patches(); const { bush, tree, trunks } = foliageTools(fol, D, sizeAt);
+  const fol = new Patches(); const { bush, tree, trunks, canopyMesh } = foliageTools(fol, D, sizeAt);
   bush(-7.5, groundHeight(-7.5, -146) + .7, -146, 2.2, 1.2, 1.6, Math.floor(420 * D), .1, .05);
   for (const [x, z, h, w] of [[-16, -141, 12, 4], [-26, -139, 14, 4.5], [-38, -144, 11, 3.6], [-50, -142, 13, 4], [38, -138, 12, 3.8], [50, -141, 14, 4.4], [62, -139, 11, 3.5]]) tree(x, z, h, w, .12);
   for (let i = 0; i < 34; i++) { const x = -78 + i * 4.8 + gauss() * 1.5, z = -214 - Math.abs(gauss()) * 6; if (Math.abs(x - ABRIDGE.x) < 9 || epteSDFRaw(x, z) < 4) continue; tree(x, z, rr(6, 10), rr(2.6, 4), .1); }
   for (const [x, z] of [[-31, -209], [-20, -210], [14, -211], [70, -210]]) tree(x, z, rr(5.5, 8), rr(2.2, 3.2), .1);
   if (trunks.length) placeGroup.add(baseMesh(mergeGeometries(trunks.map(t => t.toNonIndexed())), 13, MAT.base));
+  const _cm = canopyMesh(MAT.base); if (_cm) placeGroup.add(_cm);
   placeGroup.add(fol.mesh(MAT.patch));
 
   // --- the far bank: houses as blocks under patches
@@ -1851,7 +1897,18 @@ function buildRiver(D) {
     placeGroup.add(baseMesh(walls, 14, MAT.base)); placeGroup.add(baseMesh(roof, 17, MAT.base)); SOLIDS.push({ x: tx, z: tz, hw: tw / 2 + .5, hd: tw / 2 + .5, yaw: 0, surf: (lx, lz) => ty + th + 1.7 * Math.max(0, 1 - Math.max(Math.abs(lx), Math.abs(lz)) / (tw / 2 + .3)) }); // its pyramid
     scatterOn(walls, Math.floor(520 * D), (q, m) => { const r = rand(), edge = Math.max(Math.abs(q.x - tx), Math.abs(q.z - tz)) > tw / 2 - .35; tp.lay(q, m, gauss() * .2, rr(.4, .7) * tk, rr(.18, .3) * tk, edge ? (r < .8 ? 12 : 16) : r < .78 ? 14 : r < .9 ? 16 : 12, 0, 0); });
     scatterOn(roof, Math.floor(160 * D), (q, m) => { if (m.y < .2) return; tp.lay(q, m, gauss() * .3, rr(.4, .7) * tk, rr(.18, .3) * tk, rand() < .8 ? 17 : 12, 0, 0); });
-    for (const [dx, dz, fx, fz] of [[-tw / 2 - .02, 0, -1, 0], [0, tw / 2 + .02, 0, 1]]) for (const y of [2.4, 5.2, 7.4]) { p.set(tx + dx, ty + y, tz + dz); f.set(fx, 0, fz); tp.stand(p, f, .7, .95, 3, 0, 0); }
+    // a window a storey on all four faces, and a doorway on each. Two faces carried windows and two did not, and the promenade passes the
+    // blank pair: from the walk the toll house stood as eight metres of unbroken coral wall, a third of the frame wide.
+    // And they are geometry now and not patches. A patch is rescaled to a fixed size on the screen (PATCH_VERT), so at the six metres the
+    // walk passes at, a window .95 m tall was drawn at .23 of itself -- a dab the wall's own coat, laid three centimetres off its face,
+    // covered outright. A window is a hole in a wall and not a brushstroke: it takes the wall's own base coat, at the wall's own scale
+    const holes = [];
+    for (const [dx, dz, fx, fz] of [[-tw / 2, 0, -1, 0], [tw / 2, 0, 1, 0], [0, tw / 2, 0, 1], [0, -tw / 2, 0, -1]])
+      for (const [wy, ww, wh] of [[2.4, .7, .95], [5.2, .7, .95], [7.4, .7, .95], [1.5, .85, 1.8]]) {
+        const q = new THREE.PlaneGeometry(ww, wh); q.rotateY(Math.atan2(fx, fz));
+        q.translate(tx + dx * 1.05 + fx * .06, ty + wy, tz + dz * 1.05 + fz * .06); holes.push(q);
+      }
+    placeGroup.add(baseMesh(mergeParts(holes), 3, MAT.base));
     placeGroup.add(tp.mesh(MAT.patch));
   }
 
@@ -1892,7 +1949,7 @@ function buildRiver(D) {
     g.add(baseMesh(mergeParts(parts), q => q.y > .3 ? 13 : 3, MAT.base));
     g.add(pa.mesh(MAT.patch));
     placeGroup.add(g);
-    boats.push({ g, x, z, yaw, ph, orbit, sail, L });
+    boats.push({ g, x, z, yaw, ph, orbit, sail, L, mat: MAT.base });
   }
   boat(-.9, -151.6, .35, 6.2, false, 0.4, null);
   boat(.6, -155.8, .2, 5.4, false, 2.1, null);
@@ -1931,6 +1988,7 @@ function updateFlotsam(dt) {
     const y = WATER_Y + .03 + dy + Math.sin(simTime * 1.3 + b.ph) * .015, cx = Math.cos(b.a) * b.w / 2, sx = Math.sin(b.a) * b.w / 2, cz = -Math.sin(b.a) * b.d / 2, sz = Math.cos(b.a) * b.d / 2;
     P.setXYZ(i * 4, b.x - cx - cz, y, b.z - sx - sz); P.setXYZ(i * 4 + 1, b.x + cx - cz, y, b.z + sx - sz); P.setXYZ(i * 4 + 2, b.x + cx + cz, y, b.z + sx + sz); P.setXYZ(i * 4 + 3, b.x - cx + cz, y, b.z - sx + sz); }); P.needsUpdate = true; }
 }
+const ROPE_N = 8;
 function updateBoats(dt) {
   for (const b of boats) {
     const g = b.g, t = simTime * .6 + b.ph;
@@ -1943,9 +2001,15 @@ function updateBoats(dt) {
         const sx = b.x - hx * L / 2, sz = b.z - hz * L / 2, unn = Math.abs(c0[0] * nx + c0[1] * nz), uaa = Math.abs(c0[0] * hx + c0[1] * hz), Fx = 500 * 1.2 * Dr * L * unn * unn / 2, Fa = 500 * .02 * L * (Bm + 2 * Dr) * uaa * uaa + Fx * .3; let stake = null; // the stream's load on the hull at the painted place: across it (a hull's drag on its side), the stern line's half; along it (the skin's), the bow line's, with a share of the cross load
         for (let i = 0; i < 36; i++) { const a = i / 36 * TAU, dx = Math.cos(a), dz = Math.sin(a); if (dx * nx * sg2 + dz * nz * sg2 < .5) continue; let sd0 = 0; for (let sd = 1; sd <= 14; sd += .5) if (groundHeight(sx + dx * sd, sz + dz * sd) > WATER_Y - .05) { sd0 = sd; break; } if (!sd0) continue; for (const k of [.3, 1.3, 2.5]) { const sd = sd0 + k; if (sd > 14) break; const px = sx + dx * sd, pz = sz + dz * sd, gh = groundHeight(px, pz); if (gh <= WATER_Y - .05) continue; const e = .4, sl = Math.hypot(groundHeight(px + e, pz) - groundHeight(px - e, pz), groundHeight(px, pz + e) - groundHeight(px, pz - e)) / (2 * e), rise = gh - WATER_Y, WB = WATER_BODY[waterBody(px, pz)], gran = WB.bank.d10 > .06, cu = gran ? 0 : 170e3 * Math.exp(-4.6 * clamp(1 - rise / WB.hc, 0, 1)) * (rise > 1 ? .4 : 1), soil = gran ? .5 : clamp(cu / 5e4, .1, 3), SD = .06, drive = .5 * Math.max(0, 1 - sl / 1.2), Le = Math.max(0, drive - 1.5 * SD), holdF = Le > 0 ? (gran ? .5 * 1e4 * SD * Le * Le * Le * Math.pow(Math.tan(Math.PI / 4 + WB.bank.phi * Math.PI / 360), 2) / (.4 + Le) : 9 * cu * SD * Le * Le / (2 * (.4 + 1.5 * SD) + Le)) : 0, H0 = floodOf(waterBody(px, pz), b.x, b.z), lead = dx * hx + dz * hz, need = Fx / Math.max(.25, Math.sqrt(1 - lead * lead)); if (holdF < 2 * need) continue; const cost = 2 * sd / 1.2 + 2 * rise / .3 + 30 / soil + Math.exp(-rise / H0) * 600; if (!stake || cost < stake.cost) stake = { d: sd, x: px, z: pz, cost, rise, sl, lead, holdF, need, cu }; } } // the stern line's ground chosen by what it costs a boatman: the water's edge searched on that side (within 60°, to a rope's throw of 14 m), and at each edge the ground there and a metre and two up the bank. A stake must hold twice the line's pull (the cross load over the line's lead across the hull). Its holding is Broms' for a short pile in clay: 9 c_u D over the driven length past 1.5 diameters, taken at the rope's lever (.4 m up), a 60 mm stake driven half a metre; the clay's strength by its liquidity (Wroth and Wood's c_u = 170 e^(−4.6 LI) kPa), the liquidity by the bank's own capillary rise (`WATER_BODY.hc`, from its grain by Hazen), so the ground at the water's edge is at its liquid limit (1.7 kPa) and a rise up at its plastic (170 kPa), and .4 of that in a cliff's scree; a shingle bank (the grain over .06 mm) holds as Broms' sand, half the buoyant weight of the soil times the driven length cubed at the passive pressure of its friction angle, a hundred newtons for a stake in shingle, so the harbour moors to buoys; the steeper the bank the shallower the drive, past 1 in 1.2 none. Among the grounds that hold, the least time: the walk there and back along the rope's length at 1.2 m/s, the climb at .3 m/s, the driving (half a minute in firm ground, longer in soft), and the flood's risk by the water's own regime (`floodOf`: the height the year's flood reaches, found on the scene's own section; ten minutes to moor again when it does)
         let buoy = null; for (let i = -3; i <= 3; i++) { const a = i / 6, ux2 = ux * Math.cos(a) - uz * Math.sin(a), uz2 = ux * Math.sin(a) + uz * Math.cos(a); for (let r = L * .2; r <= L * .5 + 1e-6; r += L * .05) { const px = b.x + hx * L / 2 + r * ux2, pz = b.z + hz * L / 2 + r * uz2, dep = WATER_Y - groundHeight(px, pz); if (dep < .5) continue; const need = Fa / Math.max(.3, Math.cos(a)), sinker = Math.max(20, need / (.6 * 9.8 * (1 - 1 / 2.6))), chain = 3 * dep, cost = 2 * r / .8 + sinker * .8 + chain * .6 + Math.abs(a) * 20; if (!buoy || cost < buoy.cost) buoy = { x: px, z: pz, r, a, dep, cost, sinker, chain }; } } if (!buoy) buoy = { x: b.x + hx * L / 2 + L * .25 * ux, z: b.z + hz * L / 2 + L * .25 * uz, r: L * .25, a: 0, dep: 0, cost: 0, sinker: 20, chain: 0 }; if (stake) { b.r2 = Math.hypot(stake.x - sx, stake.z - sz); b.m2 = [stake.x, stake.z]; } else { b.r2 = L * .5; b.m2 = [sx + b.r2 * sg2 * nx, sz + b.r2 * sg2 * nz]; } b.r1 = buoy.r; b.m1 = [buoy.x, buoy.z]; b.pick = { stake: stake && [+stake.cost.toFixed(0), +stake.rise.toFixed(2), +stake.sl.toFixed(2), +stake.lead.toFixed(2), +stake.d.toFixed(1), +stake.holdF.toFixed(0), +stake.need.toFixed(0), +stake.cu.toFixed(0)], buoy: [+buoy.a.toFixed(2), +buoy.r.toFixed(2), +buoy.dep.toFixed(2), +buoy.cost.toFixed(0), +buoy.sinker.toFixed(0)] }; // the bow buoy sunk where it costs least: its sinker must hold the line's pull along the stream (a stone's holding is its weight in water at a friction of .6; 20 kg at least), its chain three times the depth, and the water half a metre at least (the sinker would show); the time: rowing out and back at .8 m/s, hauling the sinker (.8 s a kg) and the chain (.6 s a metre), and a line off the stream's line (20 s a radian, for the fouling it makes)
-        const dark = new THREE.MeshBasicMaterial({ color: 0x4a3626 }), red = new THREE.MeshBasicMaterial({ color: 0x8a3a2a }), ropeM = new THREE.LineBasicMaterial({ color: 0x9a8a6a }); b.buoy = new THREE.Mesh(new THREE.SphereGeometry(.17, 8, 6), red); b.buoy.position.set(b.m1[0], WATER_Y + .05, b.m1[1]); scene.add(b.buoy);
-        if (stake) { b.stake = new THREE.Mesh(new THREE.CylinderGeometry(.045, .06, .9, 6), dark); b.stake.position.set(stake.x, groundHeight(stake.x, stake.z) + .3, stake.z); scene.add(b.stake); } else { b.stake = new THREE.Mesh(new THREE.SphereGeometry(.17, 8, 6), red); b.stake.position.set(b.m2[0], WATER_Y + .05, b.m2[1]); scene.add(b.stake); } // the buoy, red, awash; the stake at the edge, or a second buoy
-        b.ropes = [0, 1].map(() => { const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(), V()]), ropeM); ln.frustumCulled = false; scene.add(ln); return ln; });
+        // the buoy, red, awash; the stake at the edge, or a second buoy. All three wear the place's own base coat and not a flat colour:
+        // on MeshBasicMaterial they took no light, no fog, no paint field and none of the canvas's key, and a buoy read as a vermilion disc
+        // pasted on the water at Argenteuil, which is one of the nine views
+        const M = b.mat || BASE.mat, pi = b.g.userData.place, tag = o => { if (pi !== undefined) o.userData.place = pi; return o; };
+        b.buoy = tag(baseMesh(new THREE.SphereGeometry(.17, 10, 7), 17, M)); b.buoy.position.set(b.m1[0], WATER_Y + .05, b.m1[1]); placeGroup.add(b.buoy);
+        if (stake) { b.stake = tag(baseMesh(new THREE.CylinderGeometry(.045, .06, .9, 6), 13, M)); b.stake.userData.post = true; b.stake.position.set(stake.x, groundHeight(stake.x, stake.z) + .3, stake.z); placeGroup.add(b.stake); } else { b.stake = tag(baseMesh(new THREE.SphereGeometry(.17, 10, 7), 17, M)); b.stake.position.set(b.m2[0], WATER_Y + .05, b.m2[1]); placeGroup.add(b.stake); }
+        // a rope hangs: eight segments with the dip of its own slack, so a slack line is a curve and a taut one straight. Painted like the
+        // rest, it is fogged and keyed and no longer a lit hairline drawn over a sail
+        b.ropes = [0, 1].map(() => { const g2 = new THREE.BufferGeometry(); const nn = new Float32Array(ROPE_N * 3), pl = new Float32Array(ROPE_N); for (let i = 0; i < ROPE_N; i++) { nn[i * 3 + 1] = 1; pl[i] = 10; } g2.setAttribute('position', new THREE.BufferAttribute(new Float32Array(ROPE_N * 3), 3)); g2.setAttribute('normal', new THREE.BufferAttribute(nn, 3)); g2.setAttribute('aPal', new THREE.BufferAttribute(pl, 1)); const ln = tag(new THREE.Line(g2, M)); ln.frustumCulled = false; placeGroup.add(ln); return ln; });
         b.px = b.x; b.pz = b.z; b.psi = b.yaw; b.vx = 0; b.vz = 0; b.w = 0; }
       const n = Math.max(1, Math.ceil(dt / .04)), h = dt / n, kr = 4 * m, cr = 2 * Math.sqrt(kr * m) * .7; // the ropes: a stretch under the hull's weight of a quarter metre, and damped
       for (let i = 0; i < n; i++) { const c = currentAt(b.px, b.pz), hx = Math.cos(b.psi), hz = -Math.sin(b.psi), nx = Math.sin(b.psi), nz = Math.cos(b.psi); let fx = 0, fz = 0, M = 0; // the stream past the hull, the drag along it (a skin's, .02 on the wetted box) and across it (a hull's, 1.2 on its side), the cross drag taken along its length with the hull's turning, so the turning is checked
@@ -1953,8 +2017,11 @@ function updateBoats(dt) {
         for (let j = 0; j < 6; j++) { const sj = (j - 2.5) / 6 * L, un = rx * nx + rz * nz + b.w * sj, fn = 500 * 1.2 * Dr * (L / 6) * Math.abs(un) * un; fx += fn * nx; fz += fn * nz; M -= sj * fn; }
         for (const [mp, r, sg] of [[b.m1, b.r1, 1], [b.m2, b.r2, -1]]) { const px = b.px + sg * hx * L / 2, pz = b.pz + sg * hz * L / 2, dx = mp[0] - px, dz = mp[1] - pz, dist = Math.hypot(dx, dz); if (dist <= r) continue; const ex = dx / dist, ez = dz / dist, vpx = b.vx - b.w * sg * L / 2 * nx, vpz = b.vz - b.w * sg * L / 2 * nz, T = Math.max(0, kr * (dist - r) - cr * (vpx * ex + vpz * ez)); fx += T * ex; fz += T * ez; M -= sg * L / 2 * (T * (ex * nx + ez * nz)); } // each rope, taut past its length: its pull on the bow or the stern along itself, and the turn it gives the hull
         b.vx += fx / m * h; b.vz += fz / m * h; b.w += M / I * h; b.px += b.vx * h; b.pz += b.vz * h; b.psi += b.w * h; }
-      g.position.x = b.px; g.position.z = b.pz; g.rotation.y = b.psi; const hx = Math.cos(b.psi), hz = -Math.sin(b.psi), yb = g.position.y + .28; b.buoy.position.y = WATER_Y + .05 + Math.sin(t * 1.3) * .03; if (!b.stake.geometry.parameters.radiusTop) b.stake.position.y = WATER_Y + .05 + Math.sin(t * 1.1 + 1) * .03; // the buoys bob
-      for (let i = 0; i < 2; i++) { const P = b.ropes[i].geometry.attributes.position, sg = i ? -1 : 1, mp = i ? b.m2 : b.m1, ey = i && b.stake.geometry.parameters.radiusTop ? b.stake.position.y + .4 : WATER_Y + .1; P.setXYZ(0, b.px + sg * hx * L / 2, yb, b.pz + sg * hz * L / 2); P.setXYZ(1, mp[0], ey, mp[1]); P.needsUpdate = true; } } // and the ropes drawn, from the bow and the stern to the buoy and the stake
+      g.position.x = b.px; g.position.z = b.pz; g.rotation.y = b.psi; const hx = Math.cos(b.psi), hz = -Math.sin(b.psi), yb = g.position.y + .28; b.buoy.position.y = WATER_Y + .05 + Math.sin(t * 1.3) * .03; if (!b.stake.userData.post) b.stake.position.y = WATER_Y + .05 + Math.sin(t * 1.1 + 1) * .03; // the buoys bob
+      for (let i = 0; i < 2; i++) { const P = b.ropes[i].geometry.attributes.position, sg = i ? -1 : 1, mp = i ? b.m2 : b.m1, r = i ? b.r2 : b.r1, ey = i && b.stake.userData.post ? b.stake.position.y + .4 : WATER_Y + .1;
+        const ax = b.px + sg * hx * L / 2, az = b.pz + sg * hz * L / 2, dist = Math.hypot(mp[0] - ax, mp[1] - az), dip = Math.min(.5, .6 * Math.sqrt(Math.max(0, r - dist) * r));
+        for (let k = 0; k < ROPE_N; k++) { const u = k / (ROPE_N - 1); P.setXYZ(k, ax + (mp[0] - ax) * u, yb + (ey - yb) * u - dip * 4 * u * (1 - u), az + (mp[1] - az) * u); }
+        P.needsUpdate = true; } } // and the ropes drawn, from the bow and the stern to the buoy and the stake, with the dip of their slack
     g.rotation.x = Math.sin(t * .9) * .035 + (b.sail ? .05 : 0); g.rotation.z = Math.sin(t * .7 + 1) * .02; g.position.y = WATER_Y + (b.low ? .2 : .34) + Math.sin(t * 1.1) * .025;
   }
 }
@@ -2008,7 +2075,7 @@ function buildPoplars(D) {
   }
   waterGroup.add(water.mesh(MAT.water));
   // the poplars: tall columns of foliage on thin trunks, biased downwind, the curve receding north
-  const fol = new Patches(); const { tree, trunks } = foliageTools(fol, D, sizeAt);
+  const fol = new Patches(); const { tree, trunks, canopyMesh } = foliageTools(fol, D, sizeAt);
   function poplar(x, z, h) {
     const y = groundHeight(x, z), r = .16 + h * .007;
     const trunk = new THREE.CylinderGeometry(r * .4, r, h * .66, 6, 4); trunk.translate(x, y + h * .33, z); trunks.push(trunk);
@@ -2030,6 +2097,7 @@ function buildPoplars(D) {
   // the meadow's far trees
   for (let i = 0; i < 12; i++) { const x = 70 + rand() * 40, z = -230 - rand() * 100; if (epteSDFRaw(x, z) < 4) continue; tree(x, z, rr(8, 13), rr(3, 4.5), .1); }
   if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
+  const _cm = canopyMesh(MAT.base); if (_cm) placeGroup.add(_cm);
   placeGroup.add(fol.mesh(MAT.patch));
   timings.poplars = 1;
 }
@@ -2082,10 +2150,11 @@ function buildHaystacks(D) {
   placeGroup.add(baseMesh(mergeParts(parts), 3, MAT.base));
   placeGroup.add(st.mesh(MAT.patch));
   // the tree line before the hills, and a few trees behind the stacks
-  const fol = new Patches(); const { tree, trunks } = foliageTools(fol, D, sizeAt);
+  const fol = new Patches(); const { tree, trunks, canopyMesh } = foliageTools(fol, D, sizeAt);
   for (let i = 0; i < 24; i++) { const z = -226 - i * 5.4 + gauss(), x = -78 - Math.abs(gauss()) * 10; tree(x, z, rr(6, 10), rr(3, 5), .12); }
   for (const [x, z] of [[-40, -306], [-28, -310], [-68, -298], [-14, -312], [-2, -306]]) tree(x, z, rr(7, 11), rr(2.6, 4), .12);
   if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
+  const _cm = canopyMesh(MAT.base); if (_cm) placeGroup.add(_cm);
   placeGroup.add(fol.mesh(MAT.patch));
   timings.haystacks = 1;
 }
@@ -2134,10 +2203,11 @@ function buildRouen(D) {
   }
   placeGroup.add(ground.mesh(MAT.patch));
   // --- the hedge at the fields' edge, and a few trees at the mouth of the street
-  const fol = new Patches(); const { bush, tree, trunks } = foliageTools(fol, D, kAt);
+  const fol = new Patches(); const { bush, tree, trunks, canopyMesh } = foliageTools(fol, D, kAt);
   for (let x = -92; x <= -20; x += 4.6) { if (Math.abs(x - streetX(-332)) < 5) continue; const z = -332 + gauss() * .6; bush(x, groundHeight(x, z) + .9, z, 2.6, 1.1, 1.8, Math.floor(46 * D), .15, .04); }
   for (const [x, z] of [[-73, -411], [-15, -412], [-64, -339]]) tree(x, z, rr(8, 11), rr(3, 4), .12);
   if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
+  const _cm = canopyMesh(MAT.base); if (_cm) placeGroup.add(_cm);
   placeGroup.add(fol.mesh(MAT.patch));
   // --- the houses: half-timber blocks, jettied upper storeys, steep slate roofs; each house its own plaster, timber as dark vertical strokes
   const town = new Patches(); const hp = { 18: [], 16: [], 12: [], 17: [] };
@@ -2457,7 +2527,7 @@ function buildHavre(D) {
     for (let i = 0; i < 6; i++) { p.set(L * .1 + gauss() * .05, .3 + i * .28, gauss() * .05); f.set(1, 0, 0); pa.stand(p, f, (i < 5 ? .5 : .3) * k, .34 * k, 3, 0, 0, .05); }
     for (const s of [-1, 1]) { p.set(L * .05, .55, s * 1.1); _u.set(0, -.3, s).normalize(); _v.set(1, 0, 0); pa.add(p, _u, _v, 2.4, .07 * k, f.set(0, 1, 0), 3, 0, 0); }
     g.add(baseMesh(hull, 3, MAT.base)); g.add(pa.mesh(MAT.patch)); placeGroup.add(g);
-    boats.push({ g, x, z, yaw, ph, orbit, sail: false, low: true });
+    boats.push({ g, x, z, yaw, ph, orbit, sail: false, low: true, mat: MAT.base });
   }
   rower(27, -442, .3, 1.2, [1.6, .7]); rower(43, -434, -.4, 2.6, [2.2, .9]);
   timings.havre = 1;
@@ -2628,9 +2698,10 @@ function buildOrangerie(D) {
     else ground.lay(p, n, rand() * TAU, rr(.3, .55) * k, rr(.16, .3) * k, rand() < .6 ? 9 : rand() < .5 ? 11 : 7, 0, 0);
   }
   placeGroup.add(ground.mesh(MAT.patch));
-  const fol = new Patches(), { tree, trunks } = foliageTools(fol, D, sizeAt);
+  const fol = new Patches(), { tree, trunks, canopyMesh } = foliageTools(fol, D, sizeAt);
   for (const [x, z, h, w] of [[-42, 40, 11, 5], [-52, 52, 12, 5.5], [-50, 66, 10, 4.5], [-40, 78, 12, 5.5], [-18, 82, 11, 5], [4, 84, 12, 5.5], [24, 82, 10, 4.5], [42, 72, 12, 5.5], [44, 50, 11, 5], [36, 32, 10, 4.5], [14, 36, 9, 4], [-14, 38, 9, 4]]) tree(x, z, h, w, .1);
   if (trunks.length) placeGroup.add(baseMesh(mergeParts(trunks), 13, MAT.base));
+  const _cm = canopyMesh(MAT.base); if (_cm) placeGroup.add(_cm);
   placeGroup.add(fol.mesh(MAT.patch));
   timings.orangerie = 1;
 }
@@ -2810,7 +2881,7 @@ function goView(i) {
   if (gaze) pts.push(back, along(3.5));
   pts.push(pl.view.p.clone());
   travel = { curve: new THREE.CatmullRomCurve3(pts), l0: fromLook, lm: pl.view.p.clone(), l1: pl.view.look.clone(), f0: camera.fov, f1: fitFov(pl), t: 0, dur: clamp(2.2 + dist * .03, 2.4, 7), i };
-  velocity.set(0, 0, 0); drifting = false; selectView(i);
+  velocity.set(0, 0, 0); drifting = false; selectView(i); $('#location').classList.remove('show'); locationTimer = 0; zoneKey = null;
 }
 function updateTravel(dt) {
   travel.t += dt; const k = Math.min(1, travel.t / travel.dur), e = k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
@@ -3072,7 +3143,11 @@ function say(text, secs = 5) { const h = $('#hint'); h.textContent = text; h.cla
 const ALLEE = { name: 'The Grande Allée', place: 'Giverny, the flower garden', year: '' };
 let zoneKey = null;
 function captionZone() { if (placeIndex >= 1) return places[placeIndex]; const z = camera.position.z; return z < -31 && z > -70 ? ALLEE : places[0]; }
-function updateZone() { const c = captionZone(); if (c !== zoneKey) { if (zoneKey !== null) showLocation(c); zoneKey = c; } }
+// the caption names the place the eye is in, and the paintings list marks it too: the list used to mark the last viewpoint chosen, so a
+// visitor who walked from the pond to the haystacks still found The Water-Lily Pond ticked. In the Grande Allee, which is a zone and not one
+// of the nine, nothing is marked, because the eye is at none of them. A flight says nothing while it is in the air (the caption of the place
+// left stood over the one flown to, four and a half seconds outlasting the crossing); updateTravel names the place on arrival
+function updateZone() { if (travel) return; const c = captionZone(); if (c !== zoneKey) { if (zoneKey !== null) showLocation(c); selectView(places.indexOf(c)); zoneKey = c; } }
 function showLocation(pl) { $('#location').innerHTML = `${pl.name}<span>${pl.place}${pl.year ? ' · ' + pl.year : ''}</span>`; $('#location').classList.add('show'); locationTimer = realTime + 4.5; }
 function selectView(i) { document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('selected', +b.dataset.view === i)); }
 const panels = { views: '#viewsPanel', hour: '#hourPanel', quality: '#qualityPanel' }, buttons = { views: '#views', hour: '#hourBtn', quality: '#quality' };
@@ -3326,18 +3401,22 @@ function syncProjectors() {
   const up = camera.position.y - Math.max(walkHeight(camera.position.x, camera.position.z), WATER_Y);
   const amt = A && tot > 1e-5 ? (1 - sstep(leg.r, 12, 45)) * Math.max(ra, rb) * (1 - sstep(up, 12, 50)) : 0;
   const hi = A ? sstep(up, 6, 12) : 0;
+  // and how far the eye stands from each spot along the ground, which is what the azimuthal fan is read by: nought where the eye is the
+  // painter's own (so the eight viewpoints are untouched, the distance being zero at every one of them) and shut twenty metres off, where
+  // the wedges have left the walker's feet and stand over the field he is looking at
+  const fanAt = S => sstep(Math.hypot(camera.position.x - S.pos.x, camera.position.z - S.pos.z), 6, 20);
   const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
   if (A) { _kg[0].copy(A.PU.uGradeMul.value); _kg[1].copy(A.PU.uGradeAdd.value); const G = (B || A).PU; _kg[2].copy(G.uGradeMul.value); _kg[3].copy(G.uGradeAdd.value); }
   for (const T of targets) {
     if (!T) continue;
-    if (!A || (!on && amt <= 0)) { T.uProjOn.value = 0; T.uKeyAmt.value = 0; T.uKeyMix.value = 0; T.uKeyHi.value = 0; continue; }
+    if (!A || (!on && amt <= 0)) { T.uProjOn.value = 0; T.uKeyAmt.value = 0; T.uKeyMix.value = 0; T.uKeyHi.value = 0; T.uKeyFan.value = 0; T.uKeyFan2.value = 0; continue; }
     const S = A.painting.own, S2 = (B || A).painting.own;
     T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uPaintHalo.value = S.halo; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
     T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan); T.uProjAng.value.set(Math.atan(S.tan.x), Math.atan(S.tan.y));
     T.uPainting2.value = S2.tex; T.uProj2Pos.value.copy(S2.pos); T.uProj2R.value.copy(S2.R); T.uProj2U.value.copy(S2.U); T.uProj2F.value.copy(S2.F); T.uProj2Tan.value.copy(S2.tan); T.uProj2Ang.value.set(Math.atan(S2.tan.x), Math.atan(S2.tan.y));
     if (T !== A.PU) { T.uGradeMul.value.copy(_kg[0]); T.uGradeAdd.value.copy(_kg[1]); }
     T.uGrade2Mul.value.copy(_kg[2]); T.uGrade2Add.value.copy(_kg[3]);
-    T.uProjOn.value = on; T.uKeyAmt.value = amt; T.uKeyMix.value = B ? mixB : 0; T.uKeyHi.value = hi;
+    T.uProjOn.value = on; T.uKeyAmt.value = amt; T.uKeyMix.value = B ? mixB : 0; T.uKeyHi.value = hi; T.uKeyFan.value = fanAt(S); T.uKeyFan2.value = fanAt(S2);
   }
 }
 // the depth map follows the world: while the canvas is in reach it is taken again every frame, so the boats, the wind in the leaves and
