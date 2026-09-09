@@ -3697,3 +3697,63 @@ own colour with it. The harbour's leg is still the reveal's shape and not the le
 And a note for the next measurement: no band that holds water reproduces across page loads. The boats drift with the frame clock whatever
 `?still` does to the sun, and the key is a tint on whatever stands in the band, so a strip over a river is a strip over moving things. Bare
 ground reproduces to the tenth of a level; water does not reproduce at all.
+
+### Progress · M53 — the fan measured on the key and not on the world (dig: "M51's fan figures don't reproduce" / "most of that swing isn't azimuthal")
+
+**What was wrong.** M52 said M51's fan figures could not be reproduced because the band 38 m along the parasol's leg holds the Seine and its
+boats drift between page loads, and it left a note that no band holding water reproduces at all. Both are wrong. The world holds still when
+it is asked to: `?still` pins the clock — simTime at 10 and dt at nought in every frame — and two page loads at the same pose, looking down
+the Seine at Argenteuil with its boats and its flotsam in the frame, give the same frame to the byte: 0 of 1440 rows differing at 2560 by
+1440, and 0 again from a load that walked the whole promenade and stood at the aerial viewpoint first. The render at a pose is a pure
+function of the pose. A page whose pane is hidden is given no animation frames at all, so its clock does not run either, which is why some
+loads agreed and some did not. And the world's own motion is small in any case: driven by hand, 190 seconds of it move the reading at that
+band by .3 of a level, and ten seconds by nothing.
+
+What could not be reproduced was the measure. It read the key's contribution to the world — .85 · amt · (inKey(world, key) − world) — which
+scales with whatever stands in the column: a hull, a bank, a sail. With the world frozen, walking one metre along the parasol's leg moves it
+from 87.9 to 62.3 to 44.4 levels, at 38 m, 39 and 40. A measure that moves 44 levels for two metres of walking cannot resolve a twelve-level
+effect, and every fan figure M51 and M52 printed came from it — including M52's own correction of M51.
+
+**What changed.** Nothing in the world, and one comment in the shader that carried the withdrawn numbers. The key is measured on itself now:
+a build whose patch fragment ends `fin = ecol`, the key's own colour with no world, no light and no fog under it, and beside it a control
+build whose key is one flat colour, which reads a swing of 0.00 across the frame at 35 of the 36 stations (1.81 at the last) — so every
+level the other builds show is the key's own structure and nothing else. The control also says which columns of the band are the world's
+surface and which are a hull, a trunk or the sky standing in it, and those are set aside; 99.99 % survive. The stations: six legs, a sixth
+of the way along each and half way and five sixths, at 9 degrees down and at 20, looking along the leg, the band a degree tall about the
+frame's middle. Two numbers are taken of each — the swing across the frame, and the most the key moves in any one degree, which is what
+shows as an edge and which a swing does not say.
+
+**Verified.** M51's closing of the columns is worth much more than M52 allowed. On the key alone, at the twelve stations in the middle of a
+leg — the only ones where it acts, fl being 4 m (1 − m) — the swing across the frame falls from a mean of 12.96 levels of 255 to 5.72 and
+its worst from 55.19 to 42.71, and the most it moves in a degree from a mean of 4.11 to 2.48 and its worst from 31.9 to 18.0. On the
+finished picture, whole frames against a build with the closing forced off, at the ten of those stations that have a key at all: up to 46.9
+levels, a mean of 23.5 over the per-station worst and 3.4 over the whole frame, and more than two levels over 485 to 3,420 of the frame's
+3,600 blocks. At the 24 stations near a spot it changes nothing — .10 levels at the worst on the picture, and the key's own colour identical
+to the hundredth. M52 called it 38.9 against 27.2, and a mean of maxima of 11.9 against 11.2, and said it earned its place by much less than
+M51 claimed. It earns it by more.
+
+And the fan is azimuthal after all. At the 24 stations near a spot, where one picture has the key and its columns stand open, reading the
+canvas's middle column at every azimuth takes the swing from a mean of 23.9 to 5.5 — 41.1 to 1.9, 48.5 to 1.0, 57.3 to 1.5, 41.1 to 1.0,
+21.9 to 0.0 — four fifths of it or more gone at 16 of the 21 stations with a swing worth naming. M52's "most of that swing is not azimuthal
+at all" is true at exactly one place, the one it was measured at: half way along the parasol's leg at 9 degrees down, where fl has already
+closed the columns and the 42.7 levels left are the read's own vertical axis and its mip ramp — flatten the ramp and 33.9 remain, flatten
+the vertical and 22.0 do.
+
+The shader's note that reading both canvases from the eye is worse stands, and now on the key itself. Over the same 36 stations the swing
+goes from a mean of 17.8 to 42.3 and its worst from 57.3 to 91.5; the most it moves in a degree from 2.2 to 13.1 and its worst from 18.0 to
+35.5; and on the finished picture it changes all 36 frames, by 44.6 levels on average of the per-frame worst and 87.3 at the worst of them.
+The parenthetical in `keyOf` that carried M51's 6-to-30 against 28-to-46 carries these instead.
+
+**Still visible.** The fan near a spot is a gradient and not an edge: 41 to 57 levels across 62 degrees of frame, but at most 6.7 levels in
+any one degree of it, and 2.06 on average over the 24 stations. That is the picture's own left and right carried over the ground around the
+spot that painted it, which is what the key is for. It is the largest thing in the key and it is not a fault.
+
+The one edge worth the name is at the middle of the parasol's leg at 9 degrees down: 18 levels in a degree at the right of the frame, where
+the ground runs away toward the river and the read's vertical axis sweeps with it. Closing the columns halves it — 31.9 without — and cannot
+take the rest, which is not azimuthal. It reads as shading over six degrees and not as a seam, and nothing was done to it. Two of the twelve
+mid-leg stations measure nothing at all: the harbour's leg has no key in its middle, the sunrise's own reveal holding it out.
+
+And a protocol, in place of M52's withdrawn warning about water. Measure under `?still`, at one canvas size, with the camera placed and not
+travelled, and read the key on a build that ends at `ecol` with a flat-key control beside it to say which columns are the world's. Water
+reproduces exactly; so does everything else. But `?still` holds the hour's easing at its target as well (dt is nought, and the ease is 1 at
+dt = 0), so it is the wrong instrument for a step across a border — for that, M52's honest walk, carrying each place's hour across the step.

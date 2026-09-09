@@ -577,8 +577,13 @@ vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec
 // between them you stand (M50, and syncProjectors for the mix). Each is read by the direction from its own painter's spot, which is the
 // direction he saw it in; and fl closes both reads' columns by how far the key is from being one picture's — nought at a viewpoint, where
 // these lines are the lines M49 wrote and the read is what M46 tuned, and one in the middle of a leg, where the wedges of the spot ahead
-// would otherwise stand over the field in front of the walker (the read from the eye instead was tried and is worse: the ground in view
-// then spans the whole canvas in azimuth, and the swing over a frame's width went from 6 to 30 levels of 255 to 28 to 46)
+// would otherwise stand over the field in front of the walker. Measured on the key alone (M53: a build whose fragment ends at ecol, with
+// no world under it), it is worth up to 47 levels of 255 on the finished picture in the middle of a leg, over two thirds of the frame,
+// and 0.1 at the stations near a spot, where fl is nought: it takes nothing from the picture's own ground and clears the field between.
+// The read from the eye instead was tried and is worse, the ground in view then spanning the whole canvas in azimuth: over the same 36
+// stations the key's swing across a frame goes from a mean of 18 levels to 42 and its worst from 57 to 91, and the most it moves in one
+// degree — which is what shows as an edge — from 2.2 to 13.1. M51's figures for both of these came of a measure that read the world
+// through the key and moved 44 levels for two metres of walking; they are withdrawn, and these are on the key itself
 vec3 keyOf(vec3 da, vec3 db, float mx, float fl) {
   vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, fl);
   if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, fl), mx);
