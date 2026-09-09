@@ -538,7 +538,7 @@ uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; u
 // or its halo — those belong to the canvas itself, which is gone eighteen metres from a spot, and no two spots in the world stand within
 // fifty-four. uKeyAmt is how far the key reaches here at all and uKeyMix the second picture's share of it; both are taken once a frame, in
 // syncProjectors, and uKeyMix is zero at every viewpoint, so a viewpoint reads one canvas and takes the second sampler not at all
-uniform sampler2D uPainting2; uniform vec3 uProj2Pos, uProj2R, uProj2U, uProj2F, uGrade2Mul, uGrade2Add; uniform vec2 uProj2Tan, uProj2Ang; uniform float uKeyAmt, uKeyMix, uKeyHi, uKeyFan, uKeyFan2;
+uniform sampler2D uPainting2; uniform vec3 uProj2Pos, uProj2R, uProj2U, uProj2F, uGrade2Mul, uGrade2Add; uniform vec2 uProj2Tan, uProj2Ang; uniform float uKeyAmt, uKeyMix, uKeyHi, uKeyFan, uKeyFan2, uKeySharp, uKeySharp2;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
 float mirr(float u) { return 1. - abs(fract(u * .5) * 2. - 1.); }
 // the canvas's width in radians of azimuth, rounded so that a whole even number of them fills the turn: the mirrored copies then close on
@@ -568,7 +568,19 @@ float foldV(float v) { float e = clamp(v, 0., 1.), o = v - e; return e - sign(o)
 // flown stations, the swing across a degree of ground sixty metres ahead is 57.9 levels of 255 with neither shut, 45.7 with the columns
 // shut alone and 18.7 with the level alone; with both it is 9.4, and the vertical read is what is left, which is the picture's own ground
 // under the ground and its own sky over it — the thing the ext read is for, and the one part of it that is still true from the air
-vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec3 ga, float fl, float hi) {
+// sp is how far the read may be sharpened here, which is how near the eye stands to the painter's own spot (uKeySharp, syncProjectors), and
+// at nought this function is the one M55 left, to the bit. Two things happen where it is not. The read is registered: near the frame it is the
+// projection's own uv and not the angular one, because dirUv is only approximately the projection there, and a sharp read of the wrong texel is
+// a ghost of the canvas laid beside the canvas. It is wrong two ways. The horizontal is divided by extWidth, the canvas's width in azimuth
+// rounded so that a whole even number of them fills the turn, which at Argenteuil is 1.047 rad against a true .903 and stands the frame's own
+// edge 8.0 % of a canvas width outside it, and at the pond .785 against .896, 6.2 % inside; and the vertical is angle-linear where the
+// projection is tangent-linear, 1.9 % of the height out at the middle of the pond's half-frame. At level seven, sixteen texels across the whole
+// picture, eight per cent is a texel and a quarter of so blurred a read and nothing shows of it — which is why no ruler before this one had any
+// reason to find it. At three and a half, a hundred and eighty texels, it is fourteen, and the ghost is plain. Registered, the read inside the
+// frame is the canvas's own texel and the two lie on each other exactly. And then the level is taken from seven to three and a half as the frame
+// is approached, so that what wears the key beside the canvas wears the picture's colour where it stands and not the picture's mean: the leaves
+// beyond the edge take their own colour off it, at about the scale a leaf is, instead of the one green the soft read has for a quarter of the sky
+vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec3 ga, float fl, float hi, float sp) {
   vec2 uv = dirUv(d, R, U, F, tn); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.;
   // toward the poles of this mapping every azimuth is nearly the same direction, and the canvas's columns crowd into a fan there: a
   // pinwheel of wedges standing on the zenith. So as the ray rises past the frame's own top edge the columns close on the middle, and
@@ -578,7 +590,31 @@ vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec
   // walker they are wide and unseen, but over the spot ahead of him the field he is looking at spans the picture's whole width in azimuth
   // and the wedges stand in it. Where the key is one picture's, fl is nought and the columns stand; between two, both are read in the middle
   float ky = 2. * atan(tn.y), pole = smoothstep(min(ky * .5, 1.3), 1.4, abs(uv.y - .5) * ky);
-  return textureLod(tex, vec2(mix(mirr(uv.x), .5, max(pole, max(fl, hi))), foldV(uv.y)), mix(7. + 2. * smoothstep(1.1, 2.4, em), 10., hi)).rgb * gm + ga;
+  // and nothing is sharpened where the columns are closed. A closed read is one column of the canvas laid over every azimuth; read fine, that
+  // is a strip of the picture smeared round the sky, which is worse than the mush it replaces. So the whole of this rides on 1 - cl, and the
+  // three closings M51, M55 and M57 built hold it off between two spots, from the air, and away from the spot the fan converges on
+  float cl = max(pole, max(fl, hi)), z = dot(d, F), sh = sp * (1. - cl);
+  float reg = sh * step(1e-3, z) * (1. - smoothstep(1., 1.7, em));
+  if (reg > 0.) { uv = mix(uv, vec2(dot(d, R) / (z * tn.x), dot(d, U) / (z * tn.y)) * .5 + .5, reg); em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.; }
+  // and the sharpening ends inside the frame, at the edge and not past it. Past the frame there is no canvas: the read is the picture reflected
+  // in its own edge by mirr, and mirr folds — for u just inside the edge the read runs forward and just outside it runs back, so the slope turns
+  // from +1 to -1 at exactly em 1. At level seven that crease is invisible, the read having almost no gradient of its own to break; sharpen it and
+  // the crease is a line. Two builds showed it. Carrying the sharpening the whole width of the side band — em 2.2 out at the pond and 2.7 at
+  // Rouen, four levels dying at 3.2 — put a dark blue column in the sky at Rouen a fifth of the way in from the left edge, at em 1.5: the
+  // cathedral's own flank read at level 3.8 through mirr, laid over an empty sky with nothing in it to break the shape, and the sky's strokes went
+  // flat under it. Pulling it back to half a frame (dying at 1.5) still left a pale column standing at the pond's right edge, at em 1.00, where
+  // the fold is — plain against the willows in an A/B with the sharpening forced off. The read past the frame is an invention: it may be a colour
+  // out there and it may never be a shape. So it dies at .98, a hair inside the fold, and the whole of what it buys is the inner two thirds of the
+  // hem — the 38 % of the half-frame the dissolve spans — where the canvas is still mostly there and the world showing through it takes the
+  // canvas's own colour at that point instead of the picture's mean. The far field, and the fold, keep the mush they have always had.
+  // Measured on the finished frame as the colour of the canvas's last fifth against an equal strip of world just past its edge, over both sides
+  // of the six painted viewpoints: 19.4 levels of 255 before any of this, 16.2 on the dissolve alone, 14.5 with this, and the worst of the twelve
+  // from 40.3 (Rouen's left) to 33.5. Eleven of the twelve are better than they were, and eight of the twelve better than the dissolve leaves
+  // them; the four it costs are small and the two it buys are not — Argenteuil's left 12.2 to 1.9 and the parasol's right 9.9 to 5.9 against
+  // the sunrise's left 4.7 to 7.5. The one worse than before all of it is the poplars' right, 5.2 to 8.8, where the frame's edge falls on open
+  // sky and the world's own horizon runs under it
+  float lvl = mix(7. + 2. * smoothstep(1.1, 2.4, em), 10., hi) - 3.5 * sh * (1. - smoothstep(.5, .98, em));
+  return textureLod(tex, vec2(mix(mirr(uv.x), .5, cl), foldV(uv.y)), lvl).rgb * gm + ga;
 }
 // the key here: the picture of the place you are in and the picture of the place you are walking to, cross-faded by how far along the leg
 // between them you stand (M50, and syncProjectors for the mix). Each is read by the direction from its own painter's spot, which is the
@@ -598,8 +634,8 @@ vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec
 // fl nought (a place's own ground, no second picture) and uKeyHi nought (a walker's eye). Neither of the two closings could see it: M51's
 // asks how far the leg is from being one picture's and M55's how high the eye stands, and this is a walker in the middle of one place
 vec3 keyOf(vec3 da, vec3 db, float mx, float fl, float hi, float fa, float fb) {
-  vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, max(fl, fa), hi);
-  if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, max(fl, fb), hi), mx);
+  vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, max(fl, fa), hi, uKeySharp);
+  if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, max(fl, fb), hi, uKeySharp2), mx);
   return a;
 }
 // how far outside the frame a direction lies, in radians: negative within it, zero on its own edge. Used by the sky alone. The ext read is
@@ -624,11 +660,22 @@ vec3 inKey(vec3 world, vec3 key, float ex, float lo, float hi) {
   key = mix(vec3(lk), key, 1.4); // the soft read greys the picture's colour a little; give it back
   return lk * mix(max(key, 0.) / lk, world / lw, .4) * max(knee(r, 1.2, hi), lo);
 }
-// the canvas's edge: not a straight line but a feathered, wandering one, so that no rectangle is left on the view
+// the canvas's edge: not a straight line but a feathered, wandering one, so that no rectangle is left on the view. Twenty-two per cent of the
+// half-frame was not enough of one. The fit is by height (fitFov), so on any window wider than the canvas the picture stands in the middle of
+// the window with the world in two columns beside it — at 16:9 that is 45 % of the width at the pond and 37 at Rouen, with 28 and 32 of world
+// on either side — and across an eleventh of the half-frame the eye went from Monet's own brushwork to chunks of leaf and a railing of bars.
+// So the dissolve is 38 % of the half-frame now, and the wander with it: three octaves at .34, .14 and .06 against M46's .16 and .06, which is
+// three fifths of the ramp's own width, so that the edge is torn and scumbled rather than graded. The wander belongs to the edge and not to the
+// middle — a hole in the picture is worse than an edge on it — so it is itself ramped in over the first third and there is none of it at the
+// centre. .55 was tried first and gives way at Rouen, whose canvas band is the narrowest of the eight: at 471 px of half-frame the fade began
+// 259 px out, inside the tower's own silhouette, and took the stonework with it; .62 begins at 292, which is where the tower ends. Measured as
+// the largest step from one column to the next in a smoothed profile within 40 px of the frame's edge, over both sides of the six painted
+// viewpoints, it takes the mean from 1.11 levels of 255 to 1.03 and the worst from 3.22 (Rouen's left) to 2.46
 float frameEdge(vec2 puv) {
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
-  em += (vn(puv * 5.) - .5) * .16 + (vn(puv * 13. + 7.) - .5) * .06;
-  return 1. - smoothstep(.78, 1., em);
+  float w = smoothstep(.35, .95, em);
+  em += w * ((vn(puv * 3.5) - .5) * .34 + (vn(puv * 9. + 7.) - .5) * .14 + (vn(puv * 23. + 3.) - .5) * .06);
+  return 1. - smoothstep(.62, 1., em);
 }
 float linD(float z) { float n = uProjNF.x, f = uProjNF.y; return 2. * n * f / (f + n - (2. * z - 1.) * (f - n)); }
 // was this point in Monet's line of sight? four taps of the depth map, compared in metres; one clear tap is enough, so that the
@@ -995,7 +1042,7 @@ void main(){
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 // each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
 function projectorState() { return { tex: null, depth: null, near: null, plate: null, halo: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
-function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) }, uPainting2: { value: null }, uProj2Pos: { value: V() }, uProj2R: { value: V(1, 0, 0) }, uProj2U: { value: V(0, 1, 0) }, uProj2F: { value: V(0, 0, -1) }, uProj2Tan: { value: new THREE.Vector2(1, 1) }, uProj2Ang: { value: new THREE.Vector2(.79, .79) }, uGrade2Mul: { value: V(1, 1, 1) }, uGrade2Add: { value: V() }, uKeyAmt: { value: 0 }, uKeyMix: { value: 0 }, uKeyHi: { value: 0 }, uKeyFan: { value: 0 }, uKeyFan2: { value: 0 } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) }, uPainting2: { value: null }, uProj2Pos: { value: V() }, uProj2R: { value: V(1, 0, 0) }, uProj2U: { value: V(0, 1, 0) }, uProj2F: { value: V(0, 0, -1) }, uProj2Tan: { value: new THREE.Vector2(1, 1) }, uProj2Ang: { value: new THREE.Vector2(.79, .79) }, uGrade2Mul: { value: V(1, 1, 1) }, uGrade2Add: { value: V() }, uKeyAmt: { value: 0 }, uKeyMix: { value: 0 }, uKeyHi: { value: 0 }, uKeyFan: { value: 0 }, uKeyFan2: { value: 0 }, uKeySharp: { value: 0 }, uKeySharp2: { value: 0 } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
@@ -3410,18 +3457,28 @@ function syncProjectors() {
   // painter's own (so the eight viewpoints are untouched, the distance being zero at every one of them) and shut twenty metres off, where
   // the wedges have left the walker's feet and stand over the field he is looking at
   const fanAt = S => sstep(Math.hypot(camera.position.x - S.pos.x, camera.position.z - S.pos.z), 6, 20);
+  // and how far the read may be sharpened: the canvas's own dissolve, eight metres to eighteen (canvasHere), so the sharp read lives exactly
+  // as long as the canvas it is registered to and not a metre longer. Past eighteen the eye has left the spot, the canvas is gone, and a
+  // sharp read would be the picture itself thrown flat over the fields from a place nobody is standing — which is the thing M46's dissolve
+  // exists to prevent. Inside it there is a canvas in the frame to be beside, and that is the whole of what this is for. It makes the walk
+  // untouched by construction and not by a measured margin — beyond eighteen metres this is nought and canvasHere's own here is nought with it,
+  // so frameEdge is multiplied away and extCol is M55's function to the bit — and so it measures: of twelve stations walked the length of the
+  // promenade at varied yaws, eleven are identical to the pixel at 1280 by 720 against the build before this one, and the one that is not stands
+  // 590 m along with uKeySharp at .55, inside eighteen metres of a spot and looking at its hem. Two of the eleven have uKeySharp above nought and
+  // are identical anyway, the yaw there putting no part of a frame's hem in view
+  const sharpAt = S => 1 - sstep(camera.position.distanceTo(S.pos), 8, 18);
   const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
   if (A) { _kg[0].copy(A.PU.uGradeMul.value); _kg[1].copy(A.PU.uGradeAdd.value); const G = (B || A).PU; _kg[2].copy(G.uGradeMul.value); _kg[3].copy(G.uGradeAdd.value); }
   for (const T of targets) {
     if (!T) continue;
-    if (!A || (!on && amt <= 0)) { T.uProjOn.value = 0; T.uKeyAmt.value = 0; T.uKeyMix.value = 0; T.uKeyHi.value = 0; T.uKeyFan.value = 0; T.uKeyFan2.value = 0; continue; }
+    if (!A || (!on && amt <= 0)) { T.uProjOn.value = 0; T.uKeyAmt.value = 0; T.uKeyMix.value = 0; T.uKeyHi.value = 0; T.uKeyFan.value = 0; T.uKeyFan2.value = 0; T.uKeySharp.value = 0; T.uKeySharp2.value = 0; continue; }
     const S = A.painting.own, S2 = (B || A).painting.own;
     T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uPaintHalo.value = S.halo; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
     T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan); T.uProjAng.value.set(Math.atan(S.tan.x), Math.atan(S.tan.y));
     T.uPainting2.value = S2.tex; T.uProj2Pos.value.copy(S2.pos); T.uProj2R.value.copy(S2.R); T.uProj2U.value.copy(S2.U); T.uProj2F.value.copy(S2.F); T.uProj2Tan.value.copy(S2.tan); T.uProj2Ang.value.set(Math.atan(S2.tan.x), Math.atan(S2.tan.y));
     if (T !== A.PU) { T.uGradeMul.value.copy(_kg[0]); T.uGradeAdd.value.copy(_kg[1]); }
     T.uGrade2Mul.value.copy(_kg[2]); T.uGrade2Add.value.copy(_kg[3]);
-    T.uProjOn.value = on; T.uKeyAmt.value = amt; T.uKeyMix.value = B ? mixB : 0; T.uKeyHi.value = hi; T.uKeyFan.value = fanAt(S); T.uKeyFan2.value = fanAt(S2);
+    T.uProjOn.value = on; T.uKeyAmt.value = amt; T.uKeyMix.value = B ? mixB : 0; T.uKeyHi.value = hi; T.uKeyFan.value = fanAt(S); T.uKeyFan2.value = fanAt(S2); T.uKeySharp.value = sharpAt(S); T.uKeySharp2.value = sharpAt(S2);
   }
 }
 // the depth map follows the world: while the canvas is in reach it is taken again every frame, so the boats, the wind in the leaves and
