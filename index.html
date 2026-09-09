@@ -3231,28 +3231,59 @@ function projectorOn(pl, w) { const P = pl.painting; return P && P.on && P.own.d
 function hasCanvas(pl) { const P = pl.painting; return !!(P && P.on && P.own.depth && P.own.plate); }
 // the leg of the walk you are on. The world is a corridor of seven pictures in the order they are listed, and the two the key holds are the
 // ends of one of its legs: the place you are in, and whichever of its two neighbours you have set out toward. u is how far along that leg
-// you stand, a share of its length and not a count of metres, so the crossing is the same shape on a leg of 55 m and one of 117; r is how
-// far off the walk you are, the distance to the nearer of the two legs that meet at your own spot. M50 measured the key's twelve to
-// forty-five metres from the spots themselves, and only three of the six legs are shorter than two of those reaches: between the pond and
-// the parasol 8 m of the walk stood in the world's own colours, between Argenteuil and the poplars 22, between the haystacks and Rouen 27.
-// Measured from the leg, the key holds the length of the corridor and lets go only when you leave it.
+// you stand, a share of the walk between them and not a count of metres, so the crossing is the same shape on a leg of 59 m and one of 157;
+// r is how far off that walk you are. M50 measured the key's twelve to forty-five metres from the spots themselves, and only three of the
+// six legs are shorter than two of those reaches: between the pond and the parasol 8 m of the walk stood in the world's own colours,
+// between Argenteuil and the poplars 22, between the haystacks and Rouen 27. Measured from the leg, the key holds the length of the
+// corridor and lets go only when you leave it -- and measured along the leg and not across it (M54), that is true of the legs that bend
+// as well as the ones that are straight.
 // dec is how far the leg is decided. Where a place's two legs run apart the one you have set out on is plain, and off the walk beside a bend
 // they are not: in the wedge north-west of the poplars, 25 m off the corridor, the leg on to the haystacks and the leg back to Argenteuil
 // are equally the walk you are on, and the second canvas changed from the one to the other between one step and the next. So the second
 // picture's share is taken down by how nearly the two stand level, and where they stand level it is nothing: what the walker wears in that
-// wedge is the place he is in, whole, and the change happens under a share of nought. On the corridor it costs .011 of the share at most
-const _leg = { u: 0, r: 0, dec: 1, B: null };
+// wedge is the place he is in, whole, and the change happens under a share of nought. On the corridor it costs .011 of the share at most.
+// It guards a tie, and only a tie: a walk that bows far enough for the leg behind to win outright is not a tie, and needs the arclength
+// where a point stands on the walk: the promenade's own arclength, and how far off the path it lies, in one pass over the path's samples --
+// the nearest of them, and then the foot of the perpendicular on the better of its two neighbours, because the samples stand .6 m apart and
+// snapping to them carried the second picture's share up a staircase, .022 of it every .6 m of walking, where the foot climbs it smoothly
+const _wq = { s: 0, off: 0 };
+function walkAt(x, z) {
+  const n = promSamples.length - 1; let d = 1e9, k = 0;
+  for (let i = 0; i <= n; i++) { const q = promSamples[i], e = (q.x - x) ** 2 + (q.z - z) ** 2; if (e < d) { d = e; k = i; } }
+  const a = promSamples[k]; let t = 0, best = d;
+  for (const j of [k - 1, k + 1]) {
+    if (j < 0 || j > n) continue;
+    const b = promSamples[j], bx = b.x - a.x, bz = b.z - a.z, L = bx * bx + bz * bz; if (L < 1e-9) continue;
+    const u = clamp(((x - a.x) * bx + (z - a.z) * bz) / L, 0, 1), px = a.x + u * bx - x, pz = a.z + u * bz - z, e = px * px + pz * pz;
+    if (e < best) { best = e; t = (j - k) * u; }
+  }
+  _wq.s = clamp((k + t) / n * PROM_LEN, 0, PROM_LEN); _wq.off = Math.sqrt(best);
+  return _wq;
+}
+// the leg of the walk, measured along the walk. M51 measured it as the chord between two spots, which is not the path the walker takes.
+// The promenade bows off that chord -- 45 m of it between the poplars and the haystacks, 30 west of the haystacks, 25 on the hook out of
+// Argenteuil -- and a chord cannot tell a bow from a departure: 329 of the corridor's 718 m were read as off the walk and the key faded
+// there, 24 of them to nothing at all, so the crossing from the poplars to the haystacks went through a stretch of the world in its own
+// colours. Nor can a projection onto a chord tell forwards from backwards on a bend: leaving Argenteuil the walk turns north-east before
+// it turns south, which projects further along the chord back to the parasol than along the one on to the poplars, so for twelve metres
+// the key's second picture was the place already left, its share rising to .18, with the leg reading fully decided. Measured along the
+// walk neither can happen -- the arclength rises as the walker walks -- and M51's crossing identity, mix(u) + mix(1 - u) = 1, holds
+// exactly instead of nearly: u is (s - sA) / (sB - sA) from one side and 1 - u from the other, the same number
+const _leg = { u: 0, r: 0, dec: 1, B: null }, _legS = new Map();
+function spotS(pl) { let s = _legS.get(pl); if (s === undefined) _legS.set(pl, s = walkAt(pl.view.p.x, pl.view.p.z).s); return s; }
 function keyLeg(A) {
-  const p = camera.position, a = A.painting.own.pos, i = places.indexOf(A);
-  let r = p.distanceTo(a), bu = -9, ou = -9, B = null;
+  const p = camera.position, i = places.indexOf(A), sa = spotS(A), w = walkAt(p.x, p.z), sh = w.s, off = w.off;
+  let lo = sa, hi = sa, bu = -9, ou = -9, B = null;
   for (const j of [i - 1, i + 1]) {
     const pl = places[j]; if (!pl || !hasCanvas(pl)) continue;
-    const b = pl.painting.own.pos, bx = b.x - a.x, by = b.y - a.y, bz = b.z - a.z, px = p.x - a.x, py = p.y - a.y, pz = p.z - a.z;
-    const u = (px * bx + py * by + pz * bz) / (bx * bx + by * by + bz * bz), t = clamp(u, 0, 1);
-    r = Math.min(r, Math.hypot(px - t * bx, py - t * by, pz - t * bz));
+    const sb = spotS(pl), d = sb - sa; lo = Math.min(lo, sb); hi = Math.max(hi, sb);
+    const u = Math.abs(d) < 1 ? 0 : (sh - sa) / d;
     if (u > bu) { ou = bu; bu = u; B = pl; } else if (u > ou) ou = u; // the leg you are walking, and the one you are not
   }
-  _leg.u = Math.max(bu, 0); _leg.r = r; _leg.dec = sstep(bu - ou, 0, .15);
+  // off the walk is the distance to the path; past the ends of the corridor it is how far beyond them you stand, so the Orangerie loop --
+  // its own room, 140 m of arclength before the pond's spot -- wears none of the pond's picture, exactly as it did when r was measured to
+  // a spot: that stretch is untouched, its 128 m below a full key and none of them above what they had
+  _leg.u = Math.max(bu, 0); _leg.r = Math.hypot(off, Math.max(0, lo - sh, sh - hi)); _leg.dec = sstep(bu - ou, 0, .15);
   _leg.B = bu > 0 ? B : null; // behind the first spot and past the last there is no leg, and the key is one picture
   return _leg;
 }

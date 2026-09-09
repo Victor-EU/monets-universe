@@ -3757,3 +3757,62 @@ And a protocol, in place of M52's withdrawn warning about water. Measure under `
 travelled, and read the key on a build that ends at `ecol` with a flat-key control beside it to say which columns are the world's. Water
 reproduces exactly; so does everything else. But `?still` holds the hour's easing at its target as well (dt is nought, and the ease is 1 at
 dt = 0), so it is the wrong instrument for a step across a border — for that, M52's honest walk, carrying each place's hour across the step.
+
+### Progress · M54 — the leg measured along the walk and not across the chord (fix: "the column-closing is worth more than I said, not less" / "the fan is azimuthal after all" / "it acts on nothing there")
+
+**What was wrong.** The three corrections were taken as read and swept properly, which turned up first that the sweep itself was in the
+wrong place. M53 measured at three points of each of six legs, on the straight line between two painting spots; 35 of those 114 stations
+stand more than 12 m off the promenade and one 29.3, in a river the walk crosses by bridge. Walked instead — 143 stations 6 m apart along
+the 857 m of path, 122 of them carrying a key — the closing takes 2.41 levels of 255 off the swing on average. At the 69 stations where fl
+is under .1 it takes nothing at all, −0.09, and 16.0 levels of azimuthal fan stand; at the 11 where it is over .9 it takes 9.03 and leaves
+none. So "it acts on nothing there" holds, and by a wider margin than the 24 stations said.
+
+But nothing is wrong with that, and the second bullet needed a picture rather than a number. A build closing the columns by the read's own
+magnification instead — de over the fragment's distance from the spot's own axis, which is what turns a canvas's columns into wedges — moves
+the walk by 0.12 levels: the magnification is one wherever the walker stands near the spot whose picture he wears, and the fan there is the
+picture's own left and right laid over the ground at one to one. The raw key at the middle of the parasol's leg, with M51's closing forced
+off, shows the wedges plainly, a pinwheel converging on the spot 30 m ahead; at a sixth of the way along the same leg it is a smooth wash
+with no structure in it at all. M51 put the closing where the wedges are. Nothing was done to it.
+
+What is wrong is underneath all three: `keyLeg` measures the leg as the chord between two spots, and the walk is not the chord. The
+promenade runs 131.5 m to the parasol on a chord of 98.3, 157 to the poplars on 111.7, and 115.3 to the haystacks on 54.9 — twice its chord.
+A chord cannot tell a bow from a departure. `r`, how far off the walk you stand, was the distance to that chord, so 329 of the corridor's
+718 m were read as off the walk and the key faded there, 24 of them to nothing at all: the crossing from the poplars to the haystacks bows
+44.5 m south of its line, and 86 m of promenade stood in the world's own colours, an acid green with no picture on it, on a stretch between
+two paintings. This is the gap M50 measured at 102 m and M51 believed it had closed; it closed it on the legs that are straight and
+re-opened it on the ones that bend.
+
+Nor can a projection onto a chord tell forwards from backwards. Leaving Argenteuil the walk turns north-east before it turns south, and that
+hook projects further along the chord back to the parasol than along the one on to the poplars: for twelve metres the key's second picture
+was the place already left, its share rising to .184, with the leg reading fully decided — `dec` is 1 there, M52's guard catching ties and
+not this. And the projection runs backwards on a bow: u went .32 at s 360 to .09 at 380 and on to .55, so the second picture came in, went
+out to exactly nothing, and came in again over sixty metres of one straight stretch, and the column-closing with it, .51 to .00 to .90.
+Last, M51's "the leaving and the arriving are the same length on every leg" is true in chord units, which is not a length anyone walks: in
+metres of walk the halves were 14.5 and 21.8 on the poplars' leg and 28.8 and 25.0 on the pond's.
+
+**What changed.** `walkAt` gives where a point stands on the walk and how far off it, in one pass over the path's own samples: the nearest
+of them, then the foot of the perpendicular on the better of its two neighbours. The samples stand .6 m apart and snapping to them alone
+carried the share up a staircase, .022 every .6 m; the foot climbs it smoothly. `keyLeg` then takes u as (s − sA) / (sB − sA), the share of
+the walk between the two spots, which is what M51's own comment always claimed it was, and r as the distance to the path — with how far past
+the ends of the corridor you stand added under it, so the Orangerie loop, 140 m of arclength before the pond's spot and its own room, wears
+none of the pond's picture exactly as it did when r was a distance to a spot.
+
+**Verified.** The key is 1.000 at every one of the corridor's 718 m, where 329 stood below it and 24 at nothing, the lowest 0.001. The
+Orangerie loop is untouched: 128 m below a full key before and after, and none of it above what it had. The picture behind the walker never
+comes in again — 0 m against 12. M51's crossing identity, mix(u) + mix(1 − u) = 1, now holds exactly, 0 error at every quarter-metre of the
+walk, where a chord could only approximate it: u is (s − sA) / (sB − sA) from one side and 1 − u from the other, the same number. The
+halves, in metres walked, are equal to within the 0.25 m of the sampling on all six legs — 33.5 and 33.8, 15.0 and 15.3, 40.0 and 40.3, 29.5
+and 29.5, 36.8 and 37.0, 28.0 and 28.0 — where by chord they were 14.5 and 21.8 on the fourth.
+
+The nine viewpoints are identical to the pixel, 0 of 1440 rows at 2560 by 1440. The share's largest step in a quarter-metre is .0091 against
+the chord's .0092, so the walk is no less smooth than it was. The cost is `walkAt`'s single pass over 1430 samples, once a frame in
+`syncProjectors`: 5.55 microseconds against the chord's .045, five thousandths of a millisecond on frames of 5 to 23 ms, and not separable
+in a frame bench that spreads 2.3 to 12.9 ms at one pose. On the stretches that gain a key the picture moves by up to 150.5 levels of 255
+and 6.3 to 33.7 over the whole frame; `m54-walk-key.jpg` is six of them before and after.
+
+**Still visible.** The fan at the ends of the legs stands, 16.0 levels of azimuthal swing across a frame on the walk, and is not a fault: it
+is the picture's own left and right carried over the ground at one to one, which is what the key is for, and M53's reading of it holds. The
+closing acts at 11 of the 122 stations that carry a key, which is where the wedges are and nowhere else. `walkAt` is a linear scan of the
+path's 1430 samples with no spatial index — `pathDist` beside it has one, over 6 m cells, but it saturates past about twelve metres and the
+key needs forty-five. And a protocol, after M53's: measure along the promenade and not along the straight line between two spots. A third of
+M53's stations, and of every fan figure taken at them, stand where nobody walks.
