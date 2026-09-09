@@ -6,7 +6,7 @@ made from the highest-resolution reproductions we could find; the originals are 
 | Place | Painting | Year | Collection | Source of the reproduction |
 |---|---|---|---|---|
 | 1 | Bridge over a Pond of Water Lilies | 1899 | The Metropolitan Museum of Art, New York (29.100.113) | Wikimedia Commons, 4699 × 5876 |
-| 2 | Woman with a Parasol – Madame Monet and Her Son | 1875 | National Gallery of Art, Washington (open access) | Wikimedia Commons / Google Art Project, 6001 × 7455 |
+| 2 | Woman with a Parasol – Madame Monet and Her Son | 1875 | National Gallery of Art, Washington (1983.1.29, open access) | the Gallery's own IIIF master, 12666 × 15698, taken at 2048 px high (the Google Art Project scan of the older photograph, 6001 × 7455, was a seventh darker across its whole range: mean luminance .49 against .57) |
 | 3 | The Bridge at Argenteuil | 1874 | National Gallery of Art, Washington (1983.1.24, open access) | Wikimedia Commons, 7999 × 5998 |
 | 4 | Poplars on the Epte | 1891 | National Galleries of Scotland, Edinburgh | Wikimedia Commons / Google Art Project, 4001 × 4001 |
 | 5 | Stacks of Wheat (End of Summer) | 1890–91 | Art Institute of Chicago (1985.1103, CC0) | Wikimedia Commons, 3000 × 1778 |
