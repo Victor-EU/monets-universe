@@ -613,11 +613,16 @@ float outAng(vec3 d, vec3 R, vec3 U, vec3 F, vec2 ang) {
 }
 // the world outside the frame, painted in the picture's key: the picture's colour for this direction, carrying the world's own light
 // (its value relative to the picture's, compressed to Monet's narrow range) so that trees, sky and ground stay themselves. The world keeps
-// two fifths of its own colour under the key: a tree stays green and a sail white where the key is blue, and the key is a tint, not a wash
+// two fifths of its own colour under the key: a tree stays green and a sail white where the key is blue, and the key is a tint, not a wash.
+// The value's ceiling is a knee and not a wall: the world's ratio to the key is its own up to 1.2, then bends toward hi and never reaches
+// it. A wall at 1.8 (2.08 of the world's own light, the compression being .8) made every fragment brighter than that one value: on the
+// parasol's hill the key is the canvas's shaded foot and the hill's light is three times it, so the whole hill was one flat yellow-grey
+// at 1.8 times the key, its modelling gone and the frame a fifth darker than the world it was standing in (.51 against .72)
+float knee(float r, float k, float hi) { return r <= k ? r : k + (hi - k) * (1. - exp(-(r - k) / (hi - k))); }
 vec3 inKey(vec3 world, vec3 key, float ex, float lo, float hi) {
   float lw = max(dot(world, LW), .015), lk = max(dot(key, LW), .015), r = pow(lw / lk, ex);
   key = mix(vec3(lk), key, 1.4); // the soft read greys the picture's colour a little; give it back
-  return lk * mix(max(key, 0.) / lk, world / lw, .4) * clamp(r, lo, hi);
+  return lk * mix(max(key, 0.) / lk, world / lw, .4) * max(knee(r, 1.2, hi), lo);
 }
 // the canvas's edge: not a straight line but a feathered, wandering one, so that no rectangle is left on the view
 float frameEdge(vec2 puv) {
@@ -841,7 +846,7 @@ void main(){
     // stand inside that fan and it reads as the picture's own left and right at one to one, but from twenty metres up the whole of it is in
     // one frame at once and the columns lie over the fields as broad straight beams from the spot, sweeping as the flyer flies
     vec3 ecol = keyOf(vWorld - uProjPos, vWorld - uProj2Pos, uKeyMix, 4. * uKeyMix * (1. - uKeyMix), uKeyHi, uKeyFan, uKeyFan2);
-    vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 1.8), O, .6);
+    vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 4.), O, .6);
     ex = mix(ex, applyPaint(ecol, O, .3), smoothstep(.7, .95, fog)); // far off, the picture's own distance takes over from the fog
     // and the key belongs to the walk, as the sky's does (SKY_FRAG) and by the same twelve to forty-five metres: the ext read is soft by
     // design — level seven to nine of the canvas, sixteen pixels across and then four — so away from the frame it is the picture's own
@@ -961,7 +966,7 @@ void main(){
     float ga = 1. - smoothstep(.5, 1.25, outAng(d, uProjR, uProjU, uProjF, uProjAng)), sa = (1. - uKeyMix) * ga, sb = 0.;
     if (uKeyMix > 0.) sb = uKeyMix * (1. - smoothstep(.5, 1.25, outAng(d, uProj2R, uProj2U, uProj2F, uProj2Ang)));
     float st = sa + sb;
-    fin = mix(fin, applyPaint(inKey(fin, keyOf(d, d, st > 1e-5 ? sb / st : 0., 0., 0., 0., 0.), .5, .6, 1.45), O, .5), .85 * uKeyAmt * st);
+    fin = mix(fin, applyPaint(inKey(fin, keyOf(d, d, st > 1e-5 ? sb / st : 0., 0., 0., 0., 0.), .5, .6, 2.6), O, .5), .85 * uKeyAmt * st);
     float here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
     float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
     vec3 pc = texture2D(uPainting, puv, bias).rgb * uGradeMul + uGradeAdd;
@@ -979,7 +984,7 @@ void main(){
       // the world's light and strokes — as the world outside the frame does. Nothing of the picture is copied, so nothing of the thing can
       // come with it; the fill reads soft beside the canvas, as the dissolve does
       vec3 key = texture2D(uPaintPlate, puv).rgb * uGradeMul + uGradeAdd;
-      pc = mix(pc, applyPaint(inKey(fin, key, .5, .6, 1.45), O, .5), fill);
+      pc = mix(pc, applyPaint(inKey(fin, key, .5, .6, 2.6), O, .5), fill);
     }
     fin = mix(fin, pc, conf);
   }
