@@ -561,13 +561,13 @@ float foldV(float v) { float e = clamp(v, 0., 1.), o = v - e; return e - sign(o)
 // farther round from the frame it is read softer still, but never down to the picture's one mean colour (at Argenteuil that is a grey-green
 // mud of sky, trees and water together): a few rows and columns remain, so the sky's directions keep the sky's colour and the ground's
 // the water's, and behind him the columns of the edge no longer fan out over the ground in bands from where he stood
-// hi is the same closing asked of the height instead of the leg (uKeyHi, syncProjectors). It shuts the columns as fl does, and takes
-// the read down to the canvas's coarsest level besides — two by two, the picture's top half and its bottom — because from the air the
-// columns are not the only thing of the canvas that lies over the ground in bands: the level itself runs 7 to 9 by how far outside the
-// frame the direction is, and from twenty metres up that ramp crosses the field. Measured on the key alone over 133 flown stations, the
-// swing across a degree of ground sixty metres ahead is 57.9 levels of 255 as it stands, 45.7 with the columns shut alone and 18.7 with
-// the level alone; with both it is 9.4, and the vertical read is what is left, which is the picture's own ground under the ground and its
-// own sky over it — the thing the ext read is for, and the one part of it that is still true from the air
+// hi is the same closing asked of the eye's height over the ground beneath it instead of the leg (uKeyHi, syncProjectors). It shuts the
+// columns as fl does, and takes the read down to the canvas's coarsest level besides — two by two, the picture's top half and its bottom —
+// because from the air the columns are not the only thing of the canvas that lies over the ground in bands: the level itself runs 7 to 9 by
+// how far outside the frame the direction is, and from twenty metres up that ramp crosses the field. Measured on the key alone over 133
+// flown stations, the swing across a degree of ground sixty metres ahead is 57.9 levels of 255 with neither shut, 45.7 with the columns
+// shut alone and 18.7 with the level alone; with both it is 9.4, and the vertical read is what is left, which is the picture's own ground
+// under the ground and its own sky over it — the thing the ext read is for, and the one part of it that is still true from the air
 vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec3 ga, float fl, float hi) {
   vec2 uv = dirUv(d, R, U, F, tn); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.;
   // toward the poles of this mapping every azimuth is nearly the same direction, and the canvas's columns crowd into a fan there: a
@@ -818,9 +818,9 @@ void main(){
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0. || uKeyAmt > 0.) {
     // each spot reads its canvas by the direction from itself, and the columns of both close on the middle by how far the key stands from
-    // being one picture's: 4 m (1 - m) is nought where one picture has it whole and one in the middle of a leg between two — and by how far
-    // the eye stands above the painter's own besides (uKeyHi), which is a question M51 never asked because every ruler it laid, and every
-    // one M52 to M54 laid after it, stood at his eye height. A canvas's columns lie over the ground around its spot in wedges; on foot you
+    // being one picture's: 4 m (1 - m) is nought where one picture has it whole and one in the middle of a leg between two — and by how high
+    // the eye stands over the ground beneath it besides (uKeyHi), which is a question M51 never asked because every ruler it laid, and every
+    // one M52 to M54 laid after it, stood at a walker's eye. A canvas's columns lie over the ground around its spot in wedges; on foot you
     // stand inside that fan and it reads as the picture's own left and right at one to one, but from twenty metres up the whole of it is in
     // one frame at once and the columns lie over the fields as broad straight beams from the spot, sweeping as the flyer flies
     vec3 ecol = keyOf(vWorld - uProjPos, vWorld - uProj2Pos, uKeyMix, 4. * uKeyMix * (1. - uKeyMix), uKeyHi);
@@ -3314,11 +3314,18 @@ function syncProjectors() {
   // out of the key along the quay exactly as it holds the canvas out, and what the walker wears there is Rouen, alone and at full strength
   const ra = A ? (A.painting.reveal ?? 1) : 0, rb = B ? (B.painting.reveal ?? 1) : 0, wa = (1 - m0) * ra, wb = m0 * rb, tot = wa + wb;
   const mixB = tot > 1e-5 ? wb / tot : 0;
-  const amt = A && tot > 1e-5 ? (1 - sstep(leg.r, 12, 45)) * Math.max(ra, rb) * (1 - sstep(camera.position.y - A.view.p.y, 12, 50)) : 0;
-  // and how far the eye stands over the painter's own, by the same ruler the strength uses: it begins 6 m up, which is 2.3 clear of the
-  // highest the walk ever stands over the spot whose picture it wears (3.71 m, on the bridge at Argenteuil, the eye at 5.75 and the spot
-  // at 2.04, over 429 stations of the promenade), and is shut at 12, where the strength itself begins to let go
-  const hi = A ? sstep(camera.position.y - A.view.p.y, 6, 12) : 0;
+  // how high the eye stands, measured to the ground beneath it and not to the painter's own station: the deck where there is one, the
+  // water's face over the river and the pond, the terrain everywhere else. M55 asked the height over the spot whose picture the eye wears,
+  // which is late where the painter's own eye is lifted over his ground — 3.00 m at Rouen, a first-floor window, and 1.85 on the harbour's
+  // quay — early where the walk stands above his spot (2.03 m by the parasol), and steps at a border besides, the spot it measures to
+  // changing hands there where the ground under the flyer does not: a metre at a time at ten metres over the path, the closing went .91 to
+  // nought at the pond's crossing to the parasol and the strength .51 to .70 at thirty, in the one place M50 and M51 built so that nothing
+  // moves. To the ground none of the three can happen, and the walk is out of reach of it: a body on its feet stands 1.45 m over the ground
+  // anywhere in the world and 4.45 at most (Rouen's spot, his three metres of lift over the walker's own), so 6 m begins 1.55 clear of
+  // every place a body can stand, on the walk or off it, and 12 is where the strength itself begins to let go
+  const up = camera.position.y - Math.max(walkHeight(camera.position.x, camera.position.z), WATER_Y);
+  const amt = A && tot > 1e-5 ? (1 - sstep(leg.r, 12, 45)) * Math.max(ra, rb) * (1 - sstep(up, 12, 50)) : 0;
+  const hi = A ? sstep(up, 6, 12) : 0;
   const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
   if (A) { _kg[0].copy(A.PU.uGradeMul.value); _kg[1].copy(A.PU.uGradeAdd.value); const G = (B || A).PU; _kg[2].copy(G.uGradeMul.value); _kg[3].copy(G.uGradeAdd.value); }
   for (const T of targets) {

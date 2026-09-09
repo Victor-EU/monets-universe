@@ -3871,3 +3871,88 @@ worst stations left are that. Off the promenade a walker can reach ground 14.89 
 the haystacks, the eye at 16.89 and the spot at 2.00), and there the columns are now shut on foot; 1 % of walkable ground stands above 12.96
 m. And a protocol, after M53's and M54's: the fan is a function of the height of the eye as well as of the leg of the walk, and no ruler
 laid at his eye height can see it.
+
+### Progress · M56 — the closing and the strength measured to the ground under the flyer and not to the painter's own eye (fix: "where a spot stands high the closing comes late", true and worse than said, and it steps at every border besides / "the columns are now shut there on foot", not true at all)
+
+**What was wrong.** M55's `uKeyHi` asked how far the eye stood above `A.view.p.y`, the eye of the painter whose picture the ground wears,
+and the strength's own height term has asked the same since M50. That is neither where the flyer is nor what the fan lies on, and it is
+wrong three ways.
+
+It is late where the painter's own eye is lifted over his ground. Rouen's spot is a first-floor window, 3.00 m up; the harbour's stands 1.85
+m over the walker's eye on the quay. Measured at the 133 flown stations that carry a key, the ruler reads 3.00 m short at every one of
+Rouen's and 1.86 at the harbour's — so the closing arrives three metres of altitude late on exactly the descent that was reported. And it
+errs the other way where the walk runs above a spot: by the parasol it reads 2.03 m too much and closes early. Over the 133 the error runs
+from −3.71 to +3.00.
+
+It steps at a border. The ruler measures to a spot, and which spot the ground wears changes hands as the walker crosses from one place to
+the next — while the ground under the flyer does not change at all. Flying the promenade a metre at a time at ten metres over the path, the
+closing goes .907 to .000 between 243 m and 244 m, at the pond's crossing to the parasol, with the key at full strength on both sides; at
+eight metres it goes .055 to .825 at the parasol's crossing to Argenteuil, and at twelve 1.000 to .194. The strength steps with it, .505 to
+.704 at 30 m over the same crossing, .698 to .867 at 25 and .862 to .974 at 20. This is the one place M50 and M51 built so that nothing
+moves — `mix(u) + mix(1 - u) = 1`, the halves equal in metres walked, the exchange of rank costing 0.000 — and the height term walked
+straight through it. `m56-border-ba.jpg` is the two frames a metre apart, the fan blazing across the meadow in one and gone in the other.
+
+And the walker's case, which was not a case. M55's note said a walker off the promenade could reach ground 14.89 m above the spot whose
+picture he wears and that the columns were now shut there on foot. Both halves are wrong, and the figure was never reproduced. Over all the
+land inside the world's box on a half-metre grid, 520,014 cells, the most a body's eye ever stands over the spot it wears is 10.05 m, at the
+western edge by the haystacks — and the key's strength there is nought, the walk being 76.9 m away and `amt` gone at 45. Where the key
+actually reaches, within 45 m of the promenade and 63,359 cells of a metre, the most is 6.31 m, on the deck of the bridge at Argenteuil, and
+the closing M55 asks of a body standing there is .008 of the whole; 0.096 % of that ground is over 6 m at all and none of it over 12. M55
+changed nothing a walker sees, on the path or off it.
+
+**What changed.** One number, read once a frame in `syncProjectors` and used by both terms: `up`, the eye's height over the ground beneath
+it, `camera.position.y - Math.max(walkHeight(x, z), WATER_Y)` — the deck where there is one, since `walkHeight` carries the bridges, the
+water's face over the river and the pond, and the terrain everywhere else. The closing is `sstep(up, 6, 12)` and the strength's height term
+`1 - sstep(up, 12, 50)`. Nothing else moves: `extCol` takes `hi` exactly as M55 left it, and the sky still passes nought.
+
+A walker is now out of its reach by construction and not by a measured margin. On foot the eye stands at `walkHeight + 1.45`, with the
+painter's own lift blended in over the last six metres of a spot, so a body's eye is 1.45 m over its ground anywhere in the world and 4.45
+at most — at Rouen's own spot, his three metres of window on the walker's own 1.45. Six begins 1.55 m clear of that, wherever the ground
+stands and whatever picture it wears, and twelve is where the strength begins to let go, as before. The ruler does read about 1.45 m more
+than M55's at a station over flat ground, measuring to the ground and not to a standing eye, so the closing now arrives a metre and a half
+of altitude sooner everywhere; that is where most of the gain at eight metres comes from.
+
+**Verified.** The fan, on the key alone: M53's instrument, a build whose patch fragment ends at `ecol` with a flat-key control beside it for
+the mask, at M55's 154 flown poses with 133 carrying a key. Where M55 took the swing across a degree of ground sixty metres ahead from 57.87
+levels of 255 to 14.06, M56 takes it to 12.07, and its worst from 82.96 to 68.52; the most it moves in one degree from 10.04 to 9.36. At 12
+m and above, 114 stations, the swing goes 9.95 to 9.27 and the step 8.02 to 7.72. By height the swing goes 38.73 to 28.84 at 8 m and 13.73
+to 9.66 at 12, and 16 m and above is unchanged to the hundredth, the closing having already been shut there. A control: a build with the
+closing moved alone and a build with the strength moved as well give the same key at all 154 stations, 0.000 apart, the strength not
+entering `ecol` — so the fan figures are the closing's own.
+
+Borders. Flying the promenade a metre at a time at 6, 8, 9, 10, 12, 20 and 30 m over the path, not one step in the closing or the strength
+now falls at a border. The largest of any kind in the closing is .146 at 6 m and .119 at 8, nought at 12 and above, and each is inside a
+single place — the harbour's own lift entering the pose as the flyer passes over the spot, not the ruler. The largest in the strength is
+.046. Under M55 the largest were .353, .770, .744, .907 and .806 at those first five heights and every one of them was a border.
+
+The walk. `uKeyHi` is nought at every one of the promenade's 858 m, as it was, and the strength is the same number to a millionth at every
+one of them. Over the whole walk the eye stands at most 1.45 m over the ground beneath it, 3.30 with the harbour's lift in, against the six
+the closing begins at.
+
+Pixel identity, and a correction to how it has been taken since M51. The nine viewpoints and 43 stations along the walk are identical to the
+pixel, 0 of 1520 rows at 2800 by 1520 — but measured within one page load, by rendering each frame twice, the second time with M55's two
+numbers forced into all 37 uniform sets and the projector's pass held off. The cross-build comparison M51 to M55 used is not sound at this
+size: two loads of one unchanged build differ at four of the nine viewpoints, 854 rows at the parasol, 463 at Argenteuil, 1281 at the
+poplars and 71 at the aerial, with every light, wind, fog, hour and clock value identical between the loads and repeat renders within a load
+identical to the byte. Whatever that is, it is not the change, and the A/B inside one load cannot see it.
+
+The finished frame, by the same A/B at the flown stations. At the 21 that carry no key it moves 0.000 — nothing changes where there is no
+key. Where there is one the average block moves 1.14 levels of 255 and the worst 26.8, over a median 40 of 3600 blocks by more than two. By
+height: 1.99 at 8 m, 0.54 at 12, 0.58 at 16, 0.97 at 20, 1.28 at 25, 1.41 at 30 and 1.19 at 40 — the tail above twenty metres is the
+strength's term, which now lets go a metre and a half of altitude earlier. `m56-low-ba.jpg` is two of the low stations before and after. No
+new seam: the largest step from one row of the frame to the next, over 27 keyed stations, goes from a mean of 12.63 to 12.73 and its worst
+from 41.25 to 40.93, 17 of the 27 a little worse and the largest single increase 1.62.
+
+Cost. `walkHeight` is 0.072 µs a call over 200,000 calls, and it is called twice a frame — the update's `syncProjectors` and the projector
+pass's — which is 0.14 µs on frames of 15 to 26 ms. The whole-frame measurement cannot see it: the same pose measured three times running on
+one build gives 15.4, 16.2 and 20.1 ms. The whole promenade was walked at 3 m a step at a walker's dt and a 121-step flight run from 70 m
+down to 6 over the ground in to Rouen, live, with no console error, the closing 1 above twelve metres and nought at six.
+
+**Still visible.** The 9.4 levels that remain at altitude are the vertical read, the picture's own ground under the ground and its own sky
+over it, and they are not a fault. The ruler is the ground under the eye and not the ground the eye is looking at, so pitched down at a
+valley from a ridge it asks the ridge; nothing on the promenade is steep enough for that to show — the largest step in the closing over a
+metre of flight is .146 — but it is the next thing wrong with it. A body standing on a roof is measured as a flyer, `walkHeight` carrying
+the terrain and the decks but not the slates, so on the cathedral's roof the columns are shut: right, since from up there you look down on
+the fan, but it is the only thing M56 changes for anyone on their feet. And the cross-load pixel check should not be used again at this size
+until the four viewpoints are explained.
+
