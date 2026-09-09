@@ -3554,3 +3554,94 @@ ground's blue reads 128 at 120 m, 142 at 126 and 117 at 129, about ten levels ab
 that reached would be dropped, though nowhere in this world do three viewpoints stand within forty-five metres of one point. The strength
 itself still dips where two reaches sum to just under one — 1.00 to .91 across the parasol's border — which is a ninth of the key over
 eleven metres, where it was the whole of it over eight.
+
+### Progress · M51 — the key measured from the leg and not from its ends, and the columns closed between two spots (fix: "only two of the six legs are short enough for the keys to overlap; the rest keep a stretch where neither spot reaches" / "the second spot's read is centred ahead of you rather than behind, so M47's fan points into view")
+
+**What was wrong.** M50 gave the key two pictures and crossed between them, and measured how far each reached from the painter's own spot:
+twelve metres to forty-five. Two reaches make ninety, and four of the six legs of the walk are longer than any two of them can cover. Walked
+at a metre a step with the strength read off the uniform, the key stood at nothing for 16 m of the 98 between the pond and the parasol, 30
+of the 112 to the poplars, 36 of the 117 to Rouen and 20 of the 88 on the quay, where the sunrise's own reveal takes its picture out of the
+key as well and left nothing in its place: 102 m of the 528, and 87 of 264 samples under a third of full.
+
+And the two halves of a crossing were two distance falloffs, which are the same shape but not the same length when the spots stand unevenly
+about the border: Argenteuil's viewpoint is 19.5 m from where the weight changes hands and the parasol's is 38, so the picture let go over
+27 m and came back over 9.
+
+The fan was the second reason it could not be otherwise. `extCol` reads a canvas by the azimuth of each point from the spot that painted it,
+so the canvas's columns lie over the ground around that spot in wedges (M47). Behind the walker they are wide and unseen. On the spot ahead
+of him — which is where M50's second read stood — the field he is looking at spans the picture's whole width in azimuth, and the wedges
+stand in it: the key's own contribution, taken as a frame with the key and the same frame without it and smoothed over 128 px, swung 29.6
+levels of 255 across the width of the frame 38 m along the parasol's leg.
+
+**What changed.** The key's distance is taken from the leg of the walk and not from its ends. The world is a corridor of seven pictures in
+the order they are listed; the two the key holds are the ends of one of its legs, and `keyLeg` gives how far along that leg the eye stands
+and how far off it — the distance to the nearer of the two legs that meet at its own spot. On the corridor that distance is nought, so the
+same twelve to forty-five metres that took the key away between two spots now hold it the length of the world and let go only when the
+walker leaves the walk. Off it nothing is changed: forty-five metres from the nearest leg, over the Orangerie, sixty north of the pond,
+forty past the harbour, the key is gone as it was.
+
+The second picture's share is the share of the leg walked, not a count of metres: `smoothstep(u, .15, .85)`. The first sixth of a leg and
+the last are the place's own picture whole, and what lies between is symmetric about the middle — so the leaving and the arriving are the
+same length on every leg by construction, on the 55 m one and on the 117 m one alike. It is symmetric under the exchange of the two pictures
+as well, mix(u) + mix(1 − u) = 1, and the exchange is what happens at a border: the weight hands the place over at .72 of the pond's leg
+(the pond has the wider radius) and at .49 of the poplars', and at either the eye crosses and nothing moves, mix(A, B, .28) becoming mix(B,
+A, .72), which is the same colour read from the other side.
+
+A picture still in the fog is not mixed in, and no longer takes the key down with it. The two shares are (1 − m) by the first picture's
+reveal and m by the second's, normalized, and the strength is the greater of the two reveals: so the harbour's fog gate holds the sunrise
+out of the key along the quay exactly as it holds the canvas out, and Rouen carries the key there alone and at full strength, where before
+there were 20 m of nothing.
+
+And the columns of both reads close on the middle by 4 m (1 − m) — nought where the key is one picture's, one in the middle of a leg. Where
+two pictures share the world there is no left and right in either that applies to ground nobody painted; what the direction still carries is
+up and down, and that is untouched, so the sky's directions keep the sky's colour and the ground's the water's, as M46 left them. At a
+viewpoint the term is nought and the read is the read M46 tuned. The sky's key keeps its columns at all times: it is read by the direction
+from the eye, the sky is at no distance from anything, and there are no wedges in it to close.
+
+What was tried and thrown away: reading both canvases by the direction from the eye. It is exact at a viewpoint, where the eye and the spot
+are the same point; it puts the read's one degenerate direction at the nadir, where M46 already closes the columns; and it makes the ground
+and the sky read the canvas the same way. But it is worse, and measurably: the centre wants to be far from what the walker sees, and the eye
+is in the middle of it. The ground in view then spans the whole picture in azimuth, and the swing over the frame's width went from 6 to 30
+levels to 28 to 46 — broad soft blotches over the field, travelling with the walker. The spot behind him is far, and his own canvas read
+from it is what a viewpoint has always shown.
+
+**Verified.** Against HEAD's build served beside this one at the same size, both at 2560 by 1440: every one of the seven painting viewpoints
+is identical to the pixel, 0 of 1440 rows differing at the pond, the parasol, Argenteuil, the poplars, the haystacks, Rouen and the harbour.
+uKeyMix is zero at each, so the second sampler is not read and the closing term is nought, and the expression is the one M49 wrote, term for
+term. The Orangerie and the aerial viewpoint are identical too, at no key at all.
+
+The key over the walk: 1.000 at every one of 529 samples a metre apart, where before four legs carried 16 m, 30, 36 and 20 at nothing. The
+share of the picture ahead rises from 0 to 1 without turning back on all six legs, and the two halves of it measure 21.0 m and 21.0 on the
+pond's leg, 12.5 and 12.2, 23.7 and 23.8, 11.7 and 11.7, 25.0 and 25.0.
+
+The fan, as the swing of the key's own contribution across four bands of the frame: 38 m along the parasol's leg, with the next spot 20 m
+ahead, 7.0 / 9.3 / 15.6 / 29.6 levels before and 7.2 / 7.5 / 9.1 / 15.4 after; midway to the poplars, 0 / 0 / 0 / 0 before for want of any
+key at all and 2.4 / 1.8 / 1.8 / 2.8 after. Near a spot, where a place's own picture has the key whole, the columns stand as they did: 4.7 /
+10.1 / 9.4 / 11.3 twenty metres out against 4.1 / 8.8 / 8.1 / 10.1 before.
+
+The borders, as the frame's step over the last ten centimetres into them: 4.8, 22.9, 1.6, 20.4, 7.0, 2.3 against 6.5, 22.3, 1.6, 20.3, 8.6,
+3.1 before. The two large ones are not the key — they are the place changing hands, which both builds do and which this one does a little
+less (34 levels against 46 where the eye's own place changes beside the poplars).
+
+The cost cannot be separated from the frame. Nine paired blocks of twelve renders at 2560 by 1440, the second read forced on and off at a
+point where it carries half the key, spread from −1.2 to +1.8 ms about a 32 ms frame with their middle at −0.04; the pane was away, which
+M46d showed makes a bench worth little. What can be said exactly is that at every viewpoint the second read is not taken at all, and those
+frames are identical to the bit. `m52-crossing.jpg` is five stops along the 112 m from Argenteuil to the poplars in both builds and
+`m52-fan.jpg` the ground at four.
+
+**Still visible.** The key now holds at full strength over ground nobody painted, and at 85 % of so soft a read that takes about a third of
+the world's own colour out of it: the meadow midway between Argenteuil and the poplars reads 47, 43 and 35 levels of green over blue in
+three bands where it read 75, 66 and 50 with no key on it at all. That is what holding the key the whole way costs, and what it replaced was
+a stretch of world in nobody's colours; the two cannot both be had while the key is a wash.
+
+The second picture still changes over one step off the walk. In the wedge beside the poplars, 25 m off the corridor where the leg on to the
+haystacks and the leg back to Argenteuil are equally the walk you are on, the second canvas changes between one step and the next: 2.0
+levels of frame against 0.9 for the same step either side of it. On the corridor it changes only at the spots themselves, where its share is
+nought and nothing is read from it.
+
+The harbour's leg is not symmetric and cannot be: the sunrise's share rises to .22 by 32 m, is taken back to nothing through the fog
+corridor, and returns over the last 12 m at the quay. That is the reveal the arrival was built on, and the key follows it rather than the
+leg.
+
+And the largest thing that happens on the walk is still not the key. Crossing a border steps the frame 20 to 23 levels at two of the six,
+and 34 beside the poplars — the place itself changing hands, in both builds, before and after.
