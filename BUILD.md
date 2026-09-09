@@ -3816,3 +3816,58 @@ closing acts at 11 of the 122 stations that carry a key, which is where the wedg
 path's 1430 samples with no spatial index — `pathDist` beside it has one, over 6 m cells, but it saturates past about twelve metres and the
 key needs forty-five. And a protocol, after M53's: measure along the promenade and not along the straight line between two spots. A third of
 M53's stations, and of every fan figure taken at them, stand where nobody walks.
+
+### Progress · M55 — the canvas's columns closed by the height of the eye as well as the leg of the walk (fix: "the light are like broad lasers" on the ground, flying in to the cathedral)
+
+**What was wrong.** The key reads each canvas by the azimuth from the painter's own spot, so its columns lie over the ground around that
+spot in wedges. On foot you stand inside that fan and it reads as the picture's own left and right at one to one — that is M53's finding and
+M54's, and it holds. From the air it does not. The strength's height term lets the key live to fifty metres over the spot's own eye, and
+flying the descent to Rouen it reads 0 at 70 m up, .40 at 40, .43 at 30, .41 at 25, .93 at 20 and .18 at 15: the whole fan is then in one
+frame at once, and the columns lie over the fields as broad straight beams radiating from a point on the ground, sweeping as the flyer
+flies. At 20 m up on the way in to Rouen, switching the key off moves 80.7 % of the frame, 7.88 levels of 255 on average and 74.2 at worst;
+switching the projector off at the same pose moves nothing at all, 0.0.
+
+Measured on the key alone — M53's instrument, a build whose patch fragment ends at `ecol` with a flat-key control beside it to say which
+columns are the key's — but on the ground and from the air: 22 stations along the promenade at seven heights from 8 to 40 m, 133 of the 154
+carrying a key, the band one degree of ground sixty metres ahead with the pitch at each station set to put it there. The swing across that
+band is 57.87 levels on average and 124.65 at worst, and the most it moves in one degree — which is what shows as an edge — 32.21 and 94.35.
+It does not fall off with height: 54.5 at 8 m, 56.8 at 12, 61.5 at 16, 58.7 at 20, 57.7 at 40.
+
+Why no ruler since M51 has seen it: every one of them stood at his eye height. Over 429 stations of the promenade the eye is never more than
+3.71 m above the spot whose picture it wears — the worst on the bridge at Argenteuil, the eye at 5.75 and the spot at 2.04 — with a median
+of 0.16 and as low as −4.3. `fl` asks only how far along the leg you stand, which is the right question at his eye height and no question at
+all above it. And the columns are not the only thing of the canvas that lies over the ground in bands: the read's own level runs 7 to 9 by
+how far outside the frame the direction is, and from twenty metres up that ramp crosses the field. Decomposed at 20 m and over, the 45.7
+left by shutting the columns alone and the 18.7 left by the level alone come to 9.4 with both.
+
+**What changed.** `uKeyHi`, taken once a frame in `syncProjectors` beside `uKeyAmt` and `uKeyMix` and by the same ruler the strength uses:
+the smoothstep of the eye's height over the painter's own from 6 m to 12. It begins 2.3 m clear of the highest the walk ever stands over the
+spot whose picture it wears, and is shut at twelve, where the strength itself begins to let go. `extCol` takes it beside `fl`: it shuts the
+columns as `fl` does, `max(pole, max(fl, hi))`, and takes the read down to the canvas's coarsest level besides — two by two, the picture's
+top half and its bottom. What is left is the vertical read, which is the picture's own ground under the ground and its own sky over it, and
+that is the thing the ext read is for. Closing that too would take the swing to 0.11 and the world would wear one flat colour; it was tried
+and not kept. The sky's `keyOf` passes nought for both: the sky's key is read by the eye's own direction and falls off past the frame's own
+edge, so it has no fan over the ground and wants no closing.
+
+**Verified.** On the key alone over the same 133 flown stations, the swing falls from a mean of 57.87 to 14.06 and its worst from 124.65 to
+82.96; the most it moves in one degree from 32.21 to 10.04 and its worst from 94.35 to 56.35. At 12 m and above, where the closing is shut
+or nearly — 114 stations — the swing falls from 58.44 to 9.95 and the step from 32.00 to 8.02. By height the swing goes 54.5 to 38.7 at 8 m,
+56.8 to 13.7 at 12, 61.5 to 9.8 at 16, 58.7 to 9.3 at 20, 57.7 to 9.2 at 25, 58.2 to 8.6 at 30 and 57.7 to 9.0 at 40.
+
+The walk is untouched, and not nearly: `uKeyHi` is nought at every one of the promenade's 858 m. The nine viewpoints are identical to the
+pixel and so are 43 stations along the walk — 0 of 1520 rows at 2800 by 1520. At the 21 flown stations that carry no key the picture moves
+0.000. Where it does carry one, the finished frame moves 2.63 levels of 255 on the average block, 60.6 at the worst, over a median 1081 of
+3600 blocks by more than two; at 40 m only 0.71, the strength having faded there of its own accord. No new seam: the largest step from one
+row of the frame to the next, over the 27 keyed stations of a flown sample, falls from a mean of 14.68 to 12.63, and the one station whose
+worst grew — by 3.19, at 30 m over s = 160 — is the same picture to the eye, `m55-seam-ba.jpg`. The cost is not separable: with the GPU made
+to keep up by a one-pixel read after each frame, the median frame goes 14.4 to 14.3 ms at 20 m over the walk in to Rouen, 14.8 to 14.7 at 25
+m short of the haystacks and 16.2 to 15.2 at the pond, on spreads of about 2 ms. The whole promenade walked at 3 m a step and a 120-step
+flight in to the cathedral run live with no console error. `m55-air-ba.jpg` is three of the flown stations before and after.
+
+**Still visible.** The 9.4 levels that remain at altitude are the vertical read, and they are the picture's own ground and sky and not a
+fault. The closing is by the height over the painter's eye and not over the ground under the flyer, so where a spot stands high the closing
+comes late: eight metres over the path at the harbour is only four over the quay's own spot, and `uKeyHi` is nought there — two of the six
+worst stations left are that. Off the promenade a walker can reach ground 14.89 m above the spot whose picture he wears (the western hill by
+the haystacks, the eye at 16.89 and the spot at 2.00), and there the columns are now shut on foot; 1 % of walkable ground stands above 12.96
+m. And a protocol, after M53's and M54's: the fan is a function of the height of the eye as well as of the leg of the walk, and no ruler
+laid at his eye height can see it.

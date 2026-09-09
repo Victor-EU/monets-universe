@@ -538,7 +538,7 @@ uniform sampler2D uPainting, uPaintDepth, uPaintNear, uPaintPlate, uPaintHalo; u
 // or its halo — those belong to the canvas itself, which is gone eighteen metres from a spot, and no two spots in the world stand within
 // fifty-four. uKeyAmt is how far the key reaches here at all and uKeyMix the second picture's share of it; both are taken once a frame, in
 // syncProjectors, and uKeyMix is zero at every viewpoint, so a viewpoint reads one canvas and takes the second sampler not at all
-uniform sampler2D uPainting2; uniform vec3 uProj2Pos, uProj2R, uProj2U, uProj2F, uGrade2Mul, uGrade2Add; uniform vec2 uProj2Tan, uProj2Ang; uniform float uKeyAmt, uKeyMix;
+uniform sampler2D uPainting2; uniform vec3 uProj2Pos, uProj2R, uProj2U, uProj2F, uGrade2Mul, uGrade2Add; uniform vec2 uProj2Tan, uProj2Ang; uniform float uKeyAmt, uKeyMix, uKeyHi;
 // beyond the canvas's edge the picture is carried on by its own mirror image, read soft: a continuation in the same colours and rhythm
 float mirr(float u) { return 1. - abs(fract(u * .5) * 2. - 1.); }
 // the canvas's width in radians of azimuth, rounded so that a whole even number of them fills the turn: the mirrored copies then close on
@@ -561,7 +561,14 @@ float foldV(float v) { float e = clamp(v, 0., 1.), o = v - e; return e - sign(o)
 // farther round from the frame it is read softer still, but never down to the picture's one mean colour (at Argenteuil that is a grey-green
 // mud of sky, trees and water together): a few rows and columns remain, so the sky's directions keep the sky's colour and the ground's
 // the water's, and behind him the columns of the edge no longer fan out over the ground in bands from where he stood
-vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec3 ga, float fl) {
+// hi is the same closing asked of the height instead of the leg (uKeyHi, syncProjectors). It shuts the columns as fl does, and takes
+// the read down to the canvas's coarsest level besides — two by two, the picture's top half and its bottom — because from the air the
+// columns are not the only thing of the canvas that lies over the ground in bands: the level itself runs 7 to 9 by how far outside the
+// frame the direction is, and from twenty metres up that ramp crosses the field. Measured on the key alone over 133 flown stations, the
+// swing across a degree of ground sixty metres ahead is 57.9 levels of 255 as it stands, 45.7 with the columns shut alone and 18.7 with
+// the level alone; with both it is 9.4, and the vertical read is what is left, which is the picture's own ground under the ground and its
+// own sky over it — the thing the ext read is for, and the one part of it that is still true from the air
+vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec3 ga, float fl, float hi) {
   vec2 uv = dirUv(d, R, U, F, tn); float em = max(abs(uv.x - .5), abs(uv.y - .5)) * 2.;
   // toward the poles of this mapping every azimuth is nearly the same direction, and the canvas's columns crowd into a fan there: a
   // pinwheel of wedges standing on the zenith. So as the ray rises past the frame's own top edge the columns close on the middle, and
@@ -571,7 +578,7 @@ vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec
   // walker they are wide and unseen, but over the spot ahead of him the field he is looking at spans the picture's whole width in azimuth
   // and the wedges stand in it. Where the key is one picture's, fl is nought and the columns stand; between two, both are read in the middle
   float ky = 2. * atan(tn.y), pole = smoothstep(min(ky * .5, 1.3), 1.4, abs(uv.y - .5) * ky);
-  return textureLod(tex, vec2(mix(mirr(uv.x), .5, max(pole, fl)), foldV(uv.y)), 7. + 2. * smoothstep(1.1, 2.4, em)).rgb * gm + ga;
+  return textureLod(tex, vec2(mix(mirr(uv.x), .5, max(pole, max(fl, hi))), foldV(uv.y)), mix(7. + 2. * smoothstep(1.1, 2.4, em), 10., hi)).rgb * gm + ga;
 }
 // the key here: the picture of the place you are in and the picture of the place you are walking to, cross-faded by how far along the leg
 // between them you stand (M50, and syncProjectors for the mix). Each is read by the direction from its own painter's spot, which is the
@@ -584,9 +591,9 @@ vec3 extCol(sampler2D tex, vec3 d, vec3 R, vec3 U, vec3 F, vec2 tn, vec3 gm, vec
 // stations the key's swing across a frame goes from a mean of 18 levels to 42 and its worst from 57 to 91, and the most it moves in one
 // degree — which is what shows as an edge — from 2.2 to 13.1. M51's figures for both of these came of a measure that read the world
 // through the key and moved 44 levels for two metres of walking; they are withdrawn, and these are on the key itself
-vec3 keyOf(vec3 da, vec3 db, float mx, float fl) {
-  vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, fl);
-  if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, fl), mx);
+vec3 keyOf(vec3 da, vec3 db, float mx, float fl, float hi) {
+  vec3 a = extCol(uPainting, da, uProjR, uProjU, uProjF, uProjTan, uGradeMul, uGradeAdd, fl, hi);
+  if (uKeyMix > 0.) a = mix(a, extCol(uPainting2, db, uProj2R, uProj2U, uProj2F, uProj2Tan, uGrade2Mul, uGrade2Add, fl, hi), mx);
   return a;
 }
 // how far outside the frame a direction lies, in radians: negative within it, zero on its own edge. Used by the sky alone. The ext read is
@@ -811,8 +818,12 @@ void main(){
   vec2 e = abs(puv - .5) * 2.; float em = max(e.x, e.y);
   if (uProjOn > 0. || uKeyAmt > 0.) {
     // each spot reads its canvas by the direction from itself, and the columns of both close on the middle by how far the key stands from
-    // being one picture's: 4 m (1 - m) is nought where one picture has it whole and one in the middle of a leg between two
-    vec3 ecol = keyOf(vWorld - uProjPos, vWorld - uProj2Pos, uKeyMix, 4. * uKeyMix * (1. - uKeyMix));
+    // being one picture's: 4 m (1 - m) is nought where one picture has it whole and one in the middle of a leg between two — and by how far
+    // the eye stands above the painter's own besides (uKeyHi), which is a question M51 never asked because every ruler it laid, and every
+    // one M52 to M54 laid after it, stood at his eye height. A canvas's columns lie over the ground around its spot in wedges; on foot you
+    // stand inside that fan and it reads as the picture's own left and right at one to one, but from twenty metres up the whole of it is in
+    // one frame at once and the columns lie over the fields as broad straight beams from the spot, sweeping as the flyer flies
+    vec3 ecol = keyOf(vWorld - uProjPos, vWorld - uProj2Pos, uKeyMix, 4. * uKeyMix * (1. - uKeyMix), uKeyHi);
     vec3 ex = applyPaint(inKey(fin, ecol, .8, .35, 1.8), O, .6);
     ex = mix(ex, applyPaint(ecol, O, .3), smoothstep(.7, .95, fog)); // far off, the picture's own distance takes over from the fog
     // and the key belongs to the walk, as the sky's does (SKY_FRAG) and by the same twelve to forty-five metres: the ext read is soft by
@@ -933,7 +944,7 @@ void main(){
     float ga = 1. - smoothstep(.5, 1.25, outAng(d, uProjR, uProjU, uProjF, uProjAng)), sa = (1. - uKeyMix) * ga, sb = 0.;
     if (uKeyMix > 0.) sb = uKeyMix * (1. - smoothstep(.5, 1.25, outAng(d, uProj2R, uProj2U, uProj2F, uProj2Ang)));
     float st = sa + sb;
-    fin = mix(fin, applyPaint(inKey(fin, keyOf(d, d, st > 1e-5 ? sb / st : 0., 0.), .5, .6, 1.45), O, .5), .85 * uKeyAmt * st);
+    fin = mix(fin, applyPaint(inKey(fin, keyOf(d, d, st > 1e-5 ? sb / st : 0., 0., 0.), .5, .6, 1.45), O, .5), .85 * uKeyAmt * st);
     float here = 1. - smoothstep(8., 18., dist), bias = canvasBias(here, em), nd = nearD(puv);
     float conf = front * frameEdge(puv) * here, clear = step(.99995, texture2D(uPaintDepth, puv).r);
     vec3 pc = texture2D(uPainting, puv, bias).rgb * uGradeMul + uGradeAdd;
@@ -962,7 +973,7 @@ void main(){
 // every place paints with its own palette (its own hour stops); light, sky and fog are global and blend by proximity
 // each painting keeps its own projector (camera, canvas, depth map) here; every material takes the one of the place the eye is in
 function projectorState() { return { tex: null, depth: null, near: null, plate: null, halo: null, nearSize: new THREE.Vector2(64, 64), M: new THREE.Matrix4(), pos: V(), paintSize: new THREE.Vector2(2048, 2048), depthSize: new THREE.Vector2(1024, 1024), NF: new THREE.Vector2(.3, 800), R: V(1, 0, 0), U: V(0, 1, 0), F: V(0, 0, -1), tan: new THREE.Vector2(1, 1) }; }
-function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) }, uPainting2: { value: null }, uProj2Pos: { value: V() }, uProj2R: { value: V(1, 0, 0) }, uProj2U: { value: V(0, 1, 0) }, uProj2F: { value: V(0, 0, -1) }, uProj2Tan: { value: new THREE.Vector2(1, 1) }, uProj2Ang: { value: new THREE.Vector2(.79, .79) }, uGrade2Mul: { value: V(1, 1, 1) }, uGrade2Add: { value: V() }, uKeyAmt: { value: 0 }, uKeyMix: { value: 0 } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
+function projectorUniforms() { return { uPainting: { value: null }, uPaintDepth: { value: null }, uPaintNear: { value: null }, uPaintPlate: { value: null }, uPaintHalo: { value: null }, uNearSize: { value: new THREE.Vector2(64, 64) }, uProjM: { value: new THREE.Matrix4() }, uProjPos: { value: V() }, uProjOn: { value: 0 }, uPaintSize: { value: new THREE.Vector2(2048, 2048) }, uDepthSize: { value: new THREE.Vector2(1024, 1024) }, uProjNF: { value: new THREE.Vector2(.3, 800) }, uGradeMul: { value: V(1, 1, 1) }, uGradeAdd: { value: V() }, uProjR: { value: V(1, 0, 0) }, uProjU: { value: V(0, 1, 0) }, uProjF: { value: V(0, 0, -1) }, uProjTan: { value: new THREE.Vector2(1, 1) }, uProjAng: { value: new THREE.Vector2(.79, .79) }, uPainting2: { value: null }, uProj2Pos: { value: V() }, uProj2R: { value: V(1, 0, 0) }, uProj2U: { value: V(0, 1, 0) }, uProj2F: { value: V(0, 0, -1) }, uProj2Tan: { value: new THREE.Vector2(1, 1) }, uProj2Ang: { value: new THREE.Vector2(.79, .79) }, uGrade2Mul: { value: V(1, 1, 1) }, uGrade2Add: { value: V() }, uKeyAmt: { value: 0 }, uKeyMix: { value: 0 }, uKeyHi: { value: 0 } }; } // uProjAng: the frame's own half-angles, the atan of uProjTan, taken once a frame for the sky's falloff
 function paletteUniforms() { return Object.assign({ uPalA: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 20 }, () => new THREE.Color()) }, uBlend: { value: 0 }, uPaintAmt: { value: 1 } }, projectorUniforms()); }
 function patchMaterial(o = {}, PU) {
   const defines = {};
@@ -3304,18 +3315,22 @@ function syncProjectors() {
   const ra = A ? (A.painting.reveal ?? 1) : 0, rb = B ? (B.painting.reveal ?? 1) : 0, wa = (1 - m0) * ra, wb = m0 * rb, tot = wa + wb;
   const mixB = tot > 1e-5 ? wb / tot : 0;
   const amt = A && tot > 1e-5 ? (1 - sstep(leg.r, 12, 45)) * Math.max(ra, rb) * (1 - sstep(camera.position.y - A.view.p.y, 12, 50)) : 0;
+  // and how far the eye stands over the painter's own, by the same ruler the strength uses: it begins 6 m up, which is 2.3 clear of the
+  // highest the walk ever stands over the spot whose picture it wears (3.71 m, on the bridge at Argenteuil, the eye at 5.75 and the spot
+  // at 2.04, over 429 stations of the promenade), and is shut at 12, where the strength itself begins to let go
+  const hi = A ? sstep(camera.position.y - A.view.p.y, 6, 12) : 0;
   const targets = [SKYP, BASE.PU]; for (const pl of places) if (pl.PU) targets.push(pl.PU);
   if (A) { _kg[0].copy(A.PU.uGradeMul.value); _kg[1].copy(A.PU.uGradeAdd.value); const G = (B || A).PU; _kg[2].copy(G.uGradeMul.value); _kg[3].copy(G.uGradeAdd.value); }
   for (const T of targets) {
     if (!T) continue;
-    if (!A || (!on && amt <= 0)) { T.uProjOn.value = 0; T.uKeyAmt.value = 0; T.uKeyMix.value = 0; continue; }
+    if (!A || (!on && amt <= 0)) { T.uProjOn.value = 0; T.uKeyAmt.value = 0; T.uKeyMix.value = 0; T.uKeyHi.value = 0; continue; }
     const S = A.painting.own, S2 = (B || A).painting.own;
     T.uPainting.value = S.tex; T.uPaintDepth.value = S.depth; T.uPaintNear.value = S.near; T.uPaintPlate.value = S.plate; T.uPaintHalo.value = S.halo; T.uNearSize.value.copy(S.nearSize); T.uProjM.value.copy(S.M); T.uProjPos.value.copy(S.pos);
     T.uPaintSize.value.copy(S.paintSize); T.uDepthSize.value.copy(S.depthSize); T.uProjNF.value.copy(S.NF); T.uProjR.value.copy(S.R); T.uProjU.value.copy(S.U); T.uProjF.value.copy(S.F); T.uProjTan.value.copy(S.tan); T.uProjAng.value.set(Math.atan(S.tan.x), Math.atan(S.tan.y));
     T.uPainting2.value = S2.tex; T.uProj2Pos.value.copy(S2.pos); T.uProj2R.value.copy(S2.R); T.uProj2U.value.copy(S2.U); T.uProj2F.value.copy(S2.F); T.uProj2Tan.value.copy(S2.tan); T.uProj2Ang.value.set(Math.atan(S2.tan.x), Math.atan(S2.tan.y));
     if (T !== A.PU) { T.uGradeMul.value.copy(_kg[0]); T.uGradeAdd.value.copy(_kg[1]); }
     T.uGrade2Mul.value.copy(_kg[2]); T.uGrade2Add.value.copy(_kg[3]);
-    T.uProjOn.value = on; T.uKeyAmt.value = amt; T.uKeyMix.value = B ? mixB : 0;
+    T.uProjOn.value = on; T.uKeyAmt.value = amt; T.uKeyMix.value = B ? mixB : 0; T.uKeyHi.value = hi;
   }
 }
 // the depth map follows the world: while the canvas is in reach it is taken again every frame, so the boats, the wind in the leaves and
