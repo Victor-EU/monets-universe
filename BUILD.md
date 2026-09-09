@@ -3645,3 +3645,55 @@ leg.
 
 And the largest thing that happens on the walk is still not the key. Crossing a border steps the frame 20 to 23 levels at two of the six,
 and 34 beside the poplars — the place itself changing hands, in both builds, before and after.
+
+### Progress · M52 — the second picture withdrawn where the leg is undecided, and a step that was the probe and not the world (fix: "the second picture's identity still changes over one step 25 m off the walk beside the poplars" / "the place changing hands steps the frame 20 to 46 levels, in this build and the one before")
+
+**What was wrong.** The second picture is the neighbour with the larger share of the leg, and beside a bend, off the corridor, the two legs
+meeting at a spot are equally the walk you are on. In the wedge north-west of the poplars, 25 m off the walk, the second canvas changed from
+the haystacks' to Argenteuil's between one step and the next under a share of .08: 2.24 levels of frame against a median step of .51 and a
+ninetieth of 1.05 over the same traverse.
+
+The place changing hands does not step the frame 20 to 46 levels. That was the probe. M51 measured it by teleporting — `monet.set` at every
+sample, which runs `update(0)`, and at dt = 0 the hour's easing has ease = 1 (it is 1 − .25 to the dt), so every place's eased hour snapped
+to its target at every sample. Those targets do exchange at a border, by design: the place you are in shows the dial and every other place
+its own painting's hour, and a place you leave eases back to its picture over a couple of seconds. The probe was collecting that whole ease
+as one ten-centimetre step.
+
+And the fan numbers M51 quoted are not reproducible. The band 38 m along the parasol's leg holds the Seine at Argenteuil, and its boats
+drift between page loads; the key's contribution rides on whatever is in the frame, so that row read 7.0 / 9.3 / 15.6 / 29.6 in one load of
+a build and 3.7 / 8.4 / 7.8 / 9.6 in another of the same build. The rows over bare ground reproduce to the tenth.
+
+**What changed.** `keyLeg` gives how far the leg is decided as well as which it is: dec is smoothstep of (the leg walked less the leg not)
+over nought to .15, and the second picture's share is taken down by it. Where the two legs stand level the second picture is not there at
+all, and the canvas changes under a share of nought. On the corridor it costs nothing — at most .011 of the share, sampled every
+quarter-metre along all six legs — because there one leg runs ahead of you and the other behind.
+
+**Verified.** In the wedge beside the poplars, walked in tenth-metre steps: the second picture's share falls to .0000 across the switch
+(.0011 at 15.6 m, nought at 16.2 and 16.3, .0012 at 17.0), and the frame's step at it is 1.02 levels against a median of .51 and a ninetieth
+of 1.07 — where it was 2.24. The place changing hands in the same traverse falls from 4.39 levels to 1.39, the second picture having
+withdrawn there too, and 1.39 is now the largest step anywhere in those nine metres.
+
+Walked honestly — carrying each place's own eased hour across the step and running one frame of easing at the dt a walker takes to cover it,
+3.2 m/s — the borders on the walk cost 1.25, 2.67, 2.19 and 3.48 levels at the four legs measured, against a median step of 1.6 to 2.3 in
+the same stretch and a maximum of 3.5 to 16.3 within three metres of them. There is no pop at a border; there is the ease the world was
+built with, and M51's note was wrong.
+
+All nine viewpoints are still identical to the pixel against the build before M51, 0 of 1440 rows at 2560 by 1440, and the corridor is
+untouched: the key 1.000 the length of the walk, the halves 21.0 m and 21.0, 12.5 and 12.2, 23.7 and 23.8, 11.7 and 11.7, 25.0 and 25.0, the
+share of the picture ahead rising without turning back on all six legs.
+
+And M51's column-closing, measured against a build with it forced off over 24 positions on four legs at two pitches: the worst swing 38.9
+levels of 255 without it and 27.2 with, the next 19.3 and 15.5, the other twenty-two within 2.6 levels either way, and the mean of the
+per-position maxima 11.9 against 11.2. It earns its place, and by much less than M51 claimed for it.
+
+**Still visible.** The fan is larger than M51 reported. Near the start of a long leg, looking nine degrees down, the key's own contribution
+swings 27 levels across the width of the frame — the spot behind you laying its columns over the field. Closing the columns takes twelve off
+that and no more, because most of that swing is not azimuthal at all: it is the read's own vertical axis and its falloff over ground running
+away from the eye, and neither is a thing the columns can close.
+
+The wash between two spots is what it was: the key holds at full strength over ground nobody painted, and takes about a third of the world's
+own colour with it. The harbour's leg is still the reveal's shape and not the leg's.
+
+And a note for the next measurement: no band that holds water reproduces across page loads. The boats drift with the frame clock whatever
+`?still` does to the sun, and the key is a tint on whatever stands in the band, so a strip over a river is a strip over moving things. Bare
+ground reproduces to the tenth of a level; water does not reproduce at all.

@@ -3230,19 +3230,26 @@ function hasCanvas(pl) { const P = pl.painting; return !!(P && P.on && P.own.dep
 // far off the walk you are, the distance to the nearer of the two legs that meet at your own spot. M50 measured the key's twelve to
 // forty-five metres from the spots themselves, and only three of the six legs are shorter than two of those reaches: between the pond and
 // the parasol 8 m of the walk stood in the world's own colours, between Argenteuil and the poplars 22, between the haystacks and Rouen 27.
-// Measured from the leg, the key holds the length of the corridor and lets go only when you leave it
-const _leg = { u: 0, r: 0, B: null };
+// Measured from the leg, the key holds the length of the corridor and lets go only when you leave it.
+// dec is how far the leg is decided. Where a place's two legs run apart the one you have set out on is plain, and off the walk beside a bend
+// they are not: in the wedge north-west of the poplars, 25 m off the corridor, the leg on to the haystacks and the leg back to Argenteuil
+// are equally the walk you are on, and the second canvas changed from the one to the other between one step and the next. So the second
+// picture's share is taken down by how nearly the two stand level, and where they stand level it is nothing: what the walker wears in that
+// wedge is the place he is in, whole, and the change happens under a share of nought. On the corridor it costs .011 of the share at most
+const _leg = { u: 0, r: 0, dec: 1, B: null };
 function keyLeg(A) {
   const p = camera.position, a = A.painting.own.pos, i = places.indexOf(A);
-  let r = p.distanceTo(a), bu = 0, B = null;
+  let r = p.distanceTo(a), bu = -9, ou = -9, B = null;
   for (const j of [i - 1, i + 1]) {
     const pl = places[j]; if (!pl || !hasCanvas(pl)) continue;
     const b = pl.painting.own.pos, bx = b.x - a.x, by = b.y - a.y, bz = b.z - a.z, px = p.x - a.x, py = p.y - a.y, pz = p.z - a.z;
     const u = (px * bx + py * by + pz * bz) / (bx * bx + by * by + bz * bz), t = clamp(u, 0, 1);
     r = Math.min(r, Math.hypot(px - t * bx, py - t * by, pz - t * bz));
-    if (u > bu) { bu = u; B = pl; } // the leg you are walking; behind the first spot and past the last there is none, and the key is one picture
+    if (u > bu) { ou = bu; bu = u; B = pl; } else if (u > ou) ou = u; // the leg you are walking, and the one you are not
   }
-  _leg.u = bu; _leg.r = r; _leg.B = B; return _leg;
+  _leg.u = Math.max(bu, 0); _leg.r = r; _leg.dec = sstep(bu - ou, 0, .15);
+  _leg.B = bu > 0 ? B : null; // behind the first spot and past the last there is no leg, and the key is one picture
+  return _leg;
 }
 const _kg = [V(), V(), V(), V()]; // the two keys' grades, taken before the loop below writes any place's own over
 function syncProjectors() {
@@ -3255,7 +3262,7 @@ function syncProjectors() {
   // parasol) the eye crosses it and nothing moves: mix(A, B, .28) becomes mix(B, A, .72), the same colour from the other side
   let A = hasCanvas(dom) ? dom : null;
   if (!A) { let best = 1e9; for (const pl of places) if (hasCanvas(pl)) { const d = camera.position.distanceTo(pl.painting.own.pos); if (d < best) { best = d; A = pl; } } }
-  const leg = A ? keyLeg(A) : null, B = leg ? leg.B : null, m0 = B ? sstep(leg.u, .15, .85) : 0;
+  const leg = A ? keyLeg(A) : null, B = leg ? leg.B : null, m0 = B ? sstep(leg.u, .15, .85) * leg.dec : 0;
   // a picture still in the fog is not mixed in and does not take the key down with it either: the harbour's own reveal holds the sunrise
   // out of the key along the quay exactly as it holds the canvas out, and what the walker wears there is Rouen, alone and at full strength
   const ra = A ? (A.painting.reveal ?? 1) : 0, rb = B ? (B.painting.reveal ?? 1) : 0, wa = (1 - m0) * ra, wb = m0 * rb, tot = wa + wb;
