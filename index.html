@@ -2984,6 +2984,31 @@ function updateWalk(dt) {
   if (afloat) { const dh0 = Math.atan2(Math.sin(yaw - swimYaw), Math.cos(yaw - swimYaw)), want = swimming ? Math.atan2(Math.sin(Math.atan2(-_move.x, -_move.z) - swimYaw), Math.cos(Math.atan2(-_move.x, -_move.z) - swimYaw)) : Math.abs(dh0) > NECK.yaw ? dh0 - Math.sign(dh0) * NECK.yaw : 0, pace = (weary ? .5 : SWIM.pace) * (.75 + .25 * breath) * (sprint ? SWIM.sprint : 1); swimTurn.ph = (((swimPh % TAU) + TAU) % TAU) / TAU; swimTurn.th = 0; steerU = swimming || want !== 0 ? SWIM.step(swimTurn, want, dt, pace, swimming, null) : (swimTurn.om -= SWIM.c * swimTurn.om * Math.abs(swimTurn.om) / SWIM.I * dt, 0); swimYaw += swimTurn.om * dt; bodyRate = swimTurn.om; const dh = Math.atan2(Math.sin(yaw - swimYaw), Math.cos(yaw - swimYaw)); { const vs = velocity.length(), tdist = .5 * 1000 * .03 * vs * vs * .1 + .022 * Math.abs(bodyRate) * 4 + .3 * Math.abs(dh); coact = clamp(tdist / NECK_REFLEX.tol / neckPlan(MUSC.y).Ksum, .02, .5); } headYaw = swimYaw + neckTurn(neckS.y, clamp(dh, -NECK.yaw, NECK.yaw), dt, MUSC.y, null, coact, bodyRate, neckW.y); const gT = clamp(pitch, -NECK.down, NECK.up), hd = clamp(WATER_Y - (pos.y - .16), 0, .2), wg = HEAD.m * 9.8 - 1000 * 9.8 * Math.PI * hd * hd * (.3 - hd) / 3; headWt = wg / (HEAD.m * 9.8); headPitch = neckTurn(neckS.x, gT, dt, MUSC.x, th => { const a = th + headLift; return -wg * (HEAD.cgx * Math.cos(a) - HEAD.cgy * Math.sin(a)); }, coact, 0, neckW.x); } else { swimYaw = yaw; headYaw = yaw; headPitch = pitch; neckS.y.fill(0); neckS.x.fill(0); neckS.x[0] = pitch; neckS.x[20] = pitch; headWt = 1; } // the body's line is the swim's, and the body comes round to it as its own strokes turn it (`SWIM`: seconds, not the .6 s M44 set). The head turns on it as far as the neck goes, and at the neck's pace: the look asks, the neck's muscles turn the head's mass to it, so a flick of the look lags the eye by a tenth of a second and a long turn runs at the neck's speed; nodding, the head's weight less what the water bears (the head a ball of 10 cm about a point 6 cm under the eye, its immersion read from the eye's height: at the swimmer's eye it is out of the water, and the neck carries all of it) pulls against the tone the neck holds it with; the chin lifts quicker than it drops, the extensors being twice the flexors. On foot the eye is still the look's (the walking body has no frame yet). The head turns on the body as far as the neck goes; asked further, the look waits at the neck's end while the body comes round under it (still in the water; swimming, the stroke's line holds the body and the look stays at the neck's end)
   { const p = (((swimPh % TAU) + TAU) % TAU) / TAU, want = swimming && p > .4 && p < .7 ? .35 * Math.pow(Math.sin((p - .4) / .3 * Math.PI), 2) : 0; liftWant = want; headLift = neckTurn(neckS.l, want, dt, MUSC.x, null, coact, 0, neckW.l); } // the head lifts on the neck through the pull, 20° at most, the chin up for the breath
   updateArms(swimming, swimPh);
+  // the road walks you: on foot along the promenade, W (or the pad pushed forward) walks the path's own line and not the eye's, so a bend
+  // is taken without a hand on the mouse and the eye is as free to look about as it is drifting on the wheel. The road takes you when you
+  // walk onto it facing along it, either way (within 45° of its line; its gravel runs 1.6 m to a side, and it takes you within 2.2), and
+  // once it has you it keeps you round any bend the eye has not followed: a hairpin looked at fixedly is the road turning under the eye,
+  // not the eye turning off the road. What lets go of you is your own hand: the look turned away from the road's line by 40° or more
+  // by the mouse or a finger, the look then more than 45° off it (turning to follow the bend brings the look back toward the line and
+  // counts the other way); a step aside on A or D or the pad; or the road left by more than 3.2 m. Standing still keeps the hold for a
+  // second and a half, so a walk tapped out in short presses is one walk, and a stop, a turn, and a step off is a step off. Nothing snaps:
+  // the walk's direction is the two lines mixed by the hold, which fades over the last metre of the road's width, and on the road a
+  // gentle lean toward its middle keeps the walker within it on the bends, none inside the first 1.2 m so a walker keeps to their own side
+  if (!fly && !afloat && !monet.flags.noRoad) {
+    const f = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - (touchMove.active ? touchMove.y : 0);
+    const side = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + (touchMove.active ? touchMove.x : 0);
+    const w = walkAt(pos.x, pos.z), q0 = promPoint(Math.max(0, w.s - .6), _rd0), q1 = promPoint(Math.min(PROM_LEN, w.s + .6), _rd1); let tx = q1.x - q0.x, tz = q1.z - q0.z; const tl = Math.hypot(tx, tz) || 1; tx /= tl; tz /= tl;
+    const relS = Math.atan2(Math.sin(yaw - Math.atan2(-tx, -tz)), Math.cos(yaw - Math.atan2(-tx, -tz))); // the look against the road's +s line
+    if (Math.abs(f) < .2) roadIdle += dt; else roadIdle = 0;
+    if (Math.abs(side) > .5 || roadIdle > 1.5 || w.off > 3.2) roadSg = 0;
+    else if (!roadSg) { if (Math.abs(f) >= .2 && w.off < 2.2 && (Math.abs(relS) < Math.PI / 4 || Math.abs(relS) > 3 * Math.PI / 4)) { roadSg = Math.abs(relS) < Math.PI / 2 ? 1 : -1; roadAway = 0; } }
+    if (roadSg) { roadYaw = Math.atan2(-tx * roadSg, -tz * roadSg); if (roadAway > .7 && Math.abs(Math.atan2(Math.sin(yaw - roadYaw), Math.cos(yaw - roadYaw))) > Math.PI / 4) roadSg = 0; }
+    if (roadSg && Math.abs(f) >= .2) {
+      const hold = 1 - sstep(w.off, 2.4, 3.2), c = promPoint(w.s), lean = .6 * sstep(w.off, 1.2, 2.6), cl = Math.hypot(c.x - pos.x, c.z - pos.z) || 1, sg = roadSg * Math.sign(f);
+      let rx = tx * sg + (c.x - pos.x) / cl * lean, rz = tz * sg + (c.z - pos.z) / cl * lean; const rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
+      const ml = Math.hypot(_move.x, _move.z) || 1; _move.x = lerp(_move.x / ml, rx, hold) * ml; _move.z = lerp(_move.z / ml, rz, hold) * ml; roadHold = hold;
+    } else roadHold = 0;
+  } else { roadSg = 0; roadHold = 0; }
   if (_move.lengthSq() > 1) _move.normalize();
   velocity.lerp(_move.clone().multiplyScalar(speed), 1 - Math.pow(.001, dt));
   const step = velocity.clone().multiplyScalar(dt);
@@ -3103,7 +3128,7 @@ addEventListener('mousemove', e => {
 addEventListener('mouseup', () => { dragging = false; });
 canvas.addEventListener('click', () => { if (moved < 4 && !photoMode && matchMedia('(pointer:fine)').matches && canvas.requestPointerLock) canvas.requestPointerLock().catch?.(() => {}); });
 document.addEventListener('pointerlockchange', () => document.body.classList.toggle('locked', document.pointerLockElement === canvas));
-function look(dx, dy) { if (travel) return; yaw -= dx * .0022; pitch = clamp(pitch - dy * .0022, -1.45, 1.45); }
+function look(dx, dy) { if (travel) return; const rel = () => Math.abs(Math.atan2(Math.sin(yaw - roadYaw), Math.cos(yaw - roadYaw))), b = roadSg ? rel() : 0; yaw -= dx * .0022; pitch = clamp(pitch - dy * .0022, -1.45, 1.45); if (roadSg) { const a = rel(); roadAway = a > b ? roadAway + (a - b) : Math.max(0, roadAway - (b - a)); } } // the visitor's own turning of the look, away from the road's line and back toward it, is kept while the road has them (updateWalk)
 // touch: drag anywhere to look; the joystick walks
 const touchMove = { active: false, x: 0, y: 0 }; let lookTouch = null, padTouch = null;
 canvas.addEventListener('touchstart', e => { awake(); if (e.touches.length === 1) lookTouch = null; for (const t of e.changedTouches) if (!lookTouch) { lookTouch = { id: t.identifier, x: t.clientX, y: t.clientY, x0: t.clientX, y0: t.clientY, mode: null }; } }, { passive: true });
@@ -3403,7 +3428,7 @@ function hasCanvas(pl) { const P = pl.painting; return !!(P && P.on && P.own.dep
 // where a point stands on the walk: the promenade's own arclength, and how far off the path it lies, in one pass over the path's samples --
 // the nearest of them, and then the foot of the perpendicular on the better of its two neighbours, because the samples stand .6 m apart and
 // snapping to them carried the second picture's share up a staircase, .022 of it every .6 m of walking, where the foot climbs it smoothly
-const _wq = { s: 0, off: 0 };
+const _wq = { s: 0, off: 0 }, _rd0 = V(), _rd1 = V(); let roadSg = 0, roadYaw = 0, roadAway = 0, roadIdle = 0, roadHold = 0; // the road's hold on the walk (updateWalk): the way the body faces along it, +1 up the promenade, -1 down, 0 when the road does not have you; the body's yaw along it; how far the look has been turned away from that line by the visitor's own hand since it took them, rad; how long the walker has stood; the hold's weight this frame, 0 to 1
 function walkAt(x, z) {
   const n = promSamples.length - 1; let d = 1e9, k = 0;
   for (let i = 0; i <= n; i++) { const q = promSamples[i], e = (q.x - x) ** 2 + (q.z - z) ** 2; if (e < d) { d = e; k = i; } }
@@ -3581,6 +3606,7 @@ let simTime = STILL ? 10 : 0, last = performance.now(), fps = 0, fpsAcc = 0, fps
 function update(dt) {
   realTime += dt;
   if (drifting && MOVE_KEYS.some(k => keys.has(k))) { drifting = false; recover = null; }
+  if (travel || drifting) roadSg = 0; // the road's hold is the walk's own; a flight or the wheel takes over from it, and the next walk takes the road afresh by where the eye is then
   if (travel) updateTravel(dt); else if (drifting) updateDrift(dt); else updateWalk(dt);
   updateEdgeVeil(dt); updateZone();
   if (locationTimer && realTime > locationTimer) { $('#location').classList.remove('show'); locationTimer = 0; }
@@ -3613,7 +3639,7 @@ function frame(now) {
 window.monet = {
   ready: false,
   get state() { const i = renderer.info; return { camera: camera.position.toArray().map(v => +v.toFixed(2)), yaw: +yaw.toFixed(3), pitch: +pitch.toFixed(3), place: placeIndex, hour: +hourT.toFixed(3), stop: $('#hourLabel').firstChild.textContent, fly, drifting, s: +driftS.toFixed(1), photo: photoMode, landed, falling, quality: qualityName, fps: +fps.toFixed(1), drawCalls: i.render.calls, triangles: i.render.triangles, patches: patchTotal, genMs: +genMs.toFixed(0) }; },
-  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false }, build: 'm45-the-body', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, promLen: PROM_LEN, walkHeight,
+  goView, setHour, setQuality, place: i => applyViewNow(i), timings, scene, places, renderer, placeGroup, waterGroup, dragonflies, flags: { noRefl: false, noProjPass: false, noRoad: false }, build: 'm45-the-body', weights: () => placeWeights().map(v => +v.toFixed(3)), drift: scrollDrift, get drifting() { return drifting; }, get driftS() { return driftS; }, get road() { return { sg: roadSg, hold: +roadHold.toFixed(2), away: +roadAway.toFixed(2), yaw: +roadYaw.toFixed(2) }; }, mouseLook: look, walkAt: (x, z) => ({ ...walkAt(x, z) }), keys, promLen: PROM_LEN, walkHeight,
   tick(dt = 1 / 60) { if (!STILL) simTime += dt; update(dt); render(); },
   snap(w = 640, q = .6) { render(); const c = document.createElement('canvas'); c.width = w; c.height = Math.round(w * canvas.height / canvas.width); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); return c.toDataURL('image/jpeg', q); },
   look(y, p) { yaw = y; pitch = p; camera.rotation.set(pitch, yaw, 0); },
